@@ -511,3 +511,38 @@ button:hover i[data-lucide="chevron-left"] {
 .lite-mode .day-card:hover {
   transform: none !important;
 }
+
+/* 1. Global Height & Overflow Fix */
+html, body {
+  height: 100dvh; /* Dynamic Viewport Height prevents the bottom gap */
+  width: 100%;
+  overflow: hidden;
+  position: fixed; /* Prevents "rubber-banding" scroll on iOS */
+}
+
+/* 2. Fix the Mobile Header (Notch) */
+.md\:hidden.glass {
+  /* Push the content down exactly by the notch height + original padding */
+  padding-top: calc(env(safe-area-inset-top) + 0.75rem) !important;
+  background-clip: padding-box;
+}
+
+/* 3. Fix the Floating Bottom Nav (Home Indicator) */
+#mobile-bottom-nav {
+  /* Ensure the dock sits above the home swipe bar */
+  bottom: calc(env(safe-area-inset-bottom) + 1.5rem) !important;
+}
+
+/* 4. Fix Bottom Sheets (Add Task / Day View Modals) */
+.mobile-sheet {
+  /* Add padding so buttons aren't covered by the home indicator */
+  padding-bottom: calc(env(safe-area-inset-bottom) + 1rem) !important;
+  /* Adjust max height to account for safe areas */
+  max-height: calc(85dvh + env(safe-area-inset-bottom)) !important;
+}
+
+/* 5. Loading Overlay Fix */
+#loading-overlay {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
