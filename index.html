@@ -17,6 +17,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -75,11 +76,11 @@
 
     <div id="login-screen"
         class="fixed inset-0 z-[70] bg-[#FFFDF9] dark:bg-[#080808] overflow-y-auto custom-scrollbar transition-opacity duration-500 hidden selection:bg-[#E03A3A] selection:text-white font-sans">
-    
+
         <div class="fixed inset-0 z-0 opacity-[0.04] dark:opacity-[0.06] pointer-events-none"
             style="background-image: linear-gradient(#111 1px, transparent 1px), linear-gradient(90deg, #111 1px, transparent 1px); background-size: 40px 40px;">
         </div>
-    
+
         <nav
             class="sticky top-0 z-50 bg-[#FFFDF9]/90 dark:bg-[#080808]/90 backdrop-blur-sm border-b-2 border-[#1a1a1a] dark:border-zinc-800 px-6 py-4">
             <div class="max-w-7xl mx-auto flex items-center justify-between">
@@ -89,7 +90,8 @@
                         🎯
                     </div>
                     <div class="flex flex-col justify-center">
-                        <h1 class="text-2xl font-black text-zinc-900 dark:text-white tracking-tight leading-none uppercase">
+                        <h1
+                            class="text-2xl font-black text-zinc-900 dark:text-white tracking-tight leading-none uppercase">
                             ChaosPrep</h1>
                         <span
                             class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mt-0.5">by
@@ -102,10 +104,10 @@
                 </button>
             </div>
         </nav>
-    
+
         <header class="max-w-7xl mx-auto px-6 min-h-[calc(100vh-80px)] flex items-center relative z-10">
             <div class="grid lg:grid-cols-2 gap-12 lg:gap-24 w-full py-12">
-    
+
                 <div class="flex flex-col justify-center text-left">
                     <div
                         class="inline-flex items-center border-2 border-zinc-900 dark:border-zinc-800 bg-white dark:bg-[#111] mb-8 self-start shadow-[4px_4px_0px_0px_#E03A3A]">
@@ -121,14 +123,16 @@
                         <span class="text-[#E03A3A]">Daily <br> Chaos.</span>
                     </h1>
                 </div>
-    
+
                 <div
                     class="flex flex-col justify-center space-y-8 lg:border-l-2 lg:border-zinc-200 dark:lg:border-zinc-800 lg:pl-20">
                     <p class="text-2xl md:text-3xl text-zinc-600 dark:text-zinc-400 leading-tight font-medium">
-                        The tracking tool for <strong class="text-zinc-900 dark:text-white">JEE, NEET and competitive aspirants.</strong>
-                        Meticulously built for students who are tired of "AI slop" and need a system that actually works.
+                        The tracking tool for <strong class="text-zinc-900 dark:text-white">JEE, NEET and competitive
+                            aspirants.</strong>
+                        Meticulously built for students who are tired of "AI slop" and need a system that actually
+                        works.
                     </p>
-    
+
                     <div class="flex flex-wrap gap-2">
                         <span
                             class="px-3 py-1 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-bold uppercase tracking-widest">Real
@@ -140,7 +144,7 @@
                             class="px-3 py-1 border-2 border-zinc-900 dark:border-zinc-700 text-zinc-900 dark:text-zinc-300 text-[10px] font-bold uppercase tracking-widest">Zero
                             Trash</span>
                     </div>
-    
+
                     <div class="pt-4">
                         <button onclick="signInWithGoogle()"
                             class="h-20 w-full sm:w-auto px-12 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-black text-2xl flex items-center justify-center gap-4 hover:shadow-[10px_10px_0px_0px_#E03A3A] transition-all active:translate-y-1 active:shadow-none border-2 border-zinc-900 dark:border-white uppercase">
@@ -152,10 +156,10 @@
                             Results.</p>
                     </div>
                 </div>
-    
+
             </div>
         </header>
-    
+
         <footer
             class="max-w-7xl mx-auto px-6 py-12 border-t-2 border-zinc-200 dark:border-zinc-800 flex flex-col md:flex-row justify-between items-center gap-4 relative z-10">
             <div class="text-sm font-bold text-zinc-500 dark:text-zinc-400 tracking-widest uppercase">
@@ -196,7 +200,8 @@
                         class="w-10 h-10 bg-gradient-to-br from-brand-500 to-fuchsia-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg shadow-brand-500/30 shadow-inner-light">
                         🎯</div>
                     <div class="flex flex-col">
-                        <span class="text-2xl font-black text-zinc-900 dark:text-white tracking-tighter leading-none">ChaosPrep</span>
+                        <span
+                            class="text-2xl font-black text-zinc-900 dark:text-white tracking-tighter leading-none">ChaosPrep</span>
                         <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">by sval.tech</span>
                     </div>
                 </div>
@@ -230,6 +235,10 @@
                     <button onclick="switchView('weekly')" id="nav-desktop-weekly"
                         class="flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50"><i
                             data-lucide="crosshair" class="w-4 h-4"></i> Targets</button>
+                    <button onclick="switchView('squad')" id="nav-desktop-squad"
+                        class="flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50">
+                        <i data-lucide="users" class="w-4 h-4"></i> Squad
+                    </button>
                 </div>
                 <div class="flex w-full gap-1.5">
                     <button onclick="switchView('timer')" id="nav-desktop-timer"
@@ -250,10 +259,12 @@
                                         data-lucide="bar-chart" class="w-4 h-4 text-brand-500"></i> Mocks Data</button>
                                 <button onclick="switchView('stats-errors')"
                                     class="text-left px-4 py-3 text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-3 border-t border-zinc-100 dark:border-zinc-800/50"><i
-                                        data-lucide="alert-triangle" class="w-4 h-4 text-rose-500"></i> Error Tracking</button>
+                                        data-lucide="alert-triangle" class="w-4 h-4 text-rose-500"></i> Error
+                                    Tracking</button>
                                 <button onclick="switchView('stats-questions')"
                                     class="text-left px-4 py-3 text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-3 border-t border-zinc-100 dark:border-zinc-800/50"><i
-                                        data-lucide="check-square" class="w-4 h-4 text-emerald-500"></i> Daily Questions</button>
+                                        data-lucide="check-square" class="w-4 h-4 text-emerald-500"></i> Daily
+                                    Questions</button>
                             </div>
                         </div>
                     </div>
@@ -328,7 +339,8 @@
                     class="w-9 h-9 bg-gradient-to-br from-brand-500 to-fuchsia-600 rounded-lg flex items-center justify-center text-white text-sm shadow-md shrink-0">
                     🎯</div>
                 <div class="flex flex-col justify-center">
-                    <h1 class="font-black text-lg text-zinc-900 dark:text-white tracking-tight leading-none">ChaosPrep</h1>
+                    <h1 class="font-black text-lg text-zinc-900 dark:text-white tracking-tight leading-none">ChaosPrep
+                    </h1>
                     <span class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">by
                         sval.tech</span>
                 </div>
@@ -337,7 +349,8 @@
                 <div id="mobile-countdown-pill" onclick="openRealityCheck()"
                     class="hidden px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center gap-1.5 active:scale-95 transition-transform">
                     <span id="days-left-mobile"
-                        class="text-[10px] font-black uppercase tracking-wide text-zinc-700 dark:text-zinc-300">-- days</span>
+                        class="text-[10px] font-black uppercase tracking-wide text-zinc-700 dark:text-zinc-300">--
+                        days</span>
                 </div>
                 <button onclick="openSettings()"
                     class="w-8 h-8 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded-full text-zinc-600 dark:text-zinc-300 active:scale-95 transition-transform"><i
@@ -425,11 +438,10 @@
                         <div class="w-24 h-24 md:w-32 md:h-32 relative">
                             <!-- SVG setup for exactly sizing the ring accurately mapped to viewBox so percentage doesn't break depending on pixel bounds -->
                             <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="40" stroke="currentColor" stroke-width="8"
-                                    fill="transparent" class="text-zinc-100 dark:text-zinc-800" />
-                                <circle id="weekly-ring" cx="50" cy="50" r="40" stroke="currentColor"
-                                    stroke-width="8" fill="transparent" stroke-dasharray="251.3"
-                                    stroke-dashoffset="251.3"
+                                <circle cx="50" cy="50" r="40" stroke="currentColor" stroke-width="8" fill="transparent"
+                                    class="text-zinc-100 dark:text-zinc-800" />
+                                <circle id="weekly-ring" cx="50" cy="50" r="40" stroke="currentColor" stroke-width="8"
+                                    fill="transparent" stroke-dasharray="251.3" stroke-dashoffset="251.3"
                                     class="text-brand-500 transition-all duration-1000 ease-out"
                                     stroke-linecap="round" />
                             </svg>
@@ -548,11 +560,12 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Recent Logs moved within grid scope for ordering on mobile view explicitly -->
                         <div class="pt-2 w-full lg:col-span-2 timer-logs">
                             <div class="flex items-center justify-between mb-4 px-2">
-                                <h3 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Today's Sessions
+                                <h3 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Today's
+                                    Sessions
                                 </h3>
                                 <button onclick="openManualLogModal()"
                                     class="text-xs font-bold text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"><i
@@ -571,8 +584,11 @@
             class="view-section hidden flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar no-scrollbar">
             <div class="max-w-5xl mx-auto pb-32">
                 <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 px-2 gap-4">
-                    <h2 class="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tighter">Analytics</h2>
-                    <button onclick="openAddMockFromStats()" class="text-xs font-bold bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5 self-start md:self-auto"><i data-lucide="plus" class="w-4 h-4"></i> Add Mock</button>
+                    <h2 class="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tighter">Analytics
+                    </h2>
+                    <button onclick="openAddMockFromStats()"
+                        class="text-xs font-bold bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5 self-start md:self-auto"><i
+                            data-lucide="plus" class="w-4 h-4"></i> Add Mock</button>
                 </div>
 
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -615,9 +631,9 @@
                 <div id="mock-history-list" class="space-y-4 pb-12"></div>
             </div>
 
-            
+
         </div>
-        
+
 
         <!-- VIEW: Error Tracking -->
         <div id="view-container-stats-errors"
@@ -627,11 +643,12 @@
                     class="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tighter mb-8 px-2 flex items-center gap-3">
                     <i data-lucide="alert-triangle" class="w-8 h-8 text-rose-500"></i> Error Log
                 </h2>
-        
+
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        
+
                     <div class="glass-card p-6 md:p-8 rounded-[2rem] lg:col-span-2 flex flex-col h-full">
-                        <h3 class="text-base font-black text-zinc-900 dark:text-white tracking-tight mb-5">Log a New Mistake
+                        <h3 class="text-base font-black text-zinc-900 dark:text-white tracking-tight mb-5">Log a New
+                            Mistake
                         </h3>
                         <div class="space-y-5 flex-1 flex flex-col">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -641,7 +658,7 @@
                                     <select id="error-subject" onchange="window.updateErrorChapters()"
                                         class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-medium shadow-inner-light appearance-none"></select>
                                 </div>
-        
+
                                 <div>
                                     <label
                                         class="block text-[10px] font-bold text-zinc-500 mb-1.5 uppercase tracking-widest">Topic
@@ -655,31 +672,32 @@
                                     <input type="text" id="error-custom-chapter" placeholder="Enter custom chapter name"
                                         class="w-full bg-white dark:bg-zinc-800 border border-brand-200 dark:border-brand-900/50 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-medium shadow-inner-light mt-2 hidden focus:ring-2 focus:ring-brand-500">
                                 </div>
-        
+
                                 <div class="md:col-span-2 mt-1">
-                                    <label class="block text-[10px] font-bold text-zinc-500 mb-2 uppercase tracking-widest">Type
+                                    <label
+                                        class="block text-[10px] font-bold text-zinc-500 mb-2 uppercase tracking-widest">Type
                                         of Mistake</label>
                                     <div class="grid grid-cols-2 md:grid-cols-4 gap-2" id="error-type-selector">
-                                        <label class="cursor-pointer"><input type="radio" name="errorType" value="Conceptual"
-                                                class="peer sr-only" checked>
+                                        <label class="cursor-pointer"><input type="radio" name="errorType"
+                                                value="Conceptual" class="peer sr-only" checked>
                                             <div
                                                 class="text-[11px] font-bold px-3 py-2.5 rounded-xl border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 bg-rose-50/50 dark:bg-rose-900/10 peer-checked:bg-rose-500 peer-checked:text-white dark:peer-checked:bg-rose-600 transition-all text-center active:scale-95 shadow-sm">
                                                 Conceptual</div>
                                         </label>
-                                        <label class="cursor-pointer"><input type="radio" name="errorType" value="Calculative"
-                                                class="peer sr-only">
+                                        <label class="cursor-pointer"><input type="radio" name="errorType"
+                                                value="Calculative" class="peer sr-only">
                                             <div
                                                 class="text-[11px] font-bold px-3 py-2.5 rounded-xl border border-blue-200 dark:border-blue-900/50 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10 peer-checked:bg-blue-500 peer-checked:text-white dark:peer-checked:bg-blue-600 transition-all text-center active:scale-95 shadow-sm">
                                                 Calculative</div>
                                         </label>
-                                        <label class="cursor-pointer"><input type="radio" name="errorType" value="Silly Mistake"
-                                                class="peer sr-only">
+                                        <label class="cursor-pointer"><input type="radio" name="errorType"
+                                                value="Silly Mistake" class="peer sr-only">
                                             <div
                                                 class="text-[11px] font-bold px-3 py-2.5 rounded-xl border border-amber-200 dark:border-amber-900/50 text-amber-600 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-900/10 peer-checked:bg-amber-500 peer-checked:text-white dark:peer-checked:bg-amber-600 transition-all text-center active:scale-95 shadow-sm">
                                                 Silly Mistake</div>
                                         </label>
-                                        <label class="cursor-pointer"><input type="radio" name="errorType" value="Formula"
-                                                class="peer sr-only">
+                                        <label class="cursor-pointer"><input type="radio" name="errorType"
+                                                value="Formula" class="peer sr-only">
                                             <div
                                                 class="text-[11px] font-bold px-3 py-2.5 rounded-xl border border-purple-200 dark:border-purple-900/50 text-purple-600 dark:text-purple-400 bg-purple-50/50 dark:bg-purple-900/10 peer-checked:bg-purple-500 peer-checked:text-white dark:peer-checked:bg-purple-600 transition-all text-center active:scale-95 shadow-sm">
                                                 Formula</div>
@@ -687,40 +705,42 @@
                                     </div>
                                 </div>
                             </div>
-        
+
                             <div class="flex-1 mt-4">
                                 <label
                                     class="block text-[10px] font-bold text-zinc-500 mb-1.5 uppercase tracking-widest">Mistake
                                     Description</label>
-                                <textarea id="error-desc" rows="2" placeholder="What went wrong and how to avoid it next time?"
+                                <textarea id="error-desc" rows="2"
+                                    placeholder="What went wrong and how to avoid it next time?"
                                     class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-medium shadow-inner-light resize-none placeholder:text-zinc-400"></textarea>
                             </div>
-        
+
                             <button onclick="window.saveErrorLog()"
                                 class="w-full mt-4 bg-rose-500 hover:bg-rose-600 text-white font-bold py-3.5 px-6 rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2">
                                 <i data-lucide="plus" class="w-4 h-4"></i> Log Mistake
                             </button>
                         </div>
                     </div>
-        
+
                     <div
                         class="glass-card p-6 rounded-[2rem] lg:col-span-1 flex flex-col h-full relative border border-zinc-200/50 dark:border-zinc-800/50">
-                        <h3 class="text-sm font-black text-zinc-900 dark:text-white tracking-tight mb-4 text-center">Mistake
+                        <h3 class="text-sm font-black text-zinc-900 dark:text-white tracking-tight mb-4 text-center">
+                            Mistake
                             Profile</h3>
-        
+
                         <div id="error-chart-empty"
                             class="absolute inset-0 flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 z-10 p-6 text-center mt-8 hidden">
                             <i data-lucide="pie-chart" class="w-10 h-10 mb-3 opacity-30"></i>
                             <p class="text-xs font-medium">Log your first mistake to generate your profile.</p>
                         </div>
-        
+
                         <div id="error-chart-wrapper"
                             class="relative w-full flex-1 flex justify-center items-center min-h-[180px]">
                             <canvas id="errorTypeChart"></canvas>
                         </div>
                     </div>
                 </div>
-        
+
                 <div class="mb-6 space-y-3 px-2">
                     <h3 class="text-xl font-black text-zinc-900 dark:text-white tracking-tight">Recent Errors</h3>
                     <div class="flex flex-col md:flex-row gap-3">
@@ -731,8 +751,9 @@
                         </div>
                     </div>
                 </div>
-        
-                <div id="error-logs-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 pb-12"></div>
+
+                <div id="error-logs-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 pb-12">
+                </div>
             </div>
         </div>
 
@@ -751,13 +772,14 @@
                             class="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors active:scale-95 text-zinc-600 dark:text-zinc-400"><i
                                 data-lucide="chevron-left" class="w-4 h-4"></i></button>
                         <div id="questions-date-display"
-                            class="text-xs font-bold text-zinc-800 dark:text-zinc-200 min-w-[100px] text-center">Today</div>
+                            class="text-xs font-bold text-zinc-800 dark:text-zinc-200 min-w-[100px] text-center">Today
+                        </div>
                         <button onclick="changeQuestionDate(1)"
                             class="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors active:scale-95 text-zinc-600 dark:text-zinc-400"><i
                                 data-lucide="chevron-right" class="w-4 h-4"></i></button>
                     </div>
                 </div>
-        
+
                 <!-- Stats Row (Streak & Target) -->
                 <div class="grid grid-cols-2 gap-4 mb-6">
                     <!-- Streak Card -->
@@ -768,20 +790,26 @@
                             <i data-lucide="flame" class="w-6 h-6"></i>
                         </div>
                         <div>
-                            <div class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 mt-1 md:mt-0">Streak
+                            <div
+                                class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 mt-1 md:mt-0">
+                                Streak
                             </div>
                             <div class="text-3xl md:text-2xl font-black text-zinc-900 dark:text-white"><span
-                                    id="q-streak-count">0</span> <span class="text-sm font-bold text-zinc-400">Days</span></div>
+                                    id="q-streak-count">0</span> <span
+                                    class="text-sm font-bold text-zinc-400">Days</span></div>
                         </div>
                     </div>
                     <!-- Target Card -->
                     <div
                         class="glass-card p-5 md:p-6 rounded-[2rem] flex flex-col md:flex-row justify-between items-center gap-4 border-t-2 border-t-brand-500">
                         <div class="text-center md:text-left flex-1">
-                            <div class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 mt-1 md:mt-0">Daily
+                            <div
+                                class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 mt-1 md:mt-0">
+                                Daily
                                 Target</div>
                             <div class="flex items-center justify-center md:justify-start gap-1">
-                                <input type="number" id="q-target-input" value="50" onchange="saveQuestionTarget(this.value)"
+                                <input type="number" id="q-target-input" value="50"
+                                    onchange="saveQuestionTarget(this.value)"
                                     class="w-16 bg-transparent text-3xl md:text-2xl font-black text-zinc-900 dark:text-white outline-none border-b-2 border-dashed border-zinc-300 dark:border-zinc-700 focus:border-brand-500 p-0 text-center transition-colors shadow-none hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg">
                                 <span class="text-sm font-bold text-zinc-400 pb-1">Qs</span>
                             </div>
@@ -792,12 +820,13 @@
                         </div>
                     </div>
                 </div>
-        
+
                 <div class="glass-card p-6 md:p-8 rounded-[2rem] mb-8">
                     <div id="questions-inputs" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"></div>
                     <div class="flex justify-between items-center border-t border-zinc-100 dark:border-zinc-800 pt-6">
                         <div>
-                            <div class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Total Solved</div>
+                            <div class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Total Solved
+                            </div>
                             <div id="questions-total-display"
                                 class="text-4xl font-black text-zinc-900 dark:text-white tracking-tighter mt-1">
                                 0 <span class="text-xl text-zinc-400 dark:text-zinc-500 font-bold">/ 50</span>
@@ -808,15 +837,16 @@
                             Update</button>
                     </div>
                 </div>
-        
-                <h3 class="text-xl font-black text-zinc-900 dark:text-white tracking-tight mb-4 px-2">Last 7 Days Trend</h3>
+
+                <h3 class="text-xl font-black text-zinc-900 dark:text-white tracking-tight mb-4 px-2">Last 7 Days Trend
+                </h3>
                 <div class="glass-card p-5 rounded-[2rem] w-full min-h-[200px]">
                     <canvas id="questionsChart"></canvas>
                 </div>
             </div>
         </div>
 
-        
+
         <!-- VIEW: Syllabus -->
         <div id="view-container-syllabus" class="view-section hidden flex-1 flex flex-col h-full overflow-hidden">
             <div class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar no-scrollbar">
@@ -849,37 +879,95 @@
             </div>
         </div>
 
-    
+
+        <div id="view-container-squad" class="view-section hidden flex-1 flex flex-col h-full overflow-hidden">
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar no-scrollbar">
+                <div class="max-w-5xl mx-auto pb-32">
+        
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                        <div>
+                            <h2
+                                class="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tighter flex items-center gap-3">
+                                <i data-lucide="users" class="w-8 h-8 text-brand-500"></i> Accountability
+                            </h2>
+                            <p class="text-sm text-zinc-500 dark:text-zinc-400 font-medium mt-1">Surround yourself with winners.
+                            </p>
+                        </div>
+        
+                        <div
+                            class="glass-card p-4 rounded-[1.5rem] flex items-center gap-4 border border-brand-200 dark:border-brand-900/30 bg-brand-50/50 dark:bg-brand-900/10">
+                            <div>
+                                <div class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">Your Invite
+                                    Code</div>
+                                <div class="text-xl font-black tracking-widest text-zinc-900 dark:text-white select-all cursor-pointer hover:text-brand-500 transition-colors"
+                                    id="my-friend-code" onclick="copyFriendCode()">------</div>
+                            </div>
+                            <div class="w-px h-10 bg-zinc-200 dark:bg-zinc-800 mx-2"></div>
+                            <button onclick="openAddFriendModal()"
+                                class="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-5 py-2.5 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-all flex items-center gap-2">
+                                <i data-lucide="user-plus" class="w-4 h-4"></i> Add
+                            </button>
+                        </div>
+                    </div>
+        
+                    <div id="squad-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <div id="add-friend-modal"
+            class="fixed inset-0 z-[140] flex items-center justify-center modal-backdrop hidden opacity-0 transition-opacity duration-300 px-4">
+            <div
+                class="bg-white dark:bg-[#18181b] rounded-[2.5rem] shadow-2xl p-8 w-full max-w-sm transform scale-95 transition-transform duration-300 border border-zinc-200/50 dark:border-zinc-800">
+                <h3 class="text-xl font-black text-zinc-900 dark:text-white mb-2">Add to Squad</h3>
+                <p class="text-xs text-zinc-500 font-medium mb-6">Enter your friend's 6-character invite code.</p>
+        
+                <input type="text" id="friend-code-input" placeholder="e.g. A1B2C3" maxlength="6"
+                    class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3.5 text-center text-2xl tracking-[0.2em] font-black focus:ring-2 focus:ring-brand-500/30 outline-none dark:text-white mb-6 uppercase shadow-inner-light dark:shadow-inner-dark">
+        
+                <div class="flex gap-3 justify-end">
+                    <button onclick="closeAddFriendModal()"
+                        class="px-5 py-2.5 rounded-xl text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-bold text-sm transition-colors">Cancel</button>
+                    <button id="btn-submit-friend" onclick="submitAddFriend()"
+                        class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-md transition-all active:scale-95 flex items-center gap-2">Connect</button>
+                </div>
+            </div>
+        </div>
+
 
     </main>
 
     <!-- Focus Radio Widget -->
     <div id="music-widget"
         class="fixed bottom-24 md:bottom-8 right-4 md:right-8 z-[50] flex flex-col items-end gap-3 transition-all duration-300 pointer-events-none">
-    
+
         <!-- The Player Card (Hidden by default) -->
         <div id="music-player-card"
             class="glass-card p-4 rounded-[2rem] w-64 translate-x-[120%] transition-transform duration-300 shadow-2xl origin-bottom-right pointer-events-auto">
             <div class="flex justify-between items-center mb-4">
                 <div class="flex items-center gap-2">
                     <div class="flex gap-0.5 items-end h-4" id="visualizer">
-                        <div class="w-1 bg-brand-500 rounded-full h-2 animate-bounce-slight" style="animation-delay: 0ms">
+                        <div class="w-1 bg-brand-500 rounded-full h-2 animate-bounce-slight"
+                            style="animation-delay: 0ms">
                         </div>
                         <div class="w-1 bg-fuchsia-500 rounded-full h-4 animate-bounce-slight"
                             style="animation-delay: 100ms"></div>
-                        <div class="w-1 bg-brand-500 rounded-full h-3 animate-bounce-slight" style="animation-delay: 200ms">
+                        <div class="w-1 bg-brand-500 rounded-full h-3 animate-bounce-slight"
+                            style="animation-delay: 200ms">
                         </div>
                     </div>
                     <span class="text-xs font-bold text-zinc-500 uppercase tracking-widest">Focus Radio</span>
                 </div>
                 <div id="youtube-status" class="w-2 h-2 rounded-full bg-red-500"></div>
             </div>
-    
+
             <div class="mb-4 text-center">
                 <h4 id="station-name" class="text-sm font-black text-zinc-900 dark:text-white truncate">Lofi Girl</h4>
                 <p id="track-status" class="text-[10px] text-zinc-400 font-mono">Paused</p>
             </div>
-    
+
             <div class="flex justify-between items-center bg-zinc-100 dark:bg-zinc-800/50 rounded-2xl p-2 mb-3">
                 <button onclick="changeStation('prev')"
                     class="p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"><i
@@ -892,23 +980,28 @@
                     class="p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"><i
                         data-lucide="skip-forward" class="w-4 h-4"></i></button>
             </div>
-    
+
             <!-- Hidden YouTube Iframe Container -->
             <div id="yt-player-container" class="hidden w-0 h-0 overflow-hidden"></div>
         </div>
-    
+
         <!-- Toggle Button -->
         <button id="music-toggle-btn" onclick="toggleMusicWidget()"
             class="relative w-14 h-14 bg-white dark:bg-[#18181b] rounded-full shadow-floating dark:shadow-floating-dark border border-zinc-200/50 dark:border-zinc-800 flex items-center justify-center text-zinc-800 dark:text-white hover:scale-110 active:scale-95 transition-all group overflow-hidden pointer-events-auto">
-            
+
             <!-- Default Hover Background -->
-            <span class="absolute inset-0 rounded-full bg-brand-500/10 dark:bg-brand-500/20 scale-0 group-hover:scale-100 transition-transform duration-300"></span>
-            
+            <span
+                class="absolute inset-0 rounded-full bg-brand-500/10 dark:bg-brand-500/20 scale-0 group-hover:scale-100 transition-transform duration-300"></span>
+
             <!-- ACTIVE PLAYING VISUALS (Hidden by default) -->
             <!-- 1. Spinning Ring -->
-            <div id="music-active-ring" class="absolute inset-0 rounded-full border-[3px] border-transparent border-t-brand-500 border-l-brand-500/30 animate-spin opacity-0 transition-opacity duration-500 pointer-events-none"></div>
+            <div id="music-active-ring"
+                class="absolute inset-0 rounded-full border-[3px] border-transparent border-t-brand-500 border-l-brand-500/30 animate-spin opacity-0 transition-opacity duration-500 pointer-events-none">
+            </div>
             <!-- 2. Subtle Background Glow -->
-            <div id="music-active-glow" class="absolute inset-0 rounded-full bg-brand-500/10 dark:bg-brand-500/20 opacity-0 transition-opacity duration-500 pointer-events-none animate-pulse"></div>
+            <div id="music-active-glow"
+                class="absolute inset-0 rounded-full bg-brand-500/10 dark:bg-brand-500/20 opacity-0 transition-opacity duration-500 pointer-events-none animate-pulse">
+            </div>
 
             <!-- The Icon itself -->
             <i id="music-btn-icon" data-lucide="music" class="w-6 h-6 relative z-10 transition-colors duration-300"></i>
@@ -1020,7 +1113,9 @@
                 </div>
                 <!-- Support internal dragging for reordering inside Day View context -->
                 <div id="day-view-tasks"
-                    class="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1 min-h-0 touch-pan-y pb-4" ondragover="handleDragOverDayView(event)" ondrop="handleDropDayView(event, currentDayViewDate)"></div>
+                    class="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1 min-h-0 touch-pan-y pb-4"
+                    ondragover="handleDragOverDayView(event)" ondrop="handleDropDayView(event, currentDayViewDate)">
+                </div>
                 <div class="pt-4 mt-auto border-t border-zinc-100 dark:border-zinc-800">
                     <button onclick="addTaskFromDayView()"
                         class="w-full py-4 bg-zinc-50 dark:bg-zinc-900 text-brand-600 dark:text-brand-400 font-bold rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-all border border-zinc-200/50 dark:border-zinc-800 hover:border-brand-200 dark:hover:border-brand-800/50">
@@ -1091,7 +1186,8 @@
                         <button id="litemode-toggle" onclick="toggleLiteModeSetting()"
                             class="relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300">
                             <div id="litemode-knob"
-                                class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm"></div>
+                                class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm">
+                            </div>
                         </button>
                     </div>
 
@@ -1109,12 +1205,27 @@
                     <div
                         class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800">
                         <div>
+                            <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200 block">Share Tasks</span>
+                            <span class="text-[10px] text-zinc-500 font-medium">Let your squad see your daily tasks</span>
+                        </div>
+                        <button id="sharetasks-toggle" onclick="toggleShareTasksSetting()"
+                            class="relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300">
+                            <div id="sharetasks-knob"
+                                class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm translate-x-[20px]">
+                            </div>
+                        </button>
+                    </div>
+
+                    <div
+                        class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800">
+                        <div>
                             <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200 block">Focus Radio</span>
                             <span class="text-[10px] text-zinc-500 font-medium">Show music player widget</span>
                         </div>
                         <button id="music-toggle" onclick="toggleMusicSetting()"
                             class="relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300">
-                            <div id="music-knob" class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm">
+                            <div id="music-knob"
+                                class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm">
                             </div>
                         </button>
                     </div>
@@ -1135,7 +1246,7 @@
                         <button onclick="setExamType('Custom')" id="btn-custom"
                             class="p-3 rounded-xl text-xs font-bold border border-zinc-200 dark:border-zinc-700 transition-colors">Custom</button>
                     </div>
-                
+
                     <div id="jee-session-container"
                         class="hidden bg-brand-50 dark:bg-brand-900/10 p-4 rounded-2xl border border-brand-100 dark:border-brand-900/30 animate-slide-up">
                         <label
@@ -1148,7 +1259,7 @@
                                 class="flex-1 py-2 rounded-xl text-xs font-bold border border-brand-200 dark:border-brand-700 transition-colors bg-white dark:bg-zinc-800">April</button>
                         </div>
                     </div>
-                
+
                     <div id="custom-date-container"
                         class="hidden bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-zinc-200/50 dark:border-zinc-800 animate-slide-up">
                         <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Manual
@@ -1156,7 +1267,7 @@
                         <input type="date" id="settings-custom-date" onchange="markSettingsDirty()"
                             class="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-medium">
                     </div>
-                
+
                     <select id="settings-year" onchange="updateTargetDateConfig(); markSettingsDirty()"
                         class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3.5 text-sm outline-none dark:text-white appearance-none font-bold">
                         <option value="2026">Target Year: 2026</option>
@@ -1166,7 +1277,8 @@
                 </div>
 
                 <div class="space-y-3">
-                    <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Subject Colors</label>
+                    <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Subject
+                        Colors</label>
                     <div id="settings-subject-colors" class="space-y-2"></div>
                 </div>
 
@@ -1191,10 +1303,11 @@
                         class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white appearance-none font-medium">
                 </div>
 
-                
+
 
                 <div class="space-y-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
-                    <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Data Management</label>
+                    <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Data
+                        Management</label>
                     <div class="flex gap-2">
                         <button onclick="exportData()"
                             class="flex-1 py-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-xs font-bold text-zinc-700 dark:text-zinc-300 transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center gap-2 border border-transparent hover:border-zinc-300 dark:hover:border-zinc-600"><i
@@ -1282,14 +1395,15 @@
         class="fixed inset-0 z-[140] flex items-center justify-center modal-backdrop hidden opacity-0 transition-opacity duration-300 px-4">
         <div
             class="bg-white dark:bg-[#09090b] rounded-[2.5rem] shadow-2xl w-full max-w-md transform scale-95 transition-transform duration-300 border border-zinc-200 dark:border-zinc-800 relative overflow-hidden">
-    
+
             <!-- Dynamic Background -->
             <div class="absolute inset-0 bg-gradient-to-b from-rose-500/5 to-transparent pointer-events-none"></div>
-    
+
             <div class="relative z-10 p-6 md:p-8">
                 <div class="flex justify-between items-start mb-6">
                     <div>
-                        <h2 class="text-3xl font-black text-zinc-900 dark:text-white tracking-tighter leading-none mb-1">
+                        <h2
+                            class="text-3xl font-black text-zinc-900 dark:text-white tracking-tighter leading-none mb-1">
                             Reality Check</h2>
                         <p class="text-[10px] font-bold text-rose-500 uppercase tracking-widest">No Excuses.</p>
                     </div>
@@ -1297,7 +1411,7 @@
                         class="p-2 bg-zinc-100 dark:bg-zinc-800/50 rounded-full text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"><i
                             data-lucide="x" class="w-5 h-5"></i></button>
                 </div>
-    
+
                 <!-- Main Countdown -->
                 <div class="flex items-baseline gap-2 mb-8">
                     <div class="text-7xl font-black text-zinc-900 dark:text-white tracking-tighter leading-none"
@@ -1307,14 +1421,15 @@
                         <span class="text-xs font-bold text-rose-500 uppercase tracking-widest">Remaining</span>
                     </div>
                 </div>
-    
+
                 <!-- Brutal Grid -->
                 <div class="grid grid-cols-2 gap-3 mb-6">
                     <div
                         class="bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-zinc-200/50 dark:border-zinc-800">
                         <div class="flex items-center gap-2 mb-2">
                             <i data-lucide="calendar-off" class="w-4 h-4 text-zinc-400"></i>
-                            <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Sundays Left</span>
+                            <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Sundays
+                                Left</span>
                         </div>
                         <div class="text-2xl font-black text-zinc-900 dark:text-white" id="rc-sundays">0</div>
                     </div>
@@ -1322,12 +1437,13 @@
                         class="bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-zinc-200/50 dark:border-zinc-800">
                         <div class="flex items-center gap-2 mb-2">
                             <i data-lucide="moon" class="w-4 h-4 text-zinc-400"></i>
-                            <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Sleeps Left</span>
+                            <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Sleeps
+                                Left</span>
                         </div>
                         <div class="text-2xl font-black text-zinc-900 dark:text-white" id="rc-sleeps">0</div>
                     </div>
                 </div>
-    
+
                 <!-- Wasted Potential Warning -->
                 <div
                     class="bg-rose-50 dark:bg-rose-900/10 p-4 rounded-2xl border border-rose-100 dark:border-rose-900/30 mb-8 flex items-center gap-4">
@@ -1339,11 +1455,13 @@
                         <div class="text-[10px] font-bold text-rose-400 uppercase tracking-widest mb-0.5">If you waste
                             2h/day...</div>
                         <div class="text-sm font-medium text-rose-800 dark:text-rose-200">You will lose <strong
-                                id="rc-wasted">0 hours</strong> of prep time before the exam. In <strong id="days-remaining">0</strong> days, you will either be relieved or regretful. Choose now.</div>
+                                id="rc-wasted">0 hours</strong> of prep time before the exam. In <strong
+                                id="days-remaining">0</strong> days, you will either be relieved or regretful. Choose
+                            now.</div>
                     </div>
                 </div>
-    
-    
+
+
                 <!-- Footer Quote -->
                 <div class="text-center">
                     <p id="rc-quote" class="text-xs font-mono text-zinc-500 dark:text-zinc-400 leading-relaxed"></p>
@@ -1366,11 +1484,19 @@
             class="px-6 py-4 text-sm font-bold text-zinc-700 dark:text-zinc-300 text-left flex items-center gap-3 active:bg-zinc-100 dark:active:bg-zinc-800"><i
                 data-lucide="check-square" class="w-5 h-5 text-emerald-500"></i> Daily Questions</button>
     </div>
-    
+
     <!-- Floating Mobile Dock (iOS Style) -->
-    <div id="mobile-bottom-nav" class="md:hidden fixed bottom-6 left-4 right-4 z-[60] transition-transform duration-300">
+    <div id="mobile-bottom-nav"
+        class="md:hidden fixed bottom-6 left-4 right-4 z-[60] transition-transform duration-300">
         <div
             class="glass rounded-[2rem] shadow-floating dark:shadow-floating-dark flex justify-around items-center h-[72px] px-2 border border-white/20 dark:border-white/10">
+            <!-- Elevated Main FAB -->
+            <div class="relative -top-6">
+                <button onclick="openAddTaskModal()"
+                    class="w-16 h-16 bg-zinc-900 dark:bg-white rounded-full text-white dark:text-zinc-900 shadow-2xl shadow-zinc-900/40 dark:shadow-black/50 flex items-center justify-center active:scale-90 transition-transform ring-4 ring-white/40 dark:ring-black/40 backdrop-blur-md">
+                    <i data-lucide="plus" class="w-8 h-8"></i>
+                </button>
+            </div>
             <button onclick="switchView('calendar')" id="nav-mobile-calendar"
                 class="flex flex-col items-center justify-center w-full h-full text-brand-600 dark:text-brand-400 transition-colors">
                 <i data-lucide="calendar" class="w-6 h-6"></i>
@@ -1379,13 +1505,10 @@
                 class="flex flex-col items-center justify-center w-full h-full text-zinc-400 dark:text-zinc-500 transition-colors">
                 <i data-lucide="crosshair" class="w-6 h-6"></i>
             </button>
-            <!-- Elevated Main FAB -->
-            <div class="relative -top-6">
-                <button onclick="openAddTaskModal()"
-                    class="w-16 h-16 bg-zinc-900 dark:bg-white rounded-full text-white dark:text-zinc-900 shadow-2xl shadow-zinc-900/40 dark:shadow-black/50 flex items-center justify-center active:scale-90 transition-transform ring-4 ring-white/40 dark:ring-black/40 backdrop-blur-md">
-                    <i data-lucide="plus" class="w-8 h-8"></i>
-                </button>
-            </div>
+            <button onclick="switchView('squad')" id="nav-mobile-squad"
+                class="flex flex-col items-center justify-center w-full h-full text-zinc-400 dark:text-zinc-500 transition-colors">
+                <i data-lucide="users" class="w-6 h-6"></i>
+            </button>
             <button onclick="switchView('timer')" id="nav-mobile-timer"
                 class="flex flex-col items-center justify-center w-full h-full text-zinc-400 dark:text-zinc-500 transition-colors">
                 <i data-lucide="timer" class="w-6 h-6"></i>
@@ -1393,6 +1516,7 @@
             <button onclick="toggleMobileStatsMenu()" id="nav-mobile-stats"
                 class="flex flex-col items-center justify-center w-full h-full text-zinc-400 dark:text-zinc-500 transition-colors"><i
                     data-lucide="bar-chart-2" class="w-6 h-6"></i></button>
+            
         </div>
     </div>
     <script type="module" src="script.js"></script>
