@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>ChaosPrep Icon Generator</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: #09090b;
+            color: white;
+            gap: 20px;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: #c026d3;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>ChaosPrep Icon Generator</h2>
+    <p>Click below to instantly generate your perfectly matched PWA icons.</p>
+
+    <button onclick="downloadIcon(192)">Download icon-192.png</button>
+    <button onclick="downloadIcon(512)">Download icon-512.png</button>
+
+    <script>
+        function downloadIcon(size) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            // 1. Draw your app's exact gradient background
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#8b5cf6'); // brand-500
+            gradient.addColorStop(1, '#c026d3'); // fuchsia-600
+            ctx.fillStyle = gradient;
+
+            // Note: PWA icons should be perfect squares. Android/iOS will automatically round the corners later!
+            ctx.fillRect(0, 0, size, size);
+
+            // 2. Draw the emoji in the dead center
+            ctx.font = `${size * 0.55}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            // Slight optical adjustment (+5%) to center emojis perfectly
+            ctx.fillText('🎯', size / 2, (size / 2) + (size * 0.05));
+
+            // 3. Trigger the download instantly
+            const link = document.createElement('a');
+            link.download = `icon-${size}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+    </script>
+</body>
+
+</html>
