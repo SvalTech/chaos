@@ -755,6 +755,98 @@ window.toggleSyllabusPyq = async (id) => { const meta = getSyllabusMeta(id); sta
 
 document.getElementById('syllabus-search').addEventListener('input', () => { clearTimeout(window.searchTimeout); window.searchTimeout = setTimeout(renderSyllabusView, 300); });
 document.getElementById('btn-reset-syllabus').addEventListener('click', async () => { if (confirm("Reset all syllabus progress? This cannot be undone.")) { state.syllabusData = { status: {}, meta: {} }; await saveSyllabusData(); renderSyllabusView(); } });
+window.spawnFloatingIcons = function (element, theme) {
+    const themes = {
+        'Physics': ['🪐', '🚀', '🔭', '⚛️', '⚡', '🍎'],
+        'Chemistry': ['🧪', '🔬', '⚗️', '🔥', '💥', '🧬'],
+        'Maths': ['📐', '✖️', '🔢', '♾️', '🧮', '📊'],
+        'Mathematics': ['📐', '✖️', '🔢', '♾️', '🧮', '📊'],
+        'Biology': ['🔬', '🧬', '🌿', '🫀', '🦠', '🦋'],
+        'MockTest': ['🏆', '🎯', '⏱️', '📈', '📝', '🔥'],
+        'JEE Main': ['⚙️', '📐', '🚀', '💻', '🧠'],
+        'JEE Advanced': ['🤯', '⚙️', '🔥', '👑', '🎓'],
+        'NEET': ['🩺', '🫀', '🧬', '⚕️', '🏥'],
+        'History': ['📜', '🏺', '🏛️', '👑', '⚔️', '🗺️'],
+        'Geography': ['🌍', '🌋', '🧭', '🏔️', '🌤️', '🗺️'],
+        'English': ['📚', '✍️', '🎭', '🖋️', '📖', '🗣️'],
+        'Computer Science': ['💻', '⌨️', '🖥️', '💾', '🤖', '🌐'],
+        'Economics': ['📈', '💰', '🏦', '📉', '📊', '💵'],
+        'Commerce': ['💼', '📊', '🤝', '🏢', '🧾'],
+        'Accounts': ['🧮', '📒', '💵', '📉', '⚖️'],
+        'Business Studies': ['👔', '📈', '🏢', '🤝', '💼'],
+        'Political Science': ['🗳️', '⚖️', '🏛️', '🕊️', '📜'],
+        'Psychology': ['🧠', '👁️', '🤔', '🛋️', '🧩'],
+        'Sociology': ['🤝', '🧑‍🤝‍🧑', '🌍', '🗣️', '🏡'],
+        'Physical Education': ['⚽', '🏃', '🏋️', '🏀', '🏅']
+    };
+
+    const icons = themes[theme] || ['✨', '🌟', '💫', '🔥', '🚀', '💥'];
+
+    const rect = element.getBoundingClientRect();
+    const originX = rect.left + rect.width / 2;
+    const originY = rect.top + rect.height / 2;
+
+    // A perfect, even ring of 6 emojis
+    const count = 6;
+
+    // Tight radius: just slightly larger than the button itself
+    const baseRadius = Math.max(rect.width, rect.height) / 2;
+    const radius = baseRadius + 15;
+
+    // Pick a random starting rotation for the whole ring so it feels fresh each click
+    const ringOffset = Math.random() * 360;
+    const direction = Math.random() > 0.5 ? 1 : -1; // Randomly orbit clockwise or counter-clockwise
+
+    for (let i = 0; i < count; i++) {
+        const iconEl = document.createElement('div');
+        iconEl.innerText = icons[Math.floor(Math.random() * icons.length)];
+
+        iconEl.style.position = 'fixed';
+        iconEl.style.left = `${originX}px`;
+        iconEl.style.top = `${originY}px`;
+        iconEl.style.pointerEvents = 'none';
+        iconEl.style.zIndex = '9999';
+        iconEl.style.fontSize = '1.2rem'; // Uniform size for a clean look
+        iconEl.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))'; // Subtle shadow
+
+        document.body.appendChild(iconEl);
+
+        // Distribute them exactly 60 degrees apart (360 / 6)
+        const startAngle = ringOffset + ((360 / count) * i);
+        const endAngle = startAngle + (180 * direction); // They travel exactly half a circle (180deg)
+
+        const animation = iconEl.animate([
+            // Start invisible and scaled down
+            {
+                transform: `translate(-50%, -50%) rotate(${startAngle}deg) translateY(${radius}px) rotate(${-startAngle}deg) scale(0)`,
+                opacity: 0
+            },
+            // Smoothly fade in and scale up while already moving
+            {
+                transform: `translate(-50%, -50%) rotate(${startAngle + (30 * direction)}deg) translateY(${radius}px) rotate(${-(startAngle + (30 * direction))}deg) scale(1)`,
+                opacity: 1,
+                offset: 0.2
+            },
+            // Maintain full visibility for the majority of the orbit
+            {
+                transform: `translate(-50%, -50%) rotate(${endAngle - (30 * direction)}deg) translateY(${radius}px) rotate(${-(endAngle - (30 * direction))}deg) scale(1)`,
+                opacity: 1,
+                offset: 0.8
+            },
+            // Smoothly scale down and fade out at the exact end of the orbit
+            {
+                transform: `translate(-50%, -50%) rotate(${endAngle}deg) translateY(${radius}px) rotate(${-endAngle}deg) scale(0)`,
+                opacity: 0
+            }
+        ], {
+            duration: 1500, // 1.5 seconds for a buttery smooth, leisurely orbit
+            easing: 'ease-in-out', // Smooth acceleration at the start, smooth deceleration at the end
+            fill: 'forwards'
+        });
+
+        animation.onfinish = () => iconEl.remove();
+    }
+};
 
 // --- THEME & SETTINGS ---
 window.applyTheme = function (theme) {
@@ -819,6 +911,14 @@ window.setSubjectColor = function (sub, colorKey) {
     updateSubjectSelectors();
 }
 window.setExamType = function (type) {
+    // 💥 TRIGGER EXAM ANIMATION 💥
+    const previousType = tempSettings.examType;
+    if (previousType !== type && type !== 'Custom') {
+        const map = { 'JEE Main': 'jee', 'NEET': 'neet', 'JEE Advanced': 'jeeadv' };
+        const activeBtn = document.getElementById(`btn-${map[type]}`);
+        if (activeBtn) window.spawnFloatingIcons(activeBtn, type);
+    }
+
     tempSettings.examType = type;
     ['jee', 'neet', 'jeeadv', 'custom'].forEach(id => {
         const btn = document.getElementById(`btn-${id}`);
@@ -1329,7 +1429,25 @@ function updateSubjectSelectors() {
             html += `<label class="cursor-pointer"><input type="radio" name="subject" value="${sub}" class="peer sr-only" ${i === 0 ? 'checked' : ''}><div class="flex items-center justify-center gap-1.5 px-2 ${padding} text-xs font-bold border transition-all hover:scale-[1.02] peer-checked:ring-2 peer-checked:ring-offset-2 dark:peer-checked:ring-offset-[#09090b] shadow-sm ${style}" style="--tw-ring-color: ${isMock ? '#d946ef' : colorInfo.hex}">${colorDot} <span class="truncate">${labelText}</span></div></label>`;
         }); container.innerHTML = html;
 
-        container.querySelectorAll('input').forEach(radio => { radio.addEventListener('change', (e) => { const isMobile = formSuffix === '-mobile'; const mockContainerId = isMobile ? 'mock-fields-container-mobile' : 'mock-fields-container'; const mockFields = document.getElementById(mockContainerId); if (e.target.value === 'MockTest') { mockFields.classList.remove('hidden'); renderMockSubjectFields(mockContainerId, formSuffix); } else { mockFields.classList.add('hidden'); } }); });
+        container.querySelectorAll('input').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const isMobile = formSuffix === '-mobile';
+                const mockContainerId = isMobile ? 'mock-fields-container-mobile' : 'mock-fields-container';
+                const mockFields = document.getElementById(mockContainerId);
+
+                if (e.target.value === 'MockTest') {
+                    mockFields.classList.remove('hidden');
+                    renderMockSubjectFields(mockContainerId, formSuffix);
+                } else {
+                    mockFields.classList.add('hidden');
+                }
+
+                // 💥 TRIGGER ANIMATION HERE 💥
+                // e.target is the hidden radio input. e.target.nextElementSibling is the visible UI capsule.
+                window.spawnFloatingIcons(e.target.nextElementSibling, e.target.value);
+            });
+        });
+
     };
 
     renderRadios('subject-selector-mobile', '-mobile'); renderRadios('subject-selector', '');

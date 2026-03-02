@@ -479,3 +479,34 @@ input:focus, textarea:focus, select:focus {
 #support-modal a:active {
     transform: scale(0.98);
 }
+/* =========================================
+   9. FLOATING EMOJI ANIMATIONS
+   ========================================= */
+@keyframes popAndFloat {
+  0% {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(var(--tx), var(--ty-start)) scale(1.2) rotate(var(--rot));
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty-end)) scale(1) rotate(var(--rot));
+    opacity: 0;
+  }
+}
+
+.floating-emoji {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  font-size: 1.5rem;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));
+  animation: popAndFloat 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Disable in Lite Mode */
+.lite-mode .floating-emoji {
+  display: none !important;
+}
