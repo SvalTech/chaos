@@ -150,12 +150,6 @@ window.checkPendingInvitesUI = function () {
             `;
         }
 
-        // 2. Upgrade the Title with your signature gradient
-        const title = document.querySelector('#login-screen h1');
-        if (title) {
-            title.innerHTML = `Join <br> Your <br> <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-fuchsia-600">Squad.</span>`;
-        }
-
         // 3. Make the Subtitle more welcoming
         const subtitle = document.querySelector('#login-screen p.text-2xl');
         if (subtitle) {
@@ -2563,9 +2557,17 @@ window.copyFriendCode = () => {
 window.removeFriend = async (friendUid) => {
     if (!confirm("Remove from squad?")) return;
     try {
+        // 1. Remove them from YOUR list
         await deleteDoc(doc(db, 'artifacts', appId, 'socialFriends', currentUser.uid, 'list', friendUid));
+
+        // 2. Remove YOU from THEIR list (Mutual removal)
+        await deleteDoc(doc(db, 'artifacts', appId, 'socialFriends', friendUid, 'list', currentUser.uid));
+
         showToast("Removed from Squad");
-    } catch (e) { console.error(e); }
+    } catch (e) {
+        console.error(e);
+        showToast("Error removing from squad");
+    }
 };
 
 // 4. Render the Squad UI
