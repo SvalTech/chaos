@@ -42,6 +42,8 @@ let tempSettings = {};
 
 let myFriendCode = null;
 let squadListeners = {}; // Stores unsubs for active squad members
+let myDisplayName = null;
+state.myProfile = null;
 state.squad = []; // Stores the merged squad data
 
 // Function to generate a random 6 char code
@@ -2444,19 +2446,26 @@ window.closeRealityCheck = function () {
 }
 
 // --- SQUAD LOGIC ---
-
 // 1. Initialize user's public profile
 async function initSocialProfile(user) {
     const profileRef = doc(db, 'artifacts', appId, 'socialProfiles', user.uid);
     const snap = await getDoc(profileRef);
 
     let code = snap.exists() ? snap.data().code : generateFriendCode();
+
+    // Check if they already set a custom name in the database
+    let currentName = (snap.exists() && snap.data().name) ? snap.data().name : (user.displayName || "Aspirant");
+
     myFriendCode = code;
+    myDisplayName = currentName;
+
+    // Update the sidebar UI to reflect their actual stored display name
+    document.getElementById('user-name-desktop').innerText = currentName;
 
     // Make sure we update their name/avatar in case it changed
     await setDoc(profileRef, {
         uid: user.uid,
-        name: user.displayName || "Aspirant",
+        name: currentName,
         avatar: user.photoURL || "",
         code: code,
         lastActive: new Date().toISOString()
@@ -2464,10 +2473,18 @@ async function initSocialProfile(user) {
 
     document.getElementById('my-friend-code').innerText = code;
 }
-
+// 2. Listen to who the user has added as a friend
 // 2. Listen to who the user has added as a friend
 function setupSquadListeners(user) {
     const friendsRef = collection(db, 'artifacts', appId, 'socialFriends', user.uid, 'list');
+
+    // NEW: Listen to your own profile so you appear in the Squad
+    onSnapshot(doc(db, 'artifacts', appId, 'socialProfiles', user.uid), (docSnap) => {
+        if (docSnap.exists()) {
+            state.myProfile = docSnap.data();
+            if (state.currentView === 'squad') renderSquadView();
+        }
+    });
 
     onSnapshot(friendsRef, (snapshot) => {
         const currentFriendUids = snapshot.docs.map(d => d.id);
@@ -2518,6 +2535,34 @@ window.closeAddFriendModal = () => {
     modal.classList.add('opacity-0');
     setTimeout(() => modal.classList.add('hidden'), 300);
 };
+
+window.editDisplayName = async () => {
+    if (!currentUser) return;
+
+    const newName = prompt("Enter your new display name:", myDisplayName || currentUser.displayName || "Aspirant");
+
+    if (newName !== null && newName.trim() !== "") {
+        const cleanName = newName.trim();
+        try {
+            // Update public profile document
+            await updateDoc(doc(db, 'artifacts', appId, 'socialProfiles', currentUser.uid), {
+                name: cleanName
+            });
+
+            myDisplayName = cleanName;
+
+            // Update local sidebar
+            const nameDesktop = document.getElementById('user-name-desktop');
+            if (nameDesktop) nameDesktop.innerText = cleanName;
+
+            showToast("Display name updated!");
+        } catch (e) {
+            console.error(e);
+            showToast("Failed to update name");
+        }
+    }
+};
+
 window.submitAddFriend = async () => {
     const code = document.getElementById('friend-code-input').value.trim().toUpperCase();
     if (code.length !== 6) { showToast("Invalid code format"); return; }
@@ -2589,27 +2634,14 @@ window.renderSquadView = function () {
 
     grid.innerHTML = '';
 
-    if (state.squad.length === 0) {
-        grid.innerHTML = `
-            <div class="col-span-full flex flex-col items-center justify-center py-16 text-center px-4">
-                <div class="w-16 h-16 bg-brand-50 dark:bg-brand-900/20 text-brand-500 rounded-2xl flex items-center justify-center mb-4 shadow-sm">
-                    <i data-lucide="users" class="w-8 h-8"></i>
-                </div>
-                <h3 class="text-lg font-bold text-zinc-900 dark:text-white mb-2 tracking-tight">Build Your Squad</h3>
-                <p class="text-sm text-zinc-500 dark:text-zinc-400 max-w-xs mb-6">
-                    Studying is easier together. Send an invite link to share tasks and track progress.
-                </p>
-                <button onclick="window.copyInviteLink()" 
-                    class="flex items-center gap-2 px-6 py-3 bg-brand-600 text-white rounded-xl text-sm font-bold transition-all active:scale-95 shadow-md hover:bg-brand-700">
-                    <i data-lucide="link" class="w-4 h-4"></i>
-                    <span>Copy Invite Link</span>
-                </button>
-            </div>`;
-        lucide.createIcons();
-        return;
+    // Merge your own profile with your friends' profiles
+    const displayList = [];
+    if (state.myProfile) {
+        displayList.push({ ...state.myProfile, isMe: true });
     }
+    displayList.push(...state.squad);
 
-    state.squad.forEach(friend => {
+    displayList.forEach(friend => {
         const card = document.createElement('div');
         card.className = "glass-card p-6 rounded-[2rem] border border-zinc-200/80 dark:border-zinc-800 shadow-sm relative overflow-hidden flex flex-col";
 
@@ -2653,7 +2685,7 @@ window.renderSquadView = function () {
                 // Main Task
                 tasksHtml += `<div class="flex items-start gap-2 text-xs font-bold ${t.completed ? 'text-zinc-400 line-through' : 'text-zinc-700 dark:text-zinc-300'}"><i data-lucide="${t.completed ? 'check-circle-2' : 'circle'}" class="w-4 h-4 mt-0.5 shrink-0 ${t.completed ? 'text-emerald-500' : 'text-zinc-300 dark:text-zinc-700'}"></i><span class="leading-tight">${t.text}</span></div>`;
 
-                // Subtasks (indented with slightly smaller text)
+                // Subtasks 
                 if (t.subtasks && t.subtasks.length > 0) {
                     tasksHtml += `<div class="ml-6 mt-1 mb-2 space-y-1.5">`;
                     t.subtasks.forEach(st => {
@@ -2669,6 +2701,10 @@ window.renderSquadView = function () {
             tasksHtml = `<div class="mt-5 pt-4 border-t border-zinc-100 dark:border-zinc-800/50"><p class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest italic text-center">Tasks hidden</p></div>`;
         }
 
+        // Add (You) to your own name and hide the remove button
+        const displayName = friend.isMe ? `${friend.name} (You)` : friend.name;
+        const removeBtnHtml = friend.isMe ? '' : `<button onclick="removeFriend('${friend.uid}')" class="text-zinc-300 dark:text-zinc-600 hover:text-rose-500 transition-colors p-1"><i data-lucide="user-minus" class="w-4 h-4"></i></button>`;
+
         const avatar = friend.avatar ? `<img src="${friend.avatar}" class="w-12 h-12 rounded-full object-cover shadow-sm">` : `<div class="w-12 h-12 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-600 flex items-center justify-center font-black text-lg">${friend.name.charAt(0)}</div>`;
 
         card.innerHTML = `
@@ -2677,16 +2713,36 @@ window.renderSquadView = function () {
                 <div class="flex items-center gap-3">
                     ${avatar}
                     <div>
-                        <div class="font-black text-zinc-900 dark:text-white tracking-tight">${friend.name}</div>
+                        <div class="font-black text-zinc-900 dark:text-white tracking-tight">${displayName}</div>
                         <div class="mt-1">${statusHtml}</div>
                     </div>
                 </div>
-                <button onclick="removeFriend('${friend.uid}')" class="text-zinc-300 dark:text-zinc-600 hover:text-rose-500 transition-colors p-1"><i data-lucide="user-minus" class="w-4 h-4"></i></button>
+                ${removeBtnHtml}
             </div>
             ${tasksHtml}
         `;
         grid.appendChild(card);
     });
+
+    // Add a neat dashed card if you don't have any friends yet to prompt you to invite people
+    if (state.squad.length === 0) {
+        grid.innerHTML += `
+            <div class="glass-card p-6 rounded-[2rem] border border-zinc-200/80 dark:border-zinc-800 shadow-sm flex flex-col items-center justify-center text-center px-4 border-dashed bg-zinc-50/50 dark:bg-[#18181b]/50 min-h-[200px]">
+                <div class="w-12 h-12 bg-brand-50 dark:bg-brand-900/20 text-brand-500 rounded-2xl flex items-center justify-center mb-3 shadow-sm">
+                    <i data-lucide="user-plus" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-base font-bold text-zinc-900 dark:text-white mb-1 tracking-tight">Build Your Squad</h3>
+                <p class="text-xs text-zinc-500 dark:text-zinc-400 max-w-xs mb-4">
+                    Studying is easier together. Send an invite link to share tasks.
+                </p>
+                <button onclick="window.copyInviteLink()" 
+                    class="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-md hover:bg-brand-700">
+                    <i data-lucide="link" class="w-3 h-3"></i>
+                    <span>Copy Link</span>
+                </button>
+            </div>`;
+    }
+
     lucide.createIcons();
 }
 
