@@ -133,51 +133,63 @@ window.checkPendingInvitesUI = function () {
     const inviteId = urlParams.get('invite');
 
     if (inviteId) {
-        // 1. Upgrade the Badge with a glowing, pulsing live dot
-        const badgeContainer = document.querySelector('#login-screen .inline-flex');
+        // 1. Upgrade the hero badge with a contained, pulsing purple dot
+        const badgeContainer = document.querySelector('#login-screen header .inline-flex');
         if (badgeContainer) {
-            badgeContainer.classList.remove('shadow-[4px_4px_0px_0px_#E03A3A]', 'border-zinc-900', 'dark:border-zinc-800');
-            badgeContainer.classList.add('shadow-[4px_4px_0px_0px_#8b5cf6]', 'border-brand-500', 'bg-brand-50', 'dark:bg-brand-900/10');
+            badgeContainer.className = 'inline-flex items-center bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-700/50 rounded-full mb-8 self-start px-4 py-1.5 shadow-sm';
 
+            // Fixed the mismatched quote that caused the HTML to break and glitch
             badgeContainer.innerHTML = `
-                <span class="text-[11px] font-black uppercase tracking-[0.15em] text-brand-600 dark:text-brand-400 px-4 py-1.5 flex items-center gap-2.5">
+                <span class="text-[11px] font-bold uppercase tracking-[0.1em] text-brand-600 dark:text-brand-400 flex items-center gap-2">
                     <span class="relative flex h-2 w-2">
                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
                         <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
                     </span>
-                    SQUAD INVITE PENDING
+                    Squad Invite Pending
                 </span>
             `;
         }
 
-        // 3. Make the Subtitle more welcoming
-        const subtitle = document.querySelector('#login-screen p.text-2xl');
-        if (subtitle) {
-            subtitle.innerHTML = `Someone invited you to join their study group. <strong class="text-zinc-900 dark:text-white">Sign in now to accept the invite</strong>, share tasks, and conquer the syllabus together.`;
+        // 2. Adjust ONLY the main Hero Title (Targeting 'header h1' protects your nav logo)
+        const heroTitle = document.querySelector('#login-screen header h1');
+        if (heroTitle) {
+            heroTitle.innerHTML = `Your squad is <br> waiting.`;
         }
 
-        // 4. Update the "Feature Tags" to match the purple theme
-        const tags = document.querySelectorAll('#login-screen .flex.flex-wrap.gap-2 span');
-        tags.forEach(tag => {
-            tag.className = 'px-3 py-1 bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 text-[10px] font-bold uppercase tracking-widest border border-brand-200 dark:border-brand-800/50 rounded-md shadow-sm';
-        });
+        // 3. Update the subtitle to explain the context
+        const subtitle = document.querySelector('#login-screen header p.text-lg');
+        if (subtitle) {
+            subtitle.innerHTML = `You've been invited to an accountability squad. <strong class="text-zinc-900 dark:text-white">Sign in to accept your invite</strong>, sync your targets, and start winning together.`;
+        }
 
-        // 5. Transform the main CTA button
-        const btn = document.querySelector('#login-screen .pt-4 button');
-        if (btn) {
-            // Swap colors and shadow hover states
-            btn.classList.remove('hover:shadow-[10px_10px_0px_0px_#E03A3A]', 'bg-zinc-900', 'dark:bg-white', 'text-white', 'dark:text-zinc-900', 'border-zinc-900', 'dark:border-white');
-            btn.classList.add('hover:shadow-[10px_10px_0px_0px_#8b5cf6]', 'bg-brand-600', 'text-white', 'border-brand-600', 'hover:bg-brand-700');
+        // 4. Highlight the "Accountability Squad" feature card (The 4th item in the list)
+        const featureCards = document.querySelectorAll('#login-screen header .p-5');
+        if (featureCards && featureCards.length >= 4) {
+            const squadCard = featureCards[3];
 
-            // Inject raw SVG to ensure the icon renders instantly before Lucide initializes
-            btn.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                Accept Invite
+            // Pop the card out with a scale transform, a thicker border, and a soft glow
+            squadCard.className = 'p-5 bg-brand-50/30 dark:bg-brand-900/10 rounded-[1.5rem] border-2 border-brand-400 dark:border-brand-600 flex gap-4 transition-all transform scale-[1.03] shadow-[0_8px_30px_rgba(139,92,246,0.12)] relative overflow-hidden';
+
+            // Make the icon block solid purple so it stands out from the other gray features
+            const iconContainer = squadCard.querySelector('div.w-10');
+            if (iconContainer) {
+                iconContainer.className = 'w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center text-white shrink-0 shadow-md';
+            }
+        }
+
+        // 5. Transform the main CTA button into a glowing primary action
+        const ctaBtn = document.querySelector('#login-screen header button');
+        if (ctaBtn) {
+            // Swap to a vibrant brand-colored button with a custom purple shadow-glow
+            ctaBtn.className = 'h-14 w-full sm:w-auto px-8 bg-brand-600 hover:bg-brand-500 text-white font-bold text-base rounded-2xl flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(139,92,246,0.35)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] hover:-translate-y-1 transition-all active:scale-95';
+
+            ctaBtn.innerHTML = `
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5 bg-white rounded-full p-0.5" alt="Google">
+                Sign In to Join Squad
             `;
         }
     }
 }
-
 // Run this immediately before Firebase even checks auth status
 checkPendingInvitesUI();
 
