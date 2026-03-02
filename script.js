@@ -2635,11 +2635,37 @@ window.renderSquadView = function () {
     grid.innerHTML = '';
 
     // Merge your own profile with your friends' profiles
+    // Merge your own profile with your friends' profiles
     const displayList = [];
     if (state.myProfile) {
         displayList.push({ ...state.myProfile, isMe: true });
     }
-    displayList.push(...state.squad);
+
+    // Sort friends by Activity Status (Studying > Idle > Offline)
+    const sortedSquad = [...state.squad].sort((a, b) => {
+        const now = new Date();
+        const aLastActive = a.lastActive ? new Date(a.lastActive) : new Date(0);
+        const bLastActive = b.lastActive ? new Date(b.lastActive) : new Date(0);
+
+        const aDiff = (now - aLastActive) / (1000 * 60);
+        const bDiff = (now - bLastActive) / (1000 * 60);
+
+        const aIsIdle = !a.isStudying && aDiff <= 15;
+        const bIsIdle = !b.isStudying && bDiff <= 15;
+
+        // 1. Studying takes top priority
+        if (a.isStudying && !b.isStudying) return -1;
+        if (!a.isStudying && b.isStudying) return 1;
+
+        // 2. Idle takes second priority
+        if (aIsIdle && !bIsIdle) return -1;
+        if (!aIsIdle && bIsIdle) return 1;
+
+        // 3. Tie-breaker: Most recently active appears higher
+        return bLastActive - aLastActive;
+    });
+
+    displayList.push(...sortedSquad);
 
     displayList.forEach(friend => {
         const card = document.createElement('div');
