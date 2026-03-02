@@ -2894,3 +2894,34 @@ if ('serviceWorker' in navigator) {
             });
     });
 }
+
+window.openSupportModal = () => {
+    const modal = document.getElementById('support-modal');
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        modal.querySelector('div').classList.replace('scale-95', 'scale-100');
+    }, 10);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+};
+
+window.closeSupportModal = () => {
+    const modal = document.getElementById('support-modal');
+    modal.classList.add('opacity-0');
+    modal.querySelector('div').classList.replace('scale-100', 'scale-95');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+};
+
+window.copySupportEmail = (email) => {
+    navigator.clipboard.writeText(email).then(() => {
+        showToast("Email copied! Use this for the Amazon Gift Card.");
+        if (typeof confetti !== 'undefined') {
+            confetti({
+                particleCount: 40,
+                spread: 60,
+                origin: { y: 0.7 },
+                colors: ['#7c3aed', '#ec4899']
+            });
+        }
+    });
+};
