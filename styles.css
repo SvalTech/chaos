@@ -514,11 +514,20 @@ button:hover i[data-lucide="chevron-left"] {
 
 /* 1. Global Height & Overflow Fix */
 html, body {
-  height: 100dvh; /* Dynamic Viewport Height prevents the bottom gap */
+  position: fixed;
+  inset: 0; /* Locks to all 4 physical edges of the screen */
   width: 100%;
+  height: 100%;
   overflow: hidden;
 }
 
+/* iOS Safari & PWA Specific Height Fix */
+@supports (-webkit-touch-callout: none) {
+  html, body {
+    /* Overrides Tailwind's h-screen/dvh to fill the actual physical screen on iPhones */
+    height: -webkit-fill-available !important; 
+  }
+}
 /* 2. Fix the Mobile Header (Notch) */
 .md\:hidden.glass {
   /* Push the content down exactly by the notch height + original padding */
