@@ -1,17 +1,33 @@
+/* =========================================
+   1. CORE PWA & VIEWPORT FIXES
+   ========================================= */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
 
 html, body {
   font-family: "Inter", sans-serif;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
-  background-color: #fafafa; /* This paints the bottom gap in light mode! */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  
+  /* THE ULTIMATE iOS PWA FULL-SCREEN FIX */
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important; /* 100vh + viewport-fit=cover fills entire physical screen */
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  
+  /* Backgrounds paint the physical hardware edges (Notch & Home Bar) */
+  background-color: #fafafa !important;
 }
 
-/* Update dark mode to target the html tag */
-html.dark, .dark body {
-  background-color: #09090b; /* This paints the bottom gap in dark mode! */
+html.dark, html.dark body {
+  background-color: #09090b !important;
 }
 
 #app-background {
@@ -24,8 +40,9 @@ html.dark, .dark body {
   transition: opacity 0.8s ease-in-out;
 }
 
-/* Glassmorphism */
-/* Glassmorphism */
+/* =========================================
+   2. GLASSMORPHISM & UI COMPONENTS
+   ========================================= */
 .glass {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(24px);
@@ -47,13 +64,12 @@ html.dark, .dark body {
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.03);
-  
-  /* GPU Acceleration Fixes */
   transform: translateZ(0);
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-  outline: 1px solid transparent; /* Fixes random black lines on borders */
+  outline: 1px solid transparent; 
   background-clip: padding-box;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 .dark .glass-card {
@@ -63,33 +79,50 @@ html.dark, .dark body {
   border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
+
+@media (min-width: 768px) {
+  .glass-card:hover {
+    transform: translate3d(0, -4px, 0);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
+  }
+  .dark .glass-card:hover {
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* =========================================
+   3. SCROLLBARS
+   ========================================= */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
-
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
   background: #d4d4d8;
   border-radius: 10px;
 }
-
 .dark ::-webkit-scrollbar-thumb {
   background: #3f3f46;
 }
-
 ::-webkit-scrollbar-thumb:hover {
   background: #a1a1aa;
 }
-
-.task-checkbox:checked + div {
-  text-decoration: line-through;
-  opacity: 0.5;
-  filter: grayscale(100%);
+@media (max-width: 768px) {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
+
+/* =========================================
+   4. DRAG & DROP + ANIMATIONS
+   ========================================= */
 .day-card {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   transform: translateZ(0);
@@ -100,11 +133,9 @@ html.dark, .dark body {
 
 @media (min-width: 768px) {
   .day-card:hover {
-    /* Use translate3d instead of translateY to force GPU layering */
     transform: translate3d(0, -2px, 0);
     box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.1);
   }
-
   .dark .day-card:hover {
     box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.5);
   }
@@ -126,17 +157,81 @@ html.dark, .dark body {
   cursor: grab;
   will-change: transform;
 }
-
 .task-item:active {
   cursor: grabbing;
 }
 
+/* Checkboxes */
+.task-checkbox:checked + div {
+  text-decoration: line-through;
+  opacity: 0.5;
+  filter: grayscale(100%);
+}
+
+.fancy-checkbox {
+  appearance: none;
+  background-color: transparent;
+  margin: 0;
+  font: inherit;
+  color: currentColor;
+  width: 1.2em;
+  height: 1.2em;
+  border: 2px solid #a1a1aa;
+  border-radius: 0.35em;
+  display: grid;
+  place-content: center;
+  transition: all 0.2s;
+}
+.dark .fancy-checkbox { border-color: #52525b; }
+.fancy-checkbox::before {
+  content: "";
+  width: 0.65em;
+  height: 0.65em;
+  transform: scale(0);
+  transition: 120ms transform ease-in-out;
+  box-shadow: inset 1em 1em white;
+  background-color: white;
+  transform-origin: center;
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+}
+.fancy-checkbox:checked {
+  background-color: #10b981;
+  border-color: #10b981;
+}
+.fancy-checkbox:checked::before {
+  transform: scale(1);
+}
+.fancy-checkbox:active {
+  transform: scale(0.85);
+}
+
+.radio-MockTest:checked + div {
+  background-image: linear-gradient(to right, #8b5cf6, #d946ef);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+}
+.dark .radio-MockTest:checked + div {
+  background-image: linear-gradient(to right, #7c3aed, #c026d3);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
+}
+
+/* Staggered Item */
+.stagger-item {
+  opacity: 0;
+  animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* =========================================
+   5. MODALS, SHEETS & SAFE AREAS (PWA)
+   ========================================= */
 .modal-backdrop {
   background-color: rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
-
 .dark .modal-backdrop {
   background-color: rgba(0, 0, 0, 0.6);
 }
@@ -146,12 +241,67 @@ html.dark, .dark body {
   transform: translateY(100%);
   border-radius: 2rem 2rem 0 0;
   touch-action: none;
+  /* Add padding so content isn't covered by the home indicator */
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom)) !important;
+  /* Adjust max height to account for safe areas */
+  max-height: calc(90vh - env(safe-area-inset-top)) !important;
 }
-
 .mobile-sheet.open {
   transform: translateY(0);
 }
 
+/* Safe Area Spacing Helpers */
+.pb-safe {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom)) !important;
+}
+.pt-safe {
+  padding-top: max(1rem, env(safe-area-inset-top)) !important;
+}
+
+/* Fix the Floating Bottom Nav (Home Indicator) */
+#mobile-bottom-nav {
+  /* Pushes the nav bar securely above the iPhone home indicator swipe area */
+  bottom: max(1rem, env(safe-area-inset-bottom)) !important;
+}
+
+/* Fix the Mobile Header (Notch) */
+.md\:hidden.glass.sticky.top-0 {
+  padding-top: max(0.75rem, env(safe-area-inset-top)) !important;
+  background-clip: padding-box;
+}
+
+/* Loading Overlay Fix */
+#loading-overlay {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Login Screen Layout Fixes */
+#login-screen:not(.hidden) {
+  display: flex;
+  flex-direction: column;
+}
+#login-screen header {
+  flex: 1; 
+  min-height: auto; 
+}
+#login-screen nav {
+  padding-top: max(1rem, env(safe-area-inset-top)) !important;
+}
+#login-screen footer {
+  padding-bottom: max(2rem, env(safe-area-inset-bottom)) !important;
+}
+
+/* Mobile specific padding to clear the floating dock */
+@media (max-width: 768px) {
+  .mobile-content-padding {
+    padding-bottom: calc(100px + env(safe-area-inset-bottom));
+  }
+}
+
+/* =========================================
+   6. COMPONENTS (Spinners, Accodions, etc)
+   ========================================= */
 .spinner {
   border: 3px solid rgba(124, 58, 237, 0.2);
   border-radius: 50%;
@@ -170,77 +320,6 @@ html.dark, .dark body {
   animation: spin 0.8s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
 }
 
-/* Mobile Layout Sorting specific overrides */
-@media (max-width: 1023px) {
-  .timer-mobile-layout {
-    display: flex;
-    flex-direction: column;
-  }
-  .timer-main {
-    order: 1;
-  }
-  .timer-stats {
-    order: 2;
-  }
-  .timer-logs {
-    order: 3;
-  }
-  .timer-chart {
-    order: 4;
-  }
-  .timer-right-col {
-    display: contents;
-  }
-}
-
-.radio-MockTest:checked + div {
-  background-image: linear-gradient(to right, #8b5cf6, #d946ef);
-  color: white;
-  border-color: transparent;
-  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
-}
-
-.dark .radio-MockTest:checked + div {
-  background-image: linear-gradient(to right, #7c3aed, #c026d3);
-  color: white;
-  border-color: transparent;
-  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
-}
-
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-input,
-textarea,
-select {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-input:focus,
-textarea:focus,
-select:focus {
-  transform: translateY(-1px);
-}
-
-@media (max-width: 768px) {
-  .mobile-content-padding {
-    padding-bottom: calc(100px + env(safe-area-inset-bottom));
-  }
-
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-}
-
 .drag-handle {
   width: 36px;
   height: 5px;
@@ -248,49 +327,50 @@ select:focus {
   border-radius: 9999px;
   margin: 0 auto 16px auto;
 }
+.dark .drag-handle { background-color: #52525b; }
 
-.dark .drag-handle {
-  background-color: #52525b;
+/* Buttons / Inputs */
+button { transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+button i { transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+button:hover i[data-lucide="plus"] { transform: rotate(90deg) scale(1.1); }
+button:hover i[data-lucide="arrow-right"], button:hover i[data-lucide="chevron-right"] { transform: translateX(3px); }
+button:hover i[data-lucide="arrow-left"], button:hover i[data-lucide="chevron-left"] { transform: translateX(-3px); }
+
+input, textarea, select {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+input:focus, textarea:focus, select:focus {
+  transform: translateY(-1px);
 }
 
+/* Syllabus Accordion */
 .chapter-leaf {
   transition: background-color 0.2s ease;
   cursor: pointer;
 }
+.chapter-leaf:hover { background-color: rgba(244, 244, 245, 0.6); }
+.dark .chapter-leaf:hover { background-color: rgba(39, 39, 42, 0.6); }
 
-.chapter-leaf:hover {
-  background-color: rgba(244, 244, 245, 0.6);
-}
-
-.dark .chapter-leaf:hover {
-  background-color: rgba(39, 39, 42, 0.6);
-}
-
-/* Syllabus Accordion */
-.action-panel,
-.group-content {
+.action-panel, .group-content {
   max-height: 0;
   overflow: hidden;
-  transition:
-    max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.3s ease;
+  transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
   opacity: 0;
 }
-
-.action-panel.open,
-.group-content.open {
+.action-panel.open, .group-content.open {
   max-height: 1000px;
   opacity: 1;
 }
+.arrow-icon { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+.rotate-180 { transform: rotate(180deg); }
 
-.arrow-icon {
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.rotate-180 {
-  transform: rotate(180deg);
-}
-
+/* Badges */
 .badge {
   font-size: 9px;
   padding: 2px 6px;
@@ -299,155 +379,39 @@ select:focus {
   letter-spacing: 0.5px;
   text-transform: uppercase;
 }
+.badge-pyq { background: rgba(16, 185, 129, 0.1); color: #059669; }
+.dark .badge-pyq { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+.badge-rev { background: rgba(124, 58, 237, 0.1); color: #7c3aed; }
+.dark .badge-rev { background: rgba(124, 58, 237, 0.15); color: #a78bfa; }
 
-.badge-pyq {
-  background: rgba(16, 185, 129, 0.1);
-  color: #059669;
-}
+/* Status Dots */
+.status-dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+.dot-neutral { background-color: #a1a1aa; color: rgba(161, 161, 170, 0.4); box-shadow: none; }
+.dot-yellow { background-color: #f59e0b; color: rgba(245, 158, 11, 0.4); }
+.dot-green { background-color: #10b981; color: rgba(16, 185, 129, 0.4); }
+.dot-indigo { background-color: #8b5cf6; color: rgba(139, 92, 246, 0.4); }
 
-.dark .badge-pyq {
-  background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-}
-
-.badge-rev {
-  background: rgba(124, 58, 237, 0.1);
-  color: #7c3aed;
-}
-
-.dark .badge-rev {
-  background: rgba(124, 58, 237, 0.15);
-  color: #a78bfa;
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  box-shadow: 0 0 8px currentColor;
-}
-
-.dot-neutral {
-  background-color: #a1a1aa;
-  color: rgba(161, 161, 170, 0.4);
-  box-shadow: none;
-}
-
-.dot-yellow {
-  background-color: #f59e0b;
-  color: rgba(245, 158, 11, 0.4);
-}
-
-.dot-green {
-  background-color: #10b981;
-  color: rgba(16, 185, 129, 0.4);
-}
-
-.dot-indigo {
-  background-color: #8b5cf6;
-  color: rgba(139, 92, 246, 0.4);
-}
-
-.fancy-checkbox {
-  appearance: none;
-  background-color: transparent;
-  margin: 0;
-  font: inherit;
-  color: currentColor;
-  width: 1.2em;
-  height: 1.2em;
-  border: 2px solid #a1a1aa;
-  border-radius: 0.35em;
-  display: grid;
-  place-content: center;
-  transition: all 0.2s;
-}
-
-.dark .fancy-checkbox {
-  border-color: #52525b;
-}
-
-.fancy-checkbox::before {
-  content: "";
-  width: 0.65em;
-  height: 0.65em;
-  transform: scale(0);
-  transition: 120ms transform ease-in-out;
-  box-shadow: inset 1em 1em white;
-  background-color: white;
-  transform-origin: center;
-  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
-}
-
-.fancy-checkbox:checked {
-  background-color: #10b981;
-  border-color: #10b981;
-}
-
-.fancy-checkbox:checked::before {
-  transform: scale(1);
-}
-
-
-/* Card Hover Physics */
-.glass-card {
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
-}
-
-@media (min-width: 768px) {
-  .glass-card:hover {
-    /* Changed from scale(1.01) to pure translate3d */
-    transform: translate3d(0, -4px, 0);
-    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
+/* =========================================
+   7. MOBILE TIMER LAYOUT FIX
+   ========================================= */
+@media (max-width: 1023px) {
+  .timer-mobile-layout {
+    display: flex;
+    flex-direction: column;
   }
-  .dark .glass-card:hover {
-    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6);
-  }
-}
-
-/* Button & Icon Micro-interactions */
-button {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-button i {
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-button:hover i[data-lucide="plus"] {
-  transform: rotate(90deg) scale(1.1);
-}
-
-button:hover i[data-lucide="arrow-right"],
-button:hover i[data-lucide="chevron-right"] {
-  transform: translateX(3px);
-}
-
-button:hover i[data-lucide="arrow-left"],
-button:hover i[data-lucide="chevron-left"] {
-  transform: translateX(-3px);
-}
-
-/* Task Checkbox pop effect */
-.fancy-checkbox:active {
-  transform: scale(0.85);
-}
-
-/* Staggered Animation setup for JS injected items */
-.stagger-item {
-  opacity: 0;
-  animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  .timer-main { order: 1; }
+  .timer-stats { order: 2; }
+  .timer-logs { order: 3; }
+  .timer-chart { order: 4; }
+  .timer-right-col { display: contents; }
 }
 
 /* =========================================
-   LITE MODE (Performance Overrides)
+   8. LITE MODE (Performance Overrides)
    ========================================= */
 .lite-mode * {
-  /* Disable smooth scrolling to save layout paint cycles */
   scroll-behavior: auto !important;
 }
-
-/* 1. Kill expensive Glassmorphism (Backdrop Filters) */
 .lite-mode .glass, 
 .lite-mode .glass-card,
 .lite-mode .modal-backdrop,
@@ -455,25 +419,12 @@ button:hover i[data-lucide="chevron-left"] {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
-
-/* Provide solid color fallbacks since glass is disabled.
-   Using slightly transparent colors so the background image can still slightly peek through 
-   without needing the expensive blur effect. */
 .lite-mode .glass, 
-.lite-mode .glass-card {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-}
+.lite-mode .glass-card { background-color: rgba(255, 255, 255, 0.95) !important; }
 .lite-mode.dark .glass, 
-.lite-mode.dark .glass-card {
-  background-color: rgba(24, 24, 27, 0.95) !important;
-}
-.lite-mode .modal-backdrop {
-  background-color: rgba(0, 0, 0, 0.85) !important;
-}
+.lite-mode.dark .glass-card { background-color: rgba(24, 24, 27, 0.95) !important; }
+.lite-mode .modal-backdrop { background-color: rgba(0, 0, 0, 0.85) !important; }
 
-/* 2. Kill expensive shadow rendering */
-/* 2. Kill expensive shadow rendering without breaking Tailwind Rings */
-/* 2. Kill expensive shadow rendering without breaking Tailwind Rings */
 .lite-mode .shadow-sm,
 .lite-mode .shadow-md,
 .lite-mode .shadow-lg,
@@ -484,110 +435,18 @@ button:hover i[data-lucide="chevron-left"] {
 .lite-mode .shadow-floating,
 .lite-mode .shadow-floating-dark,
 .lite-mode .shadow-soft {
-  /* Set the shadow to transparent rather than setting box-shadow to none */
   --tw-shadow: 0 0 #0000 !important;
   --tw-shadow-colored: 0 0 #0000 !important;
-  
-  /* Reconstruct the box-shadow property so rings can still render */
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow) !important;
 }
-/* Add solid borders back so elements don't blend together without shadows */
-.lite-mode .glass-card {
-  border: 1px solid #e4e4e7 !important;
-}
-.lite-mode.dark .glass-card {
-  border: 1px solid #27272a !important;
-}
+.lite-mode .glass-card { border: 1px solid #e4e4e7 !important; }
+.lite-mode.dark .glass-card { border: 1px solid #27272a !important; }
 
-/* 3. Disable heavy floating/pulsing animated blobs (but keep the background image!) */
 .lite-mode .animate-pulse-slow,
 .lite-mode .animate-float {
   display: none !important;
   animation: none !important;
 }
 
-/* 4. Disable CSS hover transforms for heavy items */
 .lite-mode .glass-card:hover,
-.lite-mode .day-card:hover {
-  transform: none !important;
-}
-
-/* 1. Global Height & Overflow Fix */
-html, body {
-  position: fixed;
-  inset: 0; /* Locks to all 4 physical edges of the screen */
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-/* iOS Safari & PWA Specific Height Fix */
-@supports (-webkit-touch-callout: none) {
-  html, body {
-    /* Overrides Tailwind's h-screen/dvh to fill the actual physical screen on iPhones */
-    height: -webkit-fill-available !important; 
-  }
-}
-/* 2. Fix the Mobile Header (Notch) */
-.md\:hidden.glass {
-  /* Push the content down exactly by the notch height + original padding */
-  padding-top: calc(env(safe-area-inset-top) + 0.75rem) !important;
-  background-clip: padding-box;
-}
-
-/* 3. Fix the Floating Bottom Nav (Home Indicator) */
-#mobile-bottom-nav {
-  /* Ensure the dock sits above the home swipe bar */
-  bottom: calc(env(safe-area-inset-bottom) + 1.5rem) !important;
-}
-
-/* 4. Fix Bottom Sheets (Add Task / Day View Modals) */
-.mobile-sheet {
-  /* Add padding so buttons aren't covered by the home indicator */
-  padding-bottom: calc(env(safe-area-inset-bottom) + 1rem) !important;
-  /* Adjust max height to account for safe areas */
-  max-height: calc(85dvh + env(safe-area-inset-bottom)) !important;
-}
-
-/* 5. Loading Overlay Fix */
-#loading-overlay {
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-/* Push the login header below the device notch */
-#login-screen nav {
-    padding-top: max(1rem, calc(env(safe-area-inset-top) + 0.5rem)) !important;
-}
-
-/* Push the login footer above the mobile browser menu/home bar */
-#login-screen footer {
-    padding-bottom: max(1.5rem, env(safe-area-inset-bottom)) !important;
-}
-
-/* Provide safe bottom padding for modals and sheets */
-.pb-safe {
-    padding-bottom: max(1rem, env(safe-area-inset-bottom)) !important;
-}
-
-
-/* 3. Fix the layout structure to push the footer naturally */
-#login-screen:not(.hidden) {
-    display: flex;
-    flex-direction: column;
-}
-
-#login-screen header {
-    flex: 1; /* Pushes the footer all the way down */
-    min-height: auto; /* Overrides your inline min-h-[calc(...)] */
-}
-
-#login-screen {
-    /* Force the overlay to bleed into the bottom home-indicator area */
-    padding-bottom: env(safe-area-inset-bottom);
-}
-
-#login-screen footer {
-    /* Push the footer content up so it isn't hidden behind the iOS home bar */
-    padding-bottom: max(1.5rem, env(safe-area-inset-bottom)) !important;
-}
+.lite-mode .day-card:hover { transform: none !important; }
