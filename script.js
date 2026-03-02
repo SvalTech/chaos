@@ -35,7 +35,7 @@ let state = {
     tasks: [], targets: [], studyLogs: [], errorLogs: [], questionLogs: [],
     viewDate: new Date(), weeklyViewDate: new Date(), timerChartWeekDate: new Date(),
     currentView: 'calendar',
-    settings: { examType: 'JEE Main', session: 'Jan', targetYear: 2026, targetDate: '2026-01-21', customSubjects: [], subjectColors: {}, theme: 'light', bgUrl: '', showCountdown: true, dailyQuestionTarget: 50, liteMode: true },
+    settings: { examType: 'JEE Main', session: 'Apr', targetYear: 2026, targetDate: '2026-04-01', customSubjects: [], subjectColors: {}, theme: 'light', bgUrl: '', showCountdown: true, dailyQuestionTarget: 50, liteMode: true },
     syllabusData: { status: {}, meta: {} }, syllabusOpenStates: {}
 };
 let tempSettings = {};
@@ -133,27 +133,53 @@ window.checkPendingInvitesUI = function () {
     const inviteId = urlParams.get('invite');
 
     if (inviteId) {
-        // 1. Change the little top badge to a purple invite badge
-        const badge = document.querySelector('#login-screen .inline-flex span');
+        // 1. Upgrade the Badge with a glowing, pulsing live dot
         const badgeContainer = document.querySelector('#login-screen .inline-flex');
-
-        if (badge) badge.innerText = "✉️ SQUAD INVITE PENDING";
         if (badgeContainer) {
-            // Swap the red shadow/border for your purple brand color
-            badgeContainer.classList.remove('shadow-[4px_4px_0px_0px_#E03A3A]');
-            badgeContainer.classList.add('shadow-[4px_4px_0px_0px_#8b5cf6]', 'border-brand-500');
+            badgeContainer.classList.remove('shadow-[4px_4px_0px_0px_#E03A3A]', 'border-zinc-900', 'dark:border-zinc-800');
+            badgeContainer.classList.add('shadow-[4px_4px_0px_0px_#8b5cf6]', 'border-brand-500', 'bg-brand-50', 'dark:bg-brand-900/10');
+
+            badgeContainer.innerHTML = `
+                <span class="text-[11px] font-black uppercase tracking-[0.15em] text-brand-600 dark:text-brand-400 px-4 py-1.5 flex items-center gap-2.5">
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
+                    </span>
+                    SQUAD INVITE PENDING
+                </span>
+            `;
         }
 
-        // 2. Change the massive hero text
+        // 2. Upgrade the Title with your signature gradient
         const title = document.querySelector('#login-screen h1');
         if (title) {
-            title.innerHTML = `Join <br> Your <br> <span class="text-brand-500">Squad.</span>`;
+            title.innerHTML = `Join <br> Your <br> <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-fuchsia-600">Squad.</span>`;
         }
 
-        // 3. Update the description paragraph
+        // 3. Make the Subtitle more welcoming
         const subtitle = document.querySelector('#login-screen p.text-2xl');
         if (subtitle) {
-            subtitle.innerHTML = `Studying is easier together. <strong class="text-zinc-900 dark:text-white">Sign in now to accept the invite</strong>, share tasks, and conquer the syllabus.`;
+            subtitle.innerHTML = `Someone invited you to join their study group. <strong class="text-zinc-900 dark:text-white">Sign in now to accept the invite</strong>, share tasks, and conquer the syllabus together.`;
+        }
+
+        // 4. Update the "Feature Tags" to match the purple theme
+        const tags = document.querySelectorAll('#login-screen .flex.flex-wrap.gap-2 span');
+        tags.forEach(tag => {
+            tag.className = 'px-3 py-1 bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 text-[10px] font-bold uppercase tracking-widest border border-brand-200 dark:border-brand-800/50 rounded-md shadow-sm';
+        });
+
+        // 5. Transform the main CTA button
+        const btn = document.querySelector('#login-screen .pt-4 button');
+        if (btn) {
+            // Swap colors and shadow hover states
+            btn.classList.remove('hover:shadow-[10px_10px_0px_0px_#E03A3A]', 'bg-zinc-900', 'dark:bg-white', 'text-white', 'dark:text-zinc-900', 'border-zinc-900', 'dark:border-white');
+            btn.classList.add('hover:shadow-[10px_10px_0px_0px_#8b5cf6]', 'bg-brand-600', 'text-white', 'border-brand-600', 'hover:bg-brand-700');
+
+            // Inject raw SVG to ensure the icon renders instantly before Lucide initializes
+            btn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Accept Invite
+            `;
         }
     }
 }
@@ -777,7 +803,7 @@ window.setExamType = function (type) {
 
     if (type === 'JEE Main') {
         document.getElementById('jee-session-container').classList.remove('hidden');
-        if (!tempSettings.session) tempSettings.session = 'Jan';
+        if (!tempSettings.session) tempSettings.session = 'Apr';
         updateSessionUI();
     } else {
         document.getElementById('jee-session-container').classList.add('hidden');

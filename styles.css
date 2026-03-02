@@ -517,7 +517,6 @@ html, body {
   height: 100dvh; /* Dynamic Viewport Height prevents the bottom gap */
   width: 100%;
   overflow: hidden;
-  position: fixed; /* Prevents "rubber-banding" scroll on iOS */
 }
 
 /* 2. Fix the Mobile Header (Notch) */
@@ -545,4 +544,19 @@ html, body {
 #loading-overlay {
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Push the login header below the device notch */
+#login-screen nav {
+    padding-top: max(1rem, calc(env(safe-area-inset-top) + 0.5rem)) !important;
+}
+
+/* Push the login footer above the mobile browser menu/home bar */
+#login-screen footer {
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom)) !important;
+}
+
+/* Provide safe bottom padding for modals and sheets */
+.pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom)) !important;
 }
