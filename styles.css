@@ -1,33 +1,61 @@
-/* =========================================
-   1. CORE PWA & VIEWPORT FIXES
-   ========================================= */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
 
-html, body {
-  font-family: "Inter", sans-serif;
+/* =========================================
+   1. CORE PWA & VIEWPORT FIXES (THE ULTIMATE FIX)
+   ========================================= */
+/* Apple's rendering engine restricts `100%` and `dvh`. 
+   In standalone PWAs with `viewport-fit=cover`, ONLY `100vh` 
+   physically touches the absolute bottom edge of the device.
+*/
+
+html {
+  background-color: #fafafa !important; /* Forces the physical bezel to paint */
+  height: 100vh !important;
+  width: 100vw !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
   -webkit-tap-highlight-color: transparent;
-  overscroll-behavior-y: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  
-  /* THE ULTIMATE iOS PWA FULL-SCREEN FIX */
+}
+
+html.dark {
+  background-color: #09090b !important;
+}
+
+body {
   position: fixed !important;
   top: 0 !important;
+  left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
-  left: 0 !important;
   width: 100vw !important;
-  height: 100vh !important; /* 100vh + viewport-fit=cover fills entire physical screen */
+  height: 100vh !important; 
   margin: 0 !important;
   padding: 0 !important;
   overflow: hidden !important;
-  
-  /* Backgrounds paint the physical hardware edges (Notch & Home Bar) */
-  background-color: #fafafa !important;
+  font-family: "Inter", sans-serif;
+  background-color: transparent !important; /* Let the HTML background bleed through */
 }
 
-html.dark, html.dark body {
-  background-color: #09090b !important;
+/* OVERRIDE ALL TAILWIND DYNAMIC VIEWPORT CLASSES */
+.h-screen, .h-\[100dvh\], .h-\[100svh\] {
+  height: 100vh !important;
+}
+.min-h-screen, .min-h-\[100dvh\], .min-h-\[100svh\] {
+  min-height: 100vh !important;
+}
+.max-h-screen, .max-h-\[100dvh\], .max-h-\[100svh\] {
+  max-height: 100vh !important;
+}
+
+/* Force all modals and overlays to bleed to the absolute bottom edge */
+.fixed.inset-0, 
+.modal-backdrop {
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
 }
 
 #app-background {
@@ -227,23 +255,12 @@ html.dark, html.dark body {
 /* =========================================
    5. MODALS, SHEETS & SAFE AREAS (PWA)
    ========================================= */
-.modal-backdrop {
-  background-color: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-.dark .modal-backdrop {
-  background-color: rgba(0, 0, 0, 0.6);
-}
-
 .mobile-sheet {
   transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
   transform: translateY(100%);
   border-radius: 2rem 2rem 0 0;
   touch-action: none;
-  /* Add padding so content isn't covered by the home indicator */
-  padding-bottom: max(1.5rem, env(safe-area-inset-bottom)) !important;
-  /* Adjust max height to account for safe areas */
+  /* Bind strictly to vh to prevent % shrinking bugs */
   max-height: calc(90vh - env(safe-area-inset-top)) !important;
 }
 .mobile-sheet.open {
@@ -252,6 +269,7 @@ html.dark, html.dark body {
 
 /* Safe Area Spacing Helpers */
 .pb-safe {
+  /* Pads the inside of the modal so its background covers the home bar */
   padding-bottom: max(1.5rem, env(safe-area-inset-bottom)) !important;
 }
 .pt-safe {
@@ -260,8 +278,8 @@ html.dark, html.dark body {
 
 /* Fix the Floating Bottom Nav (Home Indicator) */
 #mobile-bottom-nav {
-  /* Pushes the nav bar securely above the iPhone home indicator swipe area */
-  bottom: max(1rem, env(safe-area-inset-bottom)) !important;
+  /* Floats the dock safely above the home indicator */
+  bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)) !important;
 }
 
 /* Fix the Mobile Header (Notch) */
@@ -292,7 +310,6 @@ html.dark, html.dark body {
   padding-bottom: max(2rem, env(safe-area-inset-bottom)) !important;
 }
 
-/* Mobile specific padding to clear the floating dock */
 @media (max-width: 768px) {
   .mobile-content-padding {
     padding-bottom: calc(100px + env(safe-area-inset-bottom));
