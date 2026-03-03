@@ -113,6 +113,103 @@ const colorPalette = {
 };
 const defaultColorsMap = { Physics: 'rose', Chemistry: 'amber', Maths: 'blue', Biology: 'emerald' };
 
+// ==========================================
+// UNIVERSAL CUSTOM DIALOG SYSTEM (PWA SAFE)
+// ==========================================
+window.customDialog = function (options) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('custom-dialog-modal');
+        const titleEl = document.getElementById('dialog-title');
+        const msgEl = document.getElementById('dialog-message');
+        const inputEl = document.getElementById('dialog-input');
+        const btnCancel = document.getElementById('dialog-btn-cancel');
+        const btnConfirm = document.getElementById('dialog-btn-confirm');
+        const iconContainer = document.getElementById('dialog-icon-container');
+        const modalContent = modal.querySelector('div.bg-white'); // The inner card
+
+        // Set Text
+        titleEl.innerText = options.title || "Notice";
+        msgEl.innerText = options.message || "";
+
+        // Style the Icon & Confirm Button based on danger level
+        if (options.danger) {
+            iconContainer.className = "w-12 h-12 rounded-2xl flex items-center justify-center mb-4 bg-rose-50 dark:bg-rose-500/10 text-rose-500 border border-rose-100 dark:border-rose-500/20";
+            iconContainer.innerHTML = `<i data-lucide="alert-triangle" class="w-6 h-6"></i>`;
+            btnConfirm.className = "px-6 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm shadow-md active:scale-95 transition-all";
+        } else {
+            iconContainer.className = "w-12 h-12 rounded-2xl flex items-center justify-center mb-4 bg-brand-50 dark:bg-brand-500/10 text-brand-500 border border-brand-100 dark:border-brand-500/20";
+            iconContainer.innerHTML = `<i data-lucide="${options.type === 'prompt' ? 'edit-3' : 'bell'}" class="w-6 h-6"></i>`;
+            btnConfirm.className = "px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-md active:scale-95 transition-all";
+        }
+        lucide.createIcons();
+
+        // Configure layout
+        if (options.type === 'prompt') {
+            inputEl.classList.remove('hidden');
+            inputEl.value = options.defaultValue || "";
+            inputEl.placeholder = options.placeholder || "Type here...";
+        } else {
+            inputEl.classList.add('hidden');
+            inputEl.value = "";
+        }
+
+        if (options.type === 'alert') {
+            btnCancel.classList.add('hidden');
+            btnConfirm.innerText = "OK";
+        } else {
+            btnCancel.classList.remove('hidden');
+            btnConfirm.innerText = options.confirmText || "Confirm";
+        }
+
+        // Show modal
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modalContent.classList.replace('scale-95', 'scale-100');
+        }, 10);
+
+        if (options.type === 'prompt') {
+            setTimeout(() => inputEl.focus(), 100);
+        }
+
+        // Clean up and resolve
+        const cleanup = () => {
+            modal.classList.add('opacity-0');
+            modalContent.classList.replace('scale-100', 'scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+
+            btnConfirm.removeEventListener('click', onConfirm);
+            btnCancel.removeEventListener('click', onCancel);
+            inputEl.removeEventListener('keydown', onEnter);
+        };
+
+        const onConfirm = () => {
+            cleanup();
+            if (options.type === 'prompt') resolve(inputEl.value);
+            else resolve(true);
+        };
+
+        const onCancel = () => {
+            cleanup();
+            if (options.type === 'prompt') resolve(null);
+            else resolve(false);
+        };
+
+        const onEnter = (e) => {
+            if (e.key === 'Enter') onConfirm();
+        };
+
+        btnConfirm.addEventListener('click', onConfirm);
+        btnCancel.addEventListener('click', onCancel);
+        inputEl.addEventListener('keydown', onEnter);
+    });
+};
+
+// Easy wrappers
+window.customAlert = (message, title) => customDialog({ type: 'alert', title, message });
+window.customConfirm = (message, title, danger, confirmText) => customDialog({ type: 'confirm', title, message, danger, confirmText });
+window.customPrompt = (message, defaultValue, title, placeholder) => customDialog({ type: 'prompt', title, message, defaultValue, placeholder });
+
 function getSubjectColor(sub) {
     if (sub === 'MockTest') return { light: 'bg-brand-50/80 text-brand-700 border-brand-200 font-bold', dark: 'dark:bg-brand-500/10 dark:text-brand-400 dark:border-brand-500/30 font-bold', hex: '#8b5cf6' };
     const c = state.settings.subjectColors?.[sub] || defaultColorsMap[sub] || 'teal';
@@ -369,7 +466,8 @@ window.toggleTimer = function () {
 
 window.stopTimer = async function () {
     if (timerSeconds < 60) {
-        if (!confirm("Less than 1 minute logged. Discard session?")) return;
+        const isSure = await customConfirm("You've logged less than a minute. Do you want to discard this session?", "Discard Session?", true, "Discard");
+        if (!isSure) return;
         resetTimer(); return;
     }
     const duration = Math.round(timerSeconds / 60);
@@ -760,7 +858,14 @@ window.modSyllabusRev = async (id, delta) => {
 window.toggleSyllabusPyq = async (id) => { const meta = getSyllabusMeta(id); state.syllabusData.meta[id].pyq = !meta.pyq; await saveSyllabusData(); refreshChapterUI(id); }
 
 document.getElementById('syllabus-search').addEventListener('input', () => { clearTimeout(window.searchTimeout); window.searchTimeout = setTimeout(renderSyllabusView, 300); });
-document.getElementById('btn-reset-syllabus').addEventListener('click', async () => { if (confirm("Reset all syllabus progress? This cannot be undone.")) { state.syllabusData = { status: {}, meta: {} }; await saveSyllabusData(); renderSyllabusView(); } });
+document.getElementById('btn-reset-syllabus').addEventListener('click', async () => {
+    const isSure = await customConfirm("Are you absolutely sure you want to wipe all your syllabus progress? This cannot be undone.", "Reset Progress", true, "Yes, Wipe It");
+    if (isSure) {
+        state.syllabusData = { status: {}, meta: {} };
+        await saveSyllabusData();
+        renderSyllabusView();
+    }
+});
 window.spawnFloatingIcons = function (element, theme) {
     const themes = {
         // Sciences
@@ -2038,7 +2143,8 @@ window.importData = async function (event) {
     reader.onload = async (e) => {
         try {
             const data = JSON.parse(e.target.result);
-            if (!confirm("Importing will overwrite some existing data. Proceed?")) { document.getElementById('import-file').value = ''; return; }
+            const isSure = await customConfirm("Importing this backup will overwrite existing tasks and settings. Do you want to proceed?", "Import Data Warning", true, "Import Data");
+            if (!isSure) { document.getElementById('import-file').value = ''; return; }
             const btn = document.getElementById('save-settings-btn');
             btn.innerText = "Importing...";
 
@@ -2772,8 +2878,7 @@ window.closeAddFriendModal = () => {
 window.editDisplayName = async () => {
     if (!currentUser) return;
 
-    const newName = prompt("Enter your new display name:", myDisplayName || currentUser.displayName || "Aspirant");
-
+    const newName = await customPrompt("Enter your new display name for the squad view:", myDisplayName || currentUser.displayName || "Aspirant", "Change Display Name", "e.g. Air1");
     if (newName !== null && newName.trim() !== "") {
         const cleanName = newName.trim();
         try {
@@ -2845,7 +2950,8 @@ window.copyFriendCode = () => {
 }
 
 window.removeFriend = async (friendUid) => {
-    if (!confirm("Remove from squad?")) return;
+    const isSure = await customConfirm("Are you sure you want to remove them from your accountability squad?", "Remove Squad Member", true, "Remove");
+    if (!isSure) return;
     try {
         // 1. Remove them from YOUR list
         await deleteDoc(doc(db, 'artifacts', appId, 'socialFriends', currentUser.uid, 'list', friendUid));
@@ -3149,8 +3255,7 @@ window.toggleMusicSetting = function () {
 
 window.editTaskText = async function (id, currentText) {
     if (!currentUser) return;
-    const newText = prompt("Edit your task:", currentText);
-    if (newText !== null && newText.trim() !== "" && newText !== currentText) {
+    const newText = await customPrompt("Update your task description below:", currentText, "Edit Task");    if (newText !== null && newText.trim() !== "" && newText !== currentText) {
         try {
             await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', id), {
                 text: newText.trim()
