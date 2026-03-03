@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChaosPrep Documentation</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f5f3ff',
+                            100: '#ede9fe',
+                            200: '#ddd6fe',
+                            300: '#c4b5fd',
+                            400: '#a78bfa',
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                            700: '#6d28d9',
+                            800: '#5b21b6',
+                            900: '#4c1d95',
+                        }
+                    },
+                    typography: {
+                        DEFAULT: {
+                            css: {
+                                maxWidth: '100%',
+                                color: '#3f3f46',
+                                h1: { color: '#18181b', fontWeight: '800' },
+                                h2: { color: '#18181b', fontWeight: '700', marginTop: '2.5em' },
+                                h3: { color: '#18181b', fontWeight: '600' },
+                                a: { color: '#7c3aed', '&:hover': { color: '#6d28d9' } },
+                                code: { color: '#7c3aed', backgroundColor: '#f5f3ff', padding: '0.2em 0.4em', borderRadius: '0.375rem', fontWeight: '600' },
+                                'code::before': { content: '""' },
+                                'code::after': { content: '""' },
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Scrollbar for aesthetic */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #e4e4e7;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d4d4d8;
+        }
+
+        /* Typography mimics */
+        .prose-custom p {
+            margin-bottom: 1.25em;
+            line-height: 1.75;
+            color: #52525b;
+        }
+
+        .prose-custom h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #18181b;
+            margin-top: 2.5em;
+            margin-bottom: 1em;
+            padding-bottom: 0.5em;
+            border-bottom: 1px solid #e4e4e7;
+            scroll-margin-top: 6rem;
+        }
+
+        .prose-custom h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #18181b;
+            margin-top: 2em;
+            margin-bottom: 0.75em;
+            scroll-margin-top: 6rem;
+        }
+
+        .prose-custom ul {
+            list-style-type: disc;
+            padding-left: 1.25em;
+            margin-bottom: 1.25em;
+            color: #52525b;
+        }
+
+        .prose-custom li {
+            margin-bottom: 0.5em;
+        }
+
+        .prose-custom strong {
+            font-weight: 600;
+            color: #18181b;
+        }
+
+        .nav-link.active {
+            color: #7c3aed;
+            font-weight: 600;
+            background-color: #f5f3ff;
+        }
+
+        /* Glass header */
+        .glass-header {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #f4f4f5;
+        }
+    </style>
+</head>
+
+<body class="bg-white text-zinc-900 antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- Mobile Header -->
+    <header class="md:hidden sticky top-0 z-50 glass-header px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <div
+                class="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white font-black text-sm shadow-md">
+                C</div>
+            <span class="font-bold text-lg tracking-tight">ChaosPrep Docs</span>
+        </div>
+        <button id="mobile-menu-btn" class="p-2 text-zinc-600 hover:text-zinc-900 bg-zinc-100 rounded-md">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+    </header>
+
+    <div class="max-w-[1400px] mx-auto w-full flex relative">
+
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar"
+            class="fixed inset-y-0 left-0 w-72 border-r border-zinc-200 bg-zinc-50/50 hidden md:block z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out md:sticky md:top-0 md:h-screen overflow-y-auto">
+            <div class="p-6">
+                <div class="flex items-center gap-3 mb-8">
+                    <div
+                        class="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-md">
+                        C</div>
+                    <div>
+                        <h1 class="font-black text-xl tracking-tight leading-none text-zinc-900">ChaosPrep</h1>
+                        <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Documentation</span>
+                    </div>
+                </div>
+
+                <nav class="space-y-8">
+                    <div>
+                        <h4 class="text-xs font-bold text-zinc-900 uppercase tracking-wider mb-3 px-3">Getting Started
+                        </h4>
+                        <ul class="space-y-1 text-sm text-zinc-600">
+                            <li><a href="#introduction"
+                                    class="nav-link block px-3 py-2 rounded-lg hover:bg-zinc-100 hover:text-zinc-900 transition-colors">Introduction</a>
+                            </li>
+                            <li><a href="#setup"
+                                    class="nav-link block px-3 py-2 rounded-lg hover:bg-zinc-100 hover:text-zinc-900 transition-colors">Initial
+                                    Setup</a></li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4 class="text-xs font-bold text-zinc-900 uppercase tracking-wider mb-3 px-3">Core Features
+                        </h4>
+                        <ul class="space-y-1 text-sm text-zinc-600">
+                            <li><a href="#planner"
+                                    class="nav-link block px-3 py-2 rounded-lg hover:bg-zinc-100 hover:text-zinc-900 transition-colors">Daily
+                                    Planner</a></li>
+                            <li><a href="#timer"
+                                    class="nav-link block px-3 py-2 rounded-lg hover:bg-zinc-100 hover:text-zinc-900 transition-colors">Focus
+                                    Timer & Radio</a></li>
+                            <li><a href="#analytics"
+                                    class="nav-link block px-3 py-2 rounded-lg hover:bg-zinc-100 hover:text-zinc-900 transition-colors">Mocks
+                                    & Error Analytics</a></li>
+                            <li><a href="#syllabus"
+                                    class="nav-link block px-3 py-2 rounded-lg hover:bg-zinc-100 hover:text-zinc-900 transition-colors">Syllabus
+                                    Tracker</a></li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4
+                            class="text-xs font-bold text-brand-600 uppercase tracking-wider mb-3 px-3 flex items-center gap-2">
+                            <i data-lucide="users" class="w-4 h-4"></i> Squads (Multiplayer)
+                        </h4>
+                        <ul class="space-y-1 text-sm text-zinc-600">
+                            <li><a href="#squads-intro"
+                                    class="nav-link block px-3 py-2 rounded-lg hover:bg-brand-50 hover:text-brand-700 transition-colors">How
+                                    Squads Work</a></li>
+                            <li><a href="#squads-adding"
+                                    class="nav-link block px-3 py-2 rounded-lg hover:bg-brand-50 hover:text-brand-700 transition-colors">Building
+                                    Your Squad</a></li>
+                            <li><a href="#squads-live"
+                                    class="nav-link block px-3 py-2 rounded-lg hover:bg-brand-50 hover:text-brand-700 transition-colors">Live
+                                    Status & Syncing</a></li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4 class="text-xs font-bold text-zinc-900 uppercase tracking-wider mb-3 px-3">Customization
+                        </h4>
+                        <ul class="space-y-1 text-sm text-zinc-600">
+                            <li><a href="#settings"
+                                    class="nav-link block px-3 py-2 rounded-lg hover:bg-zinc-100 hover:text-zinc-900 transition-colors">Themes
+                                    & Preferences</a></li>
+                            <li><a href="#rollover"
+                                    class="nav-link block px-3 py-2 rounded-lg hover:bg-zinc-100 hover:text-zinc-900 transition-colors">Day
+                                    Rollover (Night Owls)</a></li>
+                        </ul>
+                    </div>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 min-w-0 px-6 py-12 md:px-12 lg:px-20 xl:px-32">
+
+            <div class="max-w-3xl prose-custom">
+                <!-- Introduction -->
+                <section id="introduction">
+                    <div
+                        class="mb-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-50 border border-brand-100 text-brand-700 text-xs font-bold uppercase tracking-widest">
+                        Documentation
+                    </div>
+                    <h1 class="text-4xl md:text-5xl font-black tracking-tighter mb-6 text-zinc-900">Welcome to
+                        ChaosPrep.</h1>
+                    <p class="text-lg md:text-xl text-zinc-600 font-medium mb-8 leading-relaxed">
+                        ChaosPrep is a quiet, distraction-free tracking system designed specifically for JEE, NEET, and
+                        competitive exam aspirants. No AI fluff, no social feeds—just raw productivity tools to help you
+                        hit your targets and visualize your growth.
+                    </p>
+                </section>
+
+                <section id="setup">
+                    <h2 class="flex items-center gap-2"><i data-lucide="settings-2" class="w-6 h-6 text-brand-500"></i>
+                        Initial Setup</h2>
+                    <p>When you first sign in, you need to configure your environment to match your goals. ChaosPrep
+                        adapts to your specific exam requirements.</p>
+                    <ul>
+                        <li><strong>Select your Exam:</strong> Head to Settings (the gear icon) and select JEE Main, JEE
+                            Advanced, NEET, or Custom. This automatically configures your subjects (e.g., swapping Maths
+                            for Biology) and your default target dates.</li>
+                        <li><strong>Add Custom Subjects:</strong> Studying for boards or an extra subject? Use the
+                            <code>+ Custom</code> button in the Quick Add Task menu or go to Settings to add subjects
+                            like "English" or "Physical Education".</li>
+                        <li><strong>Set your Target Year:</strong> Ensure your target year and session are set correctly
+                            so your Reality Check countdown is accurate.</li>
+                    </ul>
+                </section>
+
+                <hr class="my-12 border-zinc-200">
+
+                <!-- Core Features -->
+                <section id="planner">
+                    <h2 class="flex items-center gap-2"><i data-lucide="calendar" class="w-6 h-6 text-brand-500"></i>
+                        Daily Planner</h2>
+                    <p>The Planner is where you convert broad syllabus goals into executable daily tasks.</p>
+
+                    <h3>Adding and Organizing Tasks</h3>
+                    <p>Click the <code>+ Add Task</code> button on any day card. Select a subject, write your objective,
+                        and hit Add. To reorder tasks within a day, open the <strong>Day View</strong> by clicking on a
+                        specific day card, and drag the tasks using the grip handle <i data-lucide="grip-vertical"
+                            class="w-4 h-4 inline text-zinc-400"></i> on the left.</p>
+
+                    <h3>Subtasks</h3>
+                    <p>Tasks can be broken down further. Open the Day View, click on a task, and type into the <em>"Add
+                            subtask..."</em> input field to create a micro-checklist for complex chapters.</p>
+                </section>
+
+                <section id="timer">
+                    <h2 class="flex items-center gap-2"><i data-lucide="timer" class="w-6 h-6 text-brand-500"></i> Focus
+                        Timer & Radio</h2>
+                    <p>Clock actual deep work hours. The Timer view prevents you from lying to yourself about how much
+                        you actually studied.</p>
+                    <ul>
+                        <li><strong>Subject Tracking:</strong> Select a subject before hitting play. When you stop the
+                            timer, the session is logged to that specific subject.</li>
+                        <li><strong>Minimum Time:</strong> Sessions under 1 minute are discarded to prevent log spam.
+                        </li>
+                        <li><strong>Focus Radio:</strong> Need background noise? Click the floating music icon in the
+                            bottom right corner to open the Focus Radio. It streams live lo-fi, synthwave, and classical
+                            music via YouTube without needing a premium subscription.</li>
+                    </ul>
+                </section>
+
+                <section id="analytics">
+                    <h2 class="flex items-center gap-2"><i data-lucide="bar-chart-2" class="w-6 h-6 text-brand-500"></i>
+                        Analytics (Mocks & Errors)</h2>
+                    <p>Data drives improvement. ChaosPrep separates your analytics into Mock Test tracking and Error
+                        tracking.</p>
+
+                    <h3>Logging a Mock Test</h3>
+                    <p>To log a mock, add a task in the Planner and select <strong>Mock</strong> as the subject. This
+                        unlocks special score input fields. Enter your obtained and max marks. Once completed, this data
+                        feeds into the interactive chart in the Stats view.</p>
+
+                    <h3>Error Logging</h3>
+                    <p>Don't just look at your mock score; analyze your mistakes. In the Error Tracking view, you can
+                        log specific mistakes by Subject, Chapter, and Type:</p>
+                    <ul>
+                        <li><strong>Conceptual:</strong> You didn't know or misunderstood the theory.</li>
+                        <li><strong>Calculative:</strong> You knew the method, but messed up the math.</li>
+                        <li><strong>Silly Mistake:</strong> Misread the question, marked the wrong bubble, etc.</li>
+                        <li><strong>Formula:</strong> Forgot or misapplied a formula.</li>
+                    </ul>
+                    <p>The system generates a "Mistake Profile" pie chart so you know exactly what kind of errors are
+                        costing you the most marks.</p>
+                </section>
+
+                <section id="syllabus">
+                    <h2 class="flex items-center gap-2"><i data-lucide="book-open-check"
+                            class="w-6 h-6 text-brand-500"></i> Syllabus Tracker</h2>
+                    <p>A comprehensive, pre-loaded list of chapters based on the latest NTA guidelines.</p>
+                    <p>Instead of simple checkboxes, ChaosPrep uses a phased approach: <strong>To Do &rarr; Doing &rarr;
+                            Done &rarr; Mastered</strong>. You can also track how many times you have revised a chapter
+                        and whether you have completed the Previous Year Questions (PYQs) for it.</p>
+                </section>
+
+                <hr class="my-16 border-zinc-200">
+
+                <!-- SQUADS DEEP DIVE -->
+                <section id="squads-intro">
+                    <div
+                        class="bg-brand-50 dark:bg-brand-900/10 border border-brand-200 dark:border-brand-800 rounded-3xl p-8 mb-8">
+                        <h2 class="flex items-center gap-3 !mt-0 !mb-4 !border-none text-brand-900"><i
+                                data-lucide="users" class="w-8 h-8 text-brand-500"></i> Squads (Multiplayer)</h2>
+                        <p class="text-brand-800 font-medium leading-relaxed">Studying for competitive exams can be
+                            incredibly isolating. Squads is a multiplayer accountability feature designed to simulate
+                            the feeling of studying in a library with your hardest-working friends. Surround yourself
+                            with winners.</p>
+                    </div>
+                </section>
+
+                <section id="squads-adding">
+                    <h3>Building Your Squad</h3>
+                    <p>Unlike WhatsApp or Discord, <strong>there are no centralized "Group Links."</strong> Squads are
+                        built entirely through mutual, 1-on-1 connections. This prevents massive, distracting groups
+                        from forming and keeps your circle tight.</p>
+
+                    <ol class="list-decimal pl-5 space-y-4 mb-8 text-zinc-600">
+                        <li><strong>Find Your Code:</strong> Go to the Squad view. At the top, you will see your unique
+                            6-character Invite Code (e.g., <code>A1B2C3</code>).</li>
+                        <li><strong>Share It:</strong> Click the code to copy it, or use the "Link" button to generate a
+                            direct invite URL to send to a friend.</li>
+                        <li><strong>Mutual Connection:</strong> To form a squad of 3 people (You, Alice, and Bob),
+                            everyone must mutually add each other. You must add Alice, Alice must add Bob, and Bob must
+                            add You.</li>
+                    </ol>
+                    <p>If someone clicks your invite link, they will see a special "Your squad is waiting" login screen.
+                        Once they sign in, they are instantly added to your dashboard.</p>
+                </section>
+
+                <section id="squads-live">
+                    <h3>Live Status & The "Pulse"</h3>
+                    <p>The most powerful feature of Squads is live presence. We don't track your location or
+                        keystrokes—we track your focus.</p>
+
+                    <div class="grid sm:grid-cols-3 gap-4 my-6">
+                        <div class="border border-rose-200 bg-rose-50 p-4 rounded-2xl">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span
+                                    class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)]"></span>
+                                <span class="text-xs font-bold text-rose-700 uppercase tracking-widest">Studying</span>
+                            </div>
+                            <p class="text-[10px] text-rose-600 font-medium leading-relaxed">When a user turns on their
+                                Timer, their status instantly turns red. The pulse indicates they are in deep focus.</p>
+                        </div>
+                        <div class="border border-amber-200 bg-amber-50 p-4 rounded-2xl">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                                <span class="text-xs font-bold text-amber-700 uppercase tracking-widest">Idle</span>
+                            </div>
+                            <p class="text-[10px] text-amber-600 font-medium leading-relaxed">The timer is off, but the
+                                user has been active in the app within the last 15 minutes. They are planning or taking
+                                a break.</p>
+                        </div>
+                        <div class="border border-zinc-200 bg-zinc-50 p-4 rounded-2xl">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-zinc-400"></span>
+                                <span class="text-xs font-bold text-zinc-500 uppercase tracking-widest">Offline</span>
+                            </div>
+                            <p class="text-[10px] text-zinc-500 font-medium leading-relaxed">The user has closed the app
+                                or hasn't interacted with it for over 15 minutes. Shows "Seen X hrs ago".</p>
+                        </div>
+                    </div>
+
+                    <h3>Task Syncing (Privacy)</h3>
+                    <p>By default, the tasks you schedule for <strong>Today</strong> are visible to your Squad. As you
+                        check them off in your planner, they will cross out on your friends' screens in real-time. This
+                        creates positive peer pressure.</p>
+                    <p>If you prefer to keep your to-do list private, go to <strong>Settings &rarr; Share Tasks</strong>
+                        and toggle it off. Your friends will still see your live study status, but your tasks will be
+                        hidden.</p>
+                </section>
+
+                <hr class="my-16 border-zinc-200">
+
+                <!-- Customization -->
+                <section id="settings">
+                    <h2 class="flex items-center gap-2"><i data-lucide="palette" class="w-6 h-6 text-brand-500"></i>
+                        Themes & Preferences</h2>
+                    <p>Make the workspace yours.</p>
+                    <ul>
+                        <li><strong>Dark Mode:</strong> Toggle manually in settings or let it follow your system.</li>
+                        <li><strong>Atmosphere:</strong> Choose a preset background (Minimal, Space, Abstract) or paste
+                            an image URL to set a custom wallpaper.</li>
+                        <li><strong>Accent Themes:</strong> Not a fan of purple? Switch to Matcha (Green), Cobalt
+                            (Blue), Crimson (Red), or Monochrome (Black/White).</li>
+                        <li><strong>Lite Mode:</strong> Running ChaosPrep on an older laptop or budget phone? Toggle
+                            Lite Mode to disable heavy glass blurs, shadows, and animations to save battery and boost
+                            speed.</li>
+                    </ul>
+                </section>
+
+                <section id="rollover">
+                    <h2 class="flex items-center gap-2"><i data-lucide="moon" class="w-6 h-6 text-brand-500"></i> Day
+                        Rollover (For Night Owls)</h2>
+                    <p>By default, calendar apps reset at 12:00 AM (Midnight). But if you are a student who studies
+                        until 3:00 AM, having your planner jump to "Tomorrow" in the middle of your study session is
+                        frustrating and breaks your streaks.</p>
+                    <p><strong>The Fix:</strong> Go to Settings and change your <strong>Day Rollover</strong>. If you
+                        set it to 4:00 AM, ChaosPrep will consider it "Today" until 3:59 AM. Your tasks, streaks, and
+                        charts won't reset until you actually go to sleep.</p>
+                </section>
+
+                <div class="mt-20 pb-20 text-center">
+                    <p class="text-zinc-400 text-sm font-medium uppercase tracking-widest">Master your daily chaos.</p>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu"
+        class="fixed inset-0 bg-white z-40 transform translate-x-full transition-transform duration-300 md:hidden overflow-y-auto pt-20 px-6 pb-6">
+        <nav class="space-y-8">
+            <!-- Repeated nav for mobile -->
+            <div>
+                <h4 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">Getting Started</h4>
+                <ul class="space-y-2 text-sm text-zinc-600 font-medium">
+                    <li><a href="#introduction" class="mobile-nav-link block py-2">Introduction</a></li>
+                    <li><a href="#setup" class="mobile-nav-link block py-2">Initial Setup</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">Core Features</h4>
+                <ul class="space-y-2 text-sm text-zinc-600 font-medium">
+                    <li><a href="#planner" class="mobile-nav-link block py-2">Daily Planner</a></li>
+                    <li><a href="#timer" class="mobile-nav-link block py-2">Focus Timer & Radio</a></li>
+                    <li><a href="#analytics" class="mobile-nav-link block py-2">Analytics</a></li>
+                    <li><a href="#syllabus" class="mobile-nav-link block py-2">Syllabus Tracker</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="text-xs font-bold text-brand-500 uppercase tracking-wider mb-3">Squads</h4>
+                <ul class="space-y-2 text-sm text-zinc-600 font-medium">
+                    <li><a href="#squads-intro" class="mobile-nav-link block py-2">How Squads Work</a></li>
+                    <li><a href="#squads-adding" class="mobile-nav-link block py-2">Building Your Squad</a></li>
+                    <li><a href="#squads-live" class="mobile-nav-link block py-2">Live Status & Syncing</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">Customization</h4>
+                <ul class="space-y-2 text-sm text-zinc-600 font-medium">
+                    <li><a href="#settings" class="mobile-nav-link block py-2">Themes & Settings</a></li>
+                    <li><a href="#rollover" class="mobile-nav-link block py-2">Day Rollover</a></li>
+                </ul>
+            </div>
+        </nav>
+    </div>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        // Mobile Menu Toggle
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        let isMenuOpen = false;
+
+        menuBtn.addEventListener('click', () => {
+            isMenuOpen = !isMenuOpen;
+            if (isMenuOpen) {
+                mobileMenu.classList.remove('translate-x-full');
+                menuBtn.innerHTML = '<i data-lucide="x" class="w-5 h-5"></i>';
+            } else {
+                mobileMenu.classList.add('translate-x-full');
+                menuBtn.innerHTML = '<i data-lucide="menu" class="w-5 h-5"></i>';
+            }
+            lucide.createIcons();
+        });
+
+        // Close mobile menu on link click
+        document.querySelectorAll('.mobile-nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('translate-x-full');
+                menuBtn.innerHTML = '<i data-lucide="menu" class="w-5 h-5"></i>';
+                isMenuOpen = false;
+                lucide.createIcons();
+            });
+        });
+
+        // Scrollspy for Sidebar Highlighting
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        const observerOptions = {
+            root: null,
+            rootMargin: '-20% 0px -70% 0px',
+            threshold: 0
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.getAttribute('id');
+                    navLinks.forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href') === `#${id}`) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(section => observer.observe(section));
+    </script>
+</body>
+
+</html>
