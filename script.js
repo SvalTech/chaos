@@ -35,18 +35,42 @@ let timerAccumulatedMs = 0;
 let isTimerRunning = false;
 let timerSubject = "Physics";
 let currentErrorFilter = 'All';
-
-let questionsDate = new Date();
 let questionsChartInstance = null;
 
+// 1. Declare state as an empty object FIRST to prevent the ReferenceError
+let state = {};
 
-let state = {
+// --- LOGICAL DAY SYSTEM ---
+function getLogicalToday() {
+    const d = new Date();
+    // Now this safely evaluates to 0 on the very first load before settings are fetched
+    const rolloverHour = parseInt(state?.settings?.dayRolloverHour) || 0;
+
+    if (d.getHours() < rolloverHour) {
+        d.setDate(d.getDate() - 1);
+    }
+    return d;
+}
+
+function getLogicalTodayStr() {
+    return getLocalISODate(getLogicalToday());
+}
+
+// 2. Now we can safely call the functions
+let questionsDate = getLogicalToday();
+
+// 3. Populate the state object
+state = {
     tasks: [], targets: [], studyLogs: [], errorLogs: [], questionLogs: [],
-    viewDate: new Date(), weeklyViewDate: new Date(), timerChartWeekDate: new Date(),
+    viewDate: getLogicalToday(),
+    weeklyViewDate: getLogicalToday(),
+    timerChartWeekDate: getLogicalToday(),
     currentView: 'calendar',
-    settings: { examType: 'JEE Main', session: 'Apr', targetYear: 2026, targetDate: '2026-04-01', customSubjects: [], subjectColors: {}, theme: 'light', bgUrl: '', showCountdown: true, dailyQuestionTarget: 50, liteMode: true },
+    settings: { examType: 'JEE Main', session: 'Apr', targetYear: 2026, targetDate: '2026-04-01', customSubjects: [], subjectColors: {}, theme: 'light', bgUrl: '', showCountdown: true, dailyQuestionTarget: 50, liteMode: true, dayRolloverHour: 0 },
     syllabusData: { status: {}, meta: {} }, syllabusOpenStates: {}
 };
+
+
 let tempSettings = {};
 
 let myFriendCode = null;
@@ -471,7 +495,7 @@ window.stopTimer = async function () {
         resetTimer(); return;
     }
     const duration = Math.round(timerSeconds / 60);
-    const log = { subject: timerSubject, durationMinutes: duration, date: getLocalISODate(new Date()), timestamp: new Date().toISOString(), type: 'timer' };
+    const log = { subject: timerSubject, durationMinutes: duration, date: getLogicalTodayStr(), timestamp: new Date().toISOString(), type: 'timer' };
     try {
         await setDoc(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'studyLogs')), log);
         showToast(`Logged ${duration}m of ${timerSubject}`);
@@ -534,7 +558,7 @@ function updateTimerStats() {
     document.getElementById('today-total').innerText = displayTime;
 
     const dates = [...new Set(state.studyLogs.map(l => l.date))].sort().reverse();
-    let streak = 0; let checkDate = new Date();
+    let streak = 0; let checkDate = getLogicalToday();
     const checkStr = getLocalISODate(checkDate);
     const yesterday = new Date(checkDate); yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = getLocalISODate(yesterday);
@@ -571,7 +595,7 @@ window.renderTimerChart = function () {
     const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate() + 6);
 
     // Set label
-    const now = new Date();
+    const now = getLogicalToday();
     const currentWeekStart = getStartOfWeek(now);
     if (startOfWeek.getTime() === currentWeekStart.getTime()) {
         document.getElementById('timer-chart-week-label').innerText = "This Week";
@@ -612,7 +636,7 @@ window.renderTimerChart = function () {
 function renderRecentLogs() {
     const list = document.getElementById('timer-logs-list'); list.innerHTML = '';
     const logs = [...state.studyLogs].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 10);
-    const todayLogs = logs.filter(l => l.date === getLocalISODate(new Date()));
+    const todayLogs = logs.filter(l => l.date === getLogicalTodayStr());
 
     if (todayLogs.length === 0) {
         list.innerHTML = `<div class="text-center py-8 text-zinc-400 italic text-sm bg-zinc-50 dark:bg-[#18181b] rounded-3xl border border-zinc-100 dark:border-zinc-800/50">No sessions logged today. Ready to focus?</div>`; return;
@@ -650,7 +674,7 @@ window.saveManualLog = async () => {
     const subject = document.getElementById('manual-log-subject').value; const duration = parseInt(document.getElementById('manual-log-duration').value); const notes = document.getElementById('manual-log-notes').value;
     if (!duration || duration <= 0) { showToast("Invalid duration"); return; }
     try {
-        await setDoc(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'studyLogs')), { subject, durationMinutes: duration, notes, date: getLocalISODate(new Date()), timestamp: new Date().toISOString(), type: 'manual' });
+        await setDoc(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'studyLogs')), { subject, durationMinutes: duration, notes, date: getLogicalTodayStr(), timestamp: new Date().toISOString(), type: 'manual' });
         showToast("Log Added"); closeManualLogModal(); document.getElementById('manual-log-duration').value = ''; document.getElementById('manual-log-notes').value = '';
     } catch (e) { console.error(e); }
 }
@@ -1171,11 +1195,26 @@ window.updateTargetDateConfig = function () {
     else if (tempSettings.examType === 'Custom') { const m = document.getElementById('settings-custom-date').value; if (m) date = m; }
     tempSettings.targetDate = date; tempSettings.targetYear = parseInt(year);
 }
-
 window.saveSettings = async function () {
     if (!currentUser) return;
-    tempSettings.bgUrl = document.getElementById('settings-bg-url').value; updateTargetDateConfig();
-    try { await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), { ...state.settings, ...tempSettings }); resetSettingsDirty(); closeSettings(); showToast("Saved"); }
+
+    // Capture the new rollover time
+    tempSettings.dayRolloverHour = parseInt(document.getElementById('settings-rollover').value) || 0;
+    const rolloverChanged = state.settings.dayRolloverHour !== tempSettings.dayRolloverHour;
+
+    tempSettings.bgUrl = document.getElementById('settings-bg-url').value;
+    updateTargetDateConfig();
+    try {
+        await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), { ...state.settings, ...tempSettings });
+        resetSettingsDirty();
+        closeSettings();
+        showToast("Saved");
+
+        // If they changed the rollover time, cleanly reload to reset all calendars and targets
+        if (rolloverChanged) {
+            setTimeout(() => window.location.reload(), 500);
+        }
+    }
     catch (e) { console.error(e); }
 }
 
@@ -1277,7 +1316,7 @@ function formatDate(dateStr) { if (!dateStr) return ''; const parts = dateStr.sp
 
 window.renderCalendar = function () {
     const grid = document.getElementById('calendar-grid'); grid.innerHTML = '';
-    const year = state.viewDate.getFullYear(); const month = state.viewDate.getMonth(); const todayStr = getLocalISODate(new Date());
+    const year = state.viewDate.getFullYear(); const month = state.viewDate.getMonth(); const todayStr = getLogicalTodayStr();
     document.getElementById('current-month-display').innerText = state.viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
@@ -1705,7 +1744,7 @@ async function handleTaskSubmit(mode) {
 }
 
 window.changeMonth = function (d) { state.viewDate.setMonth(state.viewDate.getMonth() + d); renderCalendar(); }
-window.goToToday = function () { state.viewDate = new Date(); renderCalendar(); setTimeout(() => { const card = document.getElementById('today-card'); if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }
+window.goToToday = function () { state.viewDate = getLogicalToday(); renderCalendar(); setTimeout(() => { const card = document.getElementById('today-card'); if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }
 
 window.openDayView = function (dateStr) {
     currentDayViewDate = dateStr; const modal = document.getElementById('day-view-modal'); const list = document.getElementById('day-view-tasks'); const dateObj = new Date(dateStr);
@@ -1972,6 +2011,7 @@ window.openSettings = () => {
     setAccentTheme(tempSettings.accentTheme || state.settings.accentTheme || 'default');
     document.getElementById('settings-bg-url').value = tempSettings.bgUrl || '';
     document.getElementById('settings-year').value = tempSettings.targetYear || 2026;
+    document.getElementById('settings-rollover').value = tempSettings.dayRolloverHour || 0;
 
     // FIX: Load the custom date into the input field BEFORE setting the exam type
     if (tempSettings.examType === 'Custom') {
@@ -2100,7 +2140,8 @@ function setupTouchGestures() {
 
 
 
-document.getElementById('task-date').value = getLocalISODate(new Date()); document.getElementById('task-date-mobile').value = getLocalISODate(new Date());
+document.getElementById('task-date').value = getLogicalTodayStr();
+document.getElementById('task-date-mobile').value = getLogicalTodayStr();
 
 // --- Mobile Stats Menu ---
 window.toggleMobileStatsMenu = function () {
@@ -2234,7 +2275,7 @@ window.saveErrorLog = async function () {
 
     try {
         await setDoc(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'errorLogs')), {
-            subject, topic: chapter, errorType, desc, date: getLocalISODate(new Date()), timestamp: new Date().toISOString()
+            subject, topic: chapter, errorType, desc, date: getLogicalTodayStr(), timestamp: new Date().toISOString()
         });
         document.getElementById('error-custom-chapter').value = '';
         document.getElementById('error-desc').value = '';
@@ -2390,7 +2431,7 @@ window.changeQuestionDate = function (delta) { questionsDate.setDate(questionsDa
 window.updateQuestionStreak = function () {
     const target = state.settings.dailyQuestionTarget || 50;
     let streak = 0;
-    let checkDate = new Date();
+    let checkDate = getLogicalToday();
     const todayStr = getLocalISODate(checkDate);
     const yesterday = new Date(checkDate); yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = getLocalISODate(yesterday);
@@ -2440,7 +2481,7 @@ window.saveQuestionTarget = async function (val) {
 }
 
 window.renderQuestionsView = function () {
-    const dateStr = getLocalISODate(questionsDate); const todayStr = getLocalISODate(new Date());
+    const dateStr = getLocalISODate(questionsDate); const todayStr = getLogicalTodayStr();
     let displayDate = questionsDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
     if (dateStr === todayStr) displayDate = "Today";
     document.getElementById('questions-date-display').innerText = displayDate;
@@ -2507,7 +2548,7 @@ window.saveQuestionsLog = async function () {
         showToast("Saved Questions!");
 
         const target = state.settings.dailyQuestionTarget || 50;
-        if (total >= target && dateStr === getLocalISODate(new Date())) {
+        if (total >= target && dateStr === getLogicalTodayStr()) {
             // Throw confetti if target reached for today!
             confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#10b981', '#34d399'] });
         }
@@ -2519,7 +2560,7 @@ window.saveQuestionsLog = async function () {
 window.renderQuestionsChart = function () {
     const ctx = document.getElementById('questionsChart'); if (!ctx) return;
     if (questionsChartInstance) questionsChartInstance.destroy();
-    const labels = []; const data = []; const now = new Date();
+    const labels = []; const data = []; const now = getLogicalToday();
 
     for (let i = 6; i >= 0; i--) {
         const d = new Date(now); d.setDate(now.getDate() - i); labels.push(d.toLocaleDateString('en-GB', { weekday: 'short' }));
@@ -2728,7 +2769,7 @@ window.openRealityCheck = function () {
     const targetDateStr = state.settings.targetDate;
     if (!targetDateStr) { showToast("Set a target date in settings!"); return; }
 
-    const now = new Date();
+    const now = getLogicalToday();
     const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const [y, m, d] = targetDateStr.split('-').map(Number);
     const targetMidnight = new Date(y, m - 1, d);
@@ -3164,7 +3205,7 @@ window.syncMySocialTasks = async () => {
 
     // Wait 800ms for local data to completely settle before sending to the squad profile
     syncDebounceTimer = setTimeout(async () => {
-        const todayStr = getLocalISODate(new Date());
+        const todayStr = getLogicalTodayStr();
         const todaysTasks = state.tasks
             .filter(t => t.date === todayStr)
             .map(t => ({
