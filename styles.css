@@ -3,6 +3,79 @@
 @tailwind utilities;
 
 /* =========================================
+   0. DYNAMIC THEME VARIABLES
+   ========================================= */
+/* Default: Chaos Purple */
+:root {
+  --brand-50: 245 243 255;
+  --brand-100: 237 233 254;
+  --brand-200: 221 214 254;
+  --brand-300: 196 181 253;
+  --brand-400: 167 139 250;
+  --brand-500: 139 92 246;  
+  --brand-600: 124 58 237;  
+  --brand-700: 109 40 217;
+  --brand-800: 91 33 182;
+  --brand-900: 76 29 149;
+}
+
+/* Theme: Zen Matcha */
+html[data-theme="matcha"] {
+  --brand-50: 242 251 245;
+  --brand-100: 224 246 231;
+  --brand-200: 191 235 207;
+  --brand-300: 147 218 175;
+  --brand-400: 96 192 137;
+  --brand-500: 52 168 103;
+  --brand-600: 36 138 81;
+  --brand-700: 28 110 66;
+  --brand-800: 25 87 54;
+  --brand-900: 22 72 46;
+}
+
+/* Theme: Midnight Cobalt */
+html[data-theme="cobalt"] {
+  --brand-50: 239 246 255;
+  --brand-100: 219 234 254;
+  --brand-200: 191 219 254;
+  --brand-300: 147 197 253;
+  --brand-400: 96 165 250;
+  --brand-500: 59 130 246;
+  --brand-600: 37 99 235;
+  --brand-700: 29 78 216;
+  --brand-800: 30 64 175;
+  --brand-900: 30 58 138;
+}
+
+/* Theme: Crimson Urgency */
+html[data-theme="crimson"] {
+  --brand-50: 255 241 242;
+  --brand-100: 255 228 230;
+  --brand-200: 254 205 211;
+  --brand-300: 253 164 175;
+  --brand-400: 251 113 133;
+  --brand-500: 244 63 94;
+  --brand-600: 225 29 72;
+  --brand-700: 190 18 60;
+  --brand-800: 159 18 57;
+  --brand-900: 136 19 55;
+}
+
+/* Theme: Monochrome (Black & White) */
+html[data-theme="monochrome"] {
+  --brand-50: 250 250 250;
+  --brand-100: 244 244 245;
+  --brand-200: 228 228 231;
+  --brand-300: 212 212 216;
+  --brand-400: 161 161 170;
+  --brand-500: 113 113 122; 
+  --brand-600: 82 82 91;   
+  --brand-700: 63 63 70;
+  --brand-800: 39 39 42;
+  --brand-900: 24 24 27;
+}
+
+/* =========================================
    1. CORE PWA & VIEWPORT FIXES (THE ULTIMATE FIX)
    ========================================= */
 /* Apple's rendering engine restricts `100%` and `dvh`. 
@@ -51,6 +124,15 @@ body {
   max-height: 100vh !important;
 }
 
+/* Fix Music Widget colliding with iOS Bottom Nav */
+@media (max-width: 768px) {
+  #music-widget {
+    /* Pushes it safely above the 72px nav + floating FAB + iOS home bar */
+    bottom: calc(7.5rem + env(safe-area-inset-bottom, 0px)) !important;
+    z-index: 65 !important; /* Keeps it strictly above the bottom nav (z-60) */
+  }
+}
+
 /* Force all modals and overlays to bleed to the absolute bottom edge */
 .fixed.inset-0, 
 .modal-backdrop {
@@ -58,6 +140,12 @@ body {
   left: 0 !important;
   width: 100vw !important;
   height: 100vh !important;
+}
+
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.4); /* Darkens the background */
+  backdrop-filter: blur(8px);           /* Adds the glass blur */
+  -webkit-backdrop-filter: blur(8px);   /* Safari support */
 }
 
 #app-background {
@@ -509,4 +597,186 @@ input:focus, textarea:focus, select:focus {
 /* Disable in Lite Mode */
 .lite-mode .floating-emoji {
   display: none !important;
+}
+
+/* =========================================
+   THEME ATMOSPHERE OVERRIDES (GOING HARD)
+   ========================================= */
+
+/* 🍵 MATCHA: Soft Paper & Frosted Sage */
+html[data-theme="matcha"] { background-color: #f4f7f4 !important; }
+html.dark[data-theme="matcha"] { background-color: #0a0f0b !important; }
+
+html[data-theme="matcha"] .glass-card,
+html[data-theme="matcha"] .day-card,
+html[data-theme="matcha"] #desktop-sidebar,
+html[data-theme="matcha"] #main-content-area > div.sticky.top-0,
+html[data-theme="matcha"] .view-section .sticky.glass,
+html[data-theme="matcha"] #mobile-bottom-nav .glass,
+html[data-theme="matcha"] #music-toggle-btn { 
+  border-color: rgba(52, 168, 103, 0.25) !important; 
+}
+
+html[data-theme="matcha"] #desktop-sidebar,
+html[data-theme="matcha"] #main-content-area > div.sticky.top-0,
+html[data-theme="matcha"] .view-section .sticky.glass,
+html[data-theme="matcha"] #mobile-bottom-nav .glass,
+html[data-theme="matcha"] #music-toggle-btn {
+  background-color: rgba(244, 247, 244, 0.85) !important;
+}
+
+html.dark[data-theme="matcha"] .glass-card {
+  background: rgba(16, 25, 18, 0.8) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(52, 168, 103, 0.1) !important;
+}
+html.dark[data-theme="matcha"] #desktop-sidebar,
+html.dark[data-theme="matcha"] #main-content-area > div.sticky.top-0,
+html.dark[data-theme="matcha"] .view-section .sticky.glass,
+html.dark[data-theme="matcha"] #mobile-bottom-nav .glass,
+html.dark[data-theme="matcha"] #music-toggle-btn {
+  background-color: rgba(16, 25, 18, 0.9) !important;
+}
+
+/* 🌌 COBALT: Cyberpunk / Deep Focus */
+html[data-theme="cobalt"] { background-color: #080f1e !important; }
+html.dark[data-theme="cobalt"] { background-color: #020617 !important; }
+
+html[data-theme="cobalt"] .glass-card,
+html[data-theme="cobalt"] .day-card,
+html[data-theme="cobalt"] #desktop-sidebar,
+html[data-theme="cobalt"] #main-content-area > div.sticky.top-0,
+html[data-theme="cobalt"] .view-section .sticky.glass,
+html[data-theme="cobalt"] #mobile-bottom-nav .glass,
+html[data-theme="cobalt"] #music-toggle-btn { 
+  border-color: rgba(59, 130, 246, 0.4) !important; 
+}
+
+html[data-theme="cobalt"] #desktop-sidebar,
+html[data-theme="cobalt"] #main-content-area > div.sticky.top-0,
+html[data-theme="cobalt"] .view-section .sticky.glass,
+html[data-theme="cobalt"] #mobile-bottom-nav .glass,
+html[data-theme="cobalt"] #music-toggle-btn {
+  background-color: rgba(8, 15, 30, 0.85) !important;
+}
+
+html.dark[data-theme="cobalt"] .glass-card {
+  background: rgba(11, 17, 32, 0.7) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6), inset 0 0 20px rgba(59, 130, 246, 0.05) !important;
+}
+html.dark[data-theme="cobalt"] #desktop-sidebar,
+html.dark[data-theme="cobalt"] #main-content-area > div.sticky.top-0,
+html.dark[data-theme="cobalt"] .view-section .sticky.glass,
+html.dark[data-theme="cobalt"] #mobile-bottom-nav .glass,
+html.dark[data-theme="cobalt"] #music-toggle-btn {
+  background-color: rgba(11, 17, 32, 0.9) !important;
+}
+
+/* 🚨 CRIMSON: Brutalist / High Urgency */
+html[data-theme="crimson"] { background-color: #fff1f2 !important; }
+html.dark[data-theme="crimson"] { background-color: #1a0509 !important; }
+
+html[data-theme="crimson"] .glass-card, 
+html[data-theme="crimson"] .day-card,
+html[data-theme="crimson"] #desktop-sidebar,
+html[data-theme="crimson"] #main-content-area > div.sticky.top-0,
+html[data-theme="crimson"] .view-section .sticky.glass,
+html[data-theme="crimson"] #mobile-bottom-nav .glass,
+html[data-theme="crimson"] #music-toggle-btn {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background-color: #ffffff !important;
+}
+
+html[data-theme="crimson"] .glass-card, 
+html[data-theme="crimson"] .day-card {
+  border: 3px solid #e11d48 !important;
+  border-radius: 16px !important;
+  box-shadow: 6px 6px 0px #e11d48 !important;
+  transition: transform 0.1s, box-shadow 0.1s !important;
+}
+html[data-theme="crimson"] #desktop-sidebar { border-right: 3px solid #e11d48 !important; }
+
+/* Apply heavy bottom borders to both toolbars and top headers */
+html[data-theme="crimson"] #main-content-area > div.sticky.top-0,
+html[data-theme="crimson"] .view-section .sticky.glass { 
+  border-bottom: 3px solid #e11d48 !important; 
+}
+
+html[data-theme="crimson"] #mobile-bottom-nav .glass,
+html[data-theme="crimson"] #music-toggle-btn { 
+  border: 3px solid #e11d48 !important; 
+  box-shadow: 4px 4px 0px #e11d48 !important; 
+}
+
+html.dark[data-theme="crimson"] .glass-card, 
+html.dark[data-theme="crimson"] .day-card,
+html.dark[data-theme="crimson"] #desktop-sidebar,
+html.dark[data-theme="crimson"] #main-content-area > div.sticky.top-0,
+html.dark[data-theme="crimson"] .view-section .sticky.glass,
+html.dark[data-theme="crimson"] #mobile-bottom-nav .glass,
+html.dark[data-theme="crimson"] #music-toggle-btn {
+  background-color: #000000 !important;
+  border-color: #be123c !important;
+}
+html.dark[data-theme="crimson"] .glass-card, 
+html.dark[data-theme="crimson"] .day-card,
+html.dark[data-theme="crimson"] #mobile-bottom-nav .glass,
+html.dark[data-theme="crimson"] #music-toggle-btn {
+  box-shadow: 6px 6px 0px #be123c !important;
+}
+
+html[data-theme="crimson"] .day-card:active,
+html[data-theme="crimson"] #music-toggle-btn:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 0px 0px 0px #e11d48 !important;
+}
+
+
+/* 📰 MONOCHROME: E-Ink / Drafting Grid */
+html[data-theme="monochrome"] { 
+  background-color: #ffffff !important; 
+  background-image: radial-gradient(#d4d4d8 1.5px, transparent 1.5px) !important;
+  background-size: 24px 24px !important;
+}
+html.dark[data-theme="monochrome"] { 
+  background-color: #000000 !important; 
+  background-image: radial-gradient(#27272a 1.5px, transparent 1.5px) !important;
+  background-size: 24px 24px !important;
+}
+
+html[data-theme="monochrome"] .glass-card,
+html[data-theme="monochrome"] .day-card,
+html[data-theme="monochrome"] #desktop-sidebar,
+html[data-theme="monochrome"] #main-content-area > div.sticky.top-0,
+html[data-theme="monochrome"] .view-section .sticky.glass,
+html[data-theme="monochrome"] #mobile-bottom-nav .glass,
+html[data-theme="monochrome"] #music-toggle-btn {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background-color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="monochrome"] .glass-card,
+html[data-theme="monochrome"] .day-card { border: 2px solid #000000 !important; }
+html[data-theme="monochrome"] #desktop-sidebar { border-right: 2px solid #000000 !important; }
+
+/* Clean architectural bottom borders for toolbars */
+html[data-theme="monochrome"] #main-content-area > div.sticky.top-0,
+html[data-theme="monochrome"] .view-section .sticky.glass { 
+  border-bottom: 2px solid #000000 !important; 
+}
+
+html[data-theme="monochrome"] #mobile-bottom-nav .glass,
+html[data-theme="monochrome"] #music-toggle-btn { border: 2px solid #000000 !important; }
+
+html.dark[data-theme="monochrome"] .glass-card,
+html.dark[data-theme="monochrome"] .day-card,
+html.dark[data-theme="monochrome"] #desktop-sidebar,
+html.dark[data-theme="monochrome"] #main-content-area > div.sticky.top-0,
+html.dark[data-theme="monochrome"] .view-section .sticky.glass,
+html.dark[data-theme="monochrome"] #mobile-bottom-nav .glass,
+html.dark[data-theme="monochrome"] #music-toggle-btn {
+  background-color: #000000 !important;
+  border-color: #52525b !important;
 }

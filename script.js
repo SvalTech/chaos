@@ -257,7 +257,7 @@ function setupListeners(user) {
         if (snap.exists()) {
             state.settings = { ...state.settings, ...snap.data() };
             if (state.settings.showCountdown === undefined) state.settings.showCountdown = true;
-            applyTheme(state.settings.theme); applyBackground(state.settings.bgUrl); updateSubjectSelectors(); renderCountdown(); applyLiteMode(state.settings.liteMode); applyMusicSetting(state.settings.showMusic);
+            applyTheme(state.settings.theme); applyAccentTheme(state.settings.accentTheme || 'default'); applyBackground(state.settings.bgUrl); updateSubjectSelectors(); renderCountdown(); applyLiteMode(state.settings.liteMode); applyMusicSetting(state.settings.showMusic);
             if (state.currentView === 'calendar') renderCalendar();
             if (state.currentView === 'syllabus') renderSyllabusView();
             if (state.currentView === 'timer') { updateSubjectSelectors(); updateTimerStats(); renderRecentLogs(); renderTimerChart(); }
@@ -343,7 +343,6 @@ window.processPendingInvite = async function () {
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 }
-
 // --- TIMER LOGIC ---
 window.toggleTimer = function () {
     if (isTimerRunning) {
@@ -406,6 +405,13 @@ function updateTimerDisplay() {
     const s = (timerSeconds % 60).toString().padStart(2, '0');
     document.getElementById('timer-display').innerText = `${h}:${m}:${s}`;
 }
+
+// Ensure background tabs perfectly catch up to actual delta time when opened
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && isTimerRunning) {
+        updateTimerDisplay();
+    }
+});
 
 window.setTimerSubject = function (sub) {
     timerSubject = sub;
@@ -757,27 +763,82 @@ document.getElementById('syllabus-search').addEventListener('input', () => { cle
 document.getElementById('btn-reset-syllabus').addEventListener('click', async () => { if (confirm("Reset all syllabus progress? This cannot be undone.")) { state.syllabusData = { status: {}, meta: {} }; await saveSyllabusData(); renderSyllabusView(); } });
 window.spawnFloatingIcons = function (element, theme) {
     const themes = {
+        // Sciences
         'Physics': ['🪐', '🚀', '🔭', '⚛️', '⚡', '🍎'],
+        'Phy': ['🪐', '🚀', '🔭', '⚛️', '⚡', '🍎'],
         'Chemistry': ['🧪', '🔬', '⚗️', '🔥', '💥', '🧬'],
+        'Chem': ['🧪', '🔬', '⚗️', '🔥', '💥', '🧬'],
+        'Biology': ['🔬', '🧬', '🌿', '🫀', '🦠', '🦋'],
+        'Bio': ['🔬', '🧬', '🌿', '🫀', '🦠', '🦋'],
+        'Zoology': ['🦁', '🦍', '🐘', '🦅', '🦈', '🐒'],
+        'Botany': ['🌿', '🌱', '🌻', '🌲', '🪴', '🌾'],
+
+        // Mathematics
         'Maths': ['📐', '✖️', '🔢', '♾️', '🧮', '📊'],
         'Mathematics': ['📐', '✖️', '🔢', '♾️', '🧮', '📊'],
-        'Biology': ['🔬', '🧬', '🌿', '🫀', '🦠', '🦋'],
+        'Math': ['📐', '✖️', '🔢', '♾️', '🧮', '📊'],
+
+        // Social Sciences (School Level)
+        'Social Studies': ['🌍', '🏛️', '📜', '🤝', '🗳️', '🗺️'],
+        'SST': ['🌍', '🏛️', '📜', '🤝', '🗳️', '🗺️'],
+        'Social Science': ['🌍', '🏛️', '📜', '🤝', '🗳️', '🗺️'],
+        'Social': ['🌍', '🏛️', '📜', '🤝', '🗳️', '🗺️'],
+        'Civics': ['⚖️', '🏛️', '🗳️', '📜', '🤝', '🇮🇳'],
+        'History': ['📜', '🏺', '🏛️', '👑', '⚔️', '🗺️'],
+        'Geography': ['🌍', '🌋', '🧭', '🏔️', '🌤️', '🗺️'],
+        'Geo': ['🌍', '🌋', '🧭', '🏔️', '🌤️', '🗺️'],
+        'Environmental Studies': ['🌍', '🌱', '♻️', '💧', '☀️', '🌳'],
+        'EVS': ['🌍', '🌱', '♻️', '💧', '☀️', '🌳'],
+
+        // Commerce & Economics
+        'Commerce': ['💼', '📊', '🤝', '🏢', '🧾'],
+        'Economics': ['📈', '💰', '🏦', '📉', '📊', '💵'],
+        'Eco': ['📈', '💰', '🏦', '📉', '📊', '💵'],
+        'Accounts': ['🧮', '📒', '💵', '📉', '⚖️'],
+        'Accountancy': ['🧮', '📒', '💵', '📉', '⚖️'],
+        'Business Studies': ['👔', '📈', '🏢', '🤝', '💼'],
+        'BST': ['👔', '📈', '🏢', '🤝', '💼'],
+
+        // Arts & Humanities
+        'Political Science': ['🗳️', '⚖️', '🏛️', '🕊️', '📜'],
+        'Pol Science': ['🗳️', '⚖️', '🏛️', '🕊️', '📜'],
+        'Psychology': ['🧠', '👁️', '🤔', '🛋️', '🧩'],
+        'Sociology': ['🤝', '🧑‍🤝‍🧑', '🌍', '🗣️', '🏡'],
+        'Philosophy': ['🤔', '💭', '📜', '⚖️', '🌌', '🧘'],
+        'Home Science': ['🍳', '🧵', '🏡', '👶', '🧹', '🥗'],
+        'Fine Arts': ['🎨', '🖌️', '🖼️', '🎭', '✏️', '🖍️'],
+
+        // Languages
+        'English': ['📚', '✍️', '🎭', '🖋️', '📖', '🗣️'],
+        'Hindi': ['अ', '🇮🇳', '📚', '✍️', '📜', '🗣️'],
+        'Sanskrit': ['🕉️', '📜', '🛕', '📚', '🧘', '🇮🇳'],
+
+        // Computer Science & IT
+        'Computer Science': ['💻', '⌨️', '🖥️', '💾', '🤖', '🌐'],
+        'CS': ['💻', '⌨️', '🖥️', '💾', '🤖', '🌐'],
+        'Information Practices': ['💻', '📊', '🌐', '📱', '📡', '💾'],
+        'IP': ['💻', '📊', '🌐', '📱', '📡', '💾'],
+        'Information Technology': ['🖥️', '🌐', '📡', '⚙️', '📱', '💻'],
+        'IT': ['🖥️', '🌐', '📡', '⚙️', '📱', '💻'],
+        'Coding': ['👨‍💻', '👩‍💻', '💻', '⚙️', '🚀', '🧠'],
+
+        // Physical Education
+        'Physical Education': ['⚽', '🏃', '🏋️', '🏀', '🏅'],
+        'PE': ['⚽', '🏃', '🏋️', '🏀', '🏅'],
+        'PT': ['⚽', '🏃', '🏋️', '🏀', '🏅'],
+
+        // Competitive Exams & Mock Tests
         'MockTest': ['🏆', '🎯', '⏱️', '📈', '📝', '🔥'],
+        'JEE': ['⚙️', '📐', '🚀', '💻', '🧠'],
         'JEE Main': ['⚙️', '📐', '🚀', '💻', '🧠'],
         'JEE Advanced': ['🤯', '⚙️', '🔥', '👑', '🎓'],
         'NEET': ['🩺', '🫀', '🧬', '⚕️', '🏥'],
-        'History': ['📜', '🏺', '🏛️', '👑', '⚔️', '🗺️'],
-        'Geography': ['🌍', '🌋', '🧭', '🏔️', '🌤️', '🗺️'],
-        'English': ['📚', '✍️', '🎭', '🖋️', '📖', '🗣️'],
-        'Computer Science': ['💻', '⌨️', '🖥️', '💾', '🤖', '🌐'],
-        'Economics': ['📈', '💰', '🏦', '📉', '📊', '💵'],
-        'Commerce': ['💼', '📊', '🤝', '🏢', '🧾'],
-        'Accounts': ['🧮', '📒', '💵', '📉', '⚖️'],
-        'Business Studies': ['👔', '📈', '🏢', '🤝', '💼'],
-        'Political Science': ['🗳️', '⚖️', '🏛️', '🕊️', '📜'],
-        'Psychology': ['🧠', '👁️', '🤔', '🛋️', '🧩'],
-        'Sociology': ['🤝', '🧑‍🤝‍🧑', '🌍', '🗣️', '🏡'],
-        'Physical Education': ['⚽', '🏃', '🏋️', '🏀', '🏅']
+
+        // General Aptitude & Foundation
+        'Aptitude': ['🧩', '🧠', '⏱️', '🔢', '🤔', '💡'],
+        'Reasoning': ['🧠', '🔍', '🧩', '🤔', '💭', '⚙️'],
+        'General Knowledge': ['🌍', '📰', '💡', '🤔', '📚', '🧠'],
+        'GK': ['🌍', '📰', '💡', '🤔', '📚', '🧠']
     };
 
     const icons = themes[theme] || ['✨', '🌟', '💫', '🔥', '🚀', '💥'];
@@ -860,6 +921,35 @@ window.applyTheme = function (theme) {
     }
     if (state.currentView === 'timer') renderTimerChart();
     if (state.currentView === 'stats') renderMockStats();
+}
+
+window.setAccentTheme = function (themeName) {
+    tempSettings.accentTheme = themeName;
+    applyAccentTheme(themeName);
+
+    // Update the rings around the buttons to show which is selected
+    ['default', 'matcha', 'cobalt', 'crimson', 'monochrome'].forEach(t => {
+        const btn = document.getElementById(`theme-btn-${t}`);
+        if (btn) {
+            if (t === themeName) {
+                btn.classList.add('border-zinc-900', 'dark:border-white');
+                btn.classList.remove('border-transparent');
+            } else {
+                btn.classList.remove('border-zinc-900', 'dark:border-white');
+                btn.classList.add('border-transparent');
+            }
+        }
+    });
+
+    markSettingsDirty();
+}
+
+window.applyAccentTheme = function (themeName) {
+    if (themeName && themeName !== 'default') {
+        document.documentElement.setAttribute('data-theme', themeName);
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+    }
 }
 
 window.applyBackground = function (url) {
@@ -1774,6 +1864,7 @@ function getLocalISODate(d) { const z = d.getTimezoneOffset() * 60000; return ne
 function showToast(msg) { const t = document.getElementById('toast'); document.getElementById('toast-msg').innerText = msg; t.classList.remove('opacity-0', 'translate-y-[-20px]', 'md:translate-y-4'); setTimeout(() => t.classList.add('opacity-0', 'translate-y-[-20px]', 'md:translate-y-4'), 3000); }
 window.openSettings = () => {
     tempSettings = { ...state.settings };
+    setAccentTheme(tempSettings.accentTheme || state.settings.accentTheme || 'default');
     document.getElementById('settings-bg-url').value = tempSettings.bgUrl || '';
     document.getElementById('settings-year').value = tempSettings.targetYear || 2026;
 
@@ -1825,7 +1916,7 @@ window.openSettings = () => {
     setTimeout(() => { modal.classList.remove('opacity-0'); modal.querySelector('.mobile-sheet').classList.add('open'); }, 10);
 }
 
-window.closeSettings = () => { if (state.settings.theme) applyTheme(state.settings.theme); const modal = document.getElementById('settings-modal'); modal.querySelector('.mobile-sheet').classList.remove('open'); modal.classList.add('opacity-0'); setTimeout(() => modal.classList.add('hidden'), 400); }
+window.closeSettings = () => { if (state.settings.theme) applyTheme(state.settings.theme); applyAccentTheme(state.settings.accentTheme || 'default'); const modal = document.getElementById('settings-modal'); modal.querySelector('.mobile-sheet').classList.remove('open'); modal.classList.add('opacity-0'); setTimeout(() => modal.classList.add('hidden'), 400); }
 
 window.toggleCountdownSetting = () => {
     tempSettings.showCountdown = !tempSettings.showCountdown; const isShown = tempSettings.showCountdown; const knob = document.getElementById('countdown-knob'); const toggle = document.getElementById('countdown-toggle');
@@ -2929,20 +3020,31 @@ window.syncMySocialStatus = async (isStudying, subject) => {
 }
 
 // Keep presence updated while app is open
+// Keep presence updated while app is open
 function startPresenceHeartbeat() {
     if (heartbeatInterval) clearInterval(heartbeatInterval);
 
-    // Update every 5 minutes if the tab is visible
+    // 1. INSTANT FIX: Force sync the correct local state immediately on page load
+    syncMySocialStatus(isTimerRunning, timerSubject);
+
+    // 2. Update every 5 minutes if the tab is visible
     heartbeatInterval = setInterval(() => {
         if (document.visibilityState === 'visible') {
             syncMySocialStatus(isTimerRunning, timerSubject);
         }
     }, 5 * 60 * 1000);
 
-    // Instantly update when they switch back to this tab
+    // 3. Instantly update when they switch back to this tab
     document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === 'visible') {
             syncMySocialStatus(isTimerRunning, timerSubject);
+        }
+    });
+
+    // 4. CLEANUP: Try to clear status if they close the tab or refresh while studying
+    window.addEventListener("beforeunload", () => {
+        if (isTimerRunning) {
+            syncMySocialStatus(false, "");
         }
     });
 }
@@ -3153,5 +3255,58 @@ window.closeSquadHelp = () => {
     modal.querySelector('div').classList.replace('scale-100', 'scale-95');
     setTimeout(() => modal.classList.add('hidden'), 300);
 };
+
+// --- Export to Calendar (.ics) ---
+window.exportTasksAsICS = function () {
+    if (!currentUser) return;
+    if (!state.tasks || state.tasks.length === 0) {
+        showToast("No tasks to export!");
+        return;
+    }
+
+    // Initialize the ICS file string
+    let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//ChaosPrep//EN\n";
+
+    state.tasks.forEach(task => {
+        if (!task.date || !task.text) return;
+
+        // ICS dates need to be in YYYYMMDD format without hyphens
+        const dateStr = task.date.replace(/-/g, '');
+
+        // Use the task creation time or current time for the timestamp
+        const timestamp = new Date(task.createdAt || Date.now()).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+        icsContent += "BEGIN:VEVENT\n";
+        icsContent += `UID:${task.id}@chaosprep\n`;
+        icsContent += `DTSTAMP:${timestamp}\n`;
+        // VALUE=DATE makes it an "All-Day" event
+        icsContent += `DTSTART;VALUE=DATE:${dateStr}\n`;
+        icsContent += `SUMMARY:${task.text}\n`;
+        icsContent += `DESCRIPTION:Subject: ${task.subject || 'N/A'} ${task.completed ? '(Completed)' : ''}\n`;
+        icsContent += "END:VEVENT\n";
+    });
+
+    icsContent += "END:VCALENDAR";
+
+    // Create a Blob and trigger the download
+    const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ChaosPrep-Calendar-${getLocalISODate(new Date())}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast("Exported to Calendar!");
+}
+
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && isTimerRunning) {
+        // Instantly recalculate and paint the correct time to the screen
+        updateTimerDisplay();
+    }
+});
 
 initAuth(); lucide.createIcons();
