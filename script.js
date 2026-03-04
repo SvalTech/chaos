@@ -464,76 +464,387 @@ window.processPendingInvite = async function () {
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 }
-// --- TIMER LOGIC ---
-window.toggleTimer = function () {
-    if (isTimerRunning) {
-        clearInterval(timerInterval);
-        timerAccumulatedMs += Date.now() - timerStartMs;
-        isTimerRunning = false;
-        syncMySocialStatus(false, "");
-        document.getElementById('btn-timer-toggle').innerHTML = `<i data-lucide="play" class="w-6 h-6 md:w-8 md:h-8 fill-current"></i>`;
-        document.getElementById('btn-timer-stop').disabled = false;
-        document.getElementById('timer-active-ring').classList.remove('opacity-100', 'animate-spin-slow');
-        document.getElementById('timer-active-ring').classList.add('opacity-0');
-    } else {
-        timerStartMs = Date.now();
-        isTimerRunning = true;
-        syncMySocialStatus(true, timerSubject);
-        timerInterval = setInterval(updateTimerDisplay, 1000);
-        document.getElementById('btn-timer-toggle').innerHTML = `<i data-lucide="pause" class="w-6 h-6 md:w-8 md:h-8 fill-current"></i>`;
-        document.getElementById('btn-timer-stop').disabled = false;
-        document.getElementById('timer-active-ring').classList.remove('opacity-0');
-        document.getElementById('timer-active-ring').classList.add('opacity-100', 'animate-spin-slow');
+// --- TIMER LOGIC & STATE ---
+let timerMode = 'flow'; 
+let targetDurationSecs = 0; 
+let linkedTaskId = null;
+
+// --- ANTI-THROTTLING ENGINE ---
+
+// 1. Inline Web Worker for unthrottled background ticking
+const timerWorkerBlob = new Blob([`
+    let interval = null;
+    self.onmessage = function(e) {
+        if (e.data === 'start') {
+            interval = setInterval(() => postMessage('tick'), 1000);
+        } else if (e.data === 'stop') {
+            clearInterval(interval);
+        }
+    };
+`], { type: 'text/javascript' });
+
+const timerWorker = new Worker(URL.createObjectURL(timerWorkerBlob));
+timerWorker.onmessage = function (e) {
+    if (e.data === 'tick' && typeof isTimerRunning !== 'undefined' && isTimerRunning) {
+        updateTimerDisplay();
     }
-    lucide.createIcons();
+};
+
+// 2. Screen Wake Lock API to prevent mobile from sleeping
+let wakeLock = null;
+async function requestWakeLock() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+            wakeLock.addEventListener('release', () => {
+                console.log('Screen Wake Lock released');
+            });
+        }
+    } catch (err) { console.warn(`Wake Lock error: ${err.message}`); }
 }
 
+function releaseWakeLock() {
+    if (wakeLock !== null) {
+        wakeLock.release();
+        wakeLock = null;
+    }
+}
+
+// 3. Visibility API Catch-up
+// If OS forces a sleep, this recalculates exactly when the user unlocks their phone
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && isTimerRunning) {
+        updateTimerDisplay(); // Force an immediate recalculation
+
+        // Re-request wake lock if it was dropped during backgrounding
+        if (wakeLock === null) requestWakeLock();
+    }
+});
+
+// Populate the task dropdown for the timer
+window.updateTimerTaskSelector = function () {
+    const selector = document.getElementById('timer-task-linker');
+    if (!selector) return;
+
+    const todayStr = getLogicalTodayStr();
+    // Only show tasks that are for today and not yet completed
+    const todayTasks = state.tasks.filter(t => t.date === todayStr && !t.completed);
+
+    let html = '<option value="">Select a Task for this Session (Optional)</option>';
+    todayTasks.forEach(t => {
+        html += `<option value="${t.id}">[${t.subject}] ${t.text}</option>`;
+    });
+    selector.innerHTML = html;
+
+    // Maintain selection if it still exists
+    if (linkedTaskId && todayTasks.some(t => t.id === linkedTaskId)) {
+        selector.value = linkedTaskId;
+    } else {
+        linkedTaskId = null;
+    }
+}
+
+// Listen for task selection
+// Listen for task selection
+document.addEventListener('DOMContentLoaded', () => {
+    const selector = document.getElementById('timer-task-linker');
+    if (selector) {
+        selector.addEventListener('change', (e) => {
+            linkedTaskId = e.target.value;
+
+            // Auto-select the subject based on the chosen task
+            if (linkedTaskId) {
+                const selectedTask = state.tasks.find(t => t.id === linkedTaskId);
+                if (selectedTask && selectedTask.subject) {
+                    setTimerSubject(selectedTask.subject);
+                }
+            }
+        });
+    }
+}); 
+
+window.setTimerMode = function (mode) {
+    if (isTimerRunning) {
+        showToast("Stop the current session to switch modes.");
+        return;
+    }
+
+    timerMode = mode;
+    timerStartMs = 0;
+    timerAccumulatedMs = 0;
+    timerSeconds = 0;
+
+    const svgRing = document.getElementById('timer-progress-svg');
+    const spinRing = document.getElementById('timer-active-ring');
+    const label = document.getElementById('timer-mode-label');
+
+    // Update UI Buttons
+    ['flow', 'exam'].forEach(m => {
+        const btn = document.getElementById(`btn-mode-${m}`);
+        if (btn) {
+            if (m === mode) {
+                btn.className = "px-4 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl text-[11px] md:text-xs font-bold bg-white dark:bg-[#27272a] text-zinc-900 dark:text-white shadow-sm transition-all";
+            } else {
+                btn.className = "px-4 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl text-[11px] md:text-xs font-bold text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-all bg-transparent";
+            }
+        }
+    });
+
+    if (mode === 'flow') {
+        targetDurationSecs = 0;
+        if (svgRing) svgRing.classList.add('hidden');
+        if (spinRing) spinRing.classList.remove('hidden');
+        if (label) label.innerText = "Flow State";
+    } else if (mode === 'exam') {
+        targetDurationSecs = 3 * 60 * 60; // 3 hours
+        if (svgRing) {
+            svgRing.classList.remove('hidden');
+            const ring = document.getElementById('timer-progress-ring');
+            if (ring) {
+                // Ensure ring is purple (clears out old state bugs)
+                ring.classList.remove('text-rose-500', 'text-emerald-500', 'text-blue-500');
+                ring.classList.add('text-brand-500');
+            }
+        }
+        if (spinRing) spinRing.classList.add('hidden');
+        if (label) label.innerText = "Exam Simulator";
+    }
+
+    updateTimerDisplay();
+}
 window.stopTimer = async function () {
+    // 1. Instantly pause the timer so it doesn't tick behind the modals
+    let wasRunning = isTimerRunning;
+    if (isTimerRunning) {
+        timerWorker.postMessage('stop');
+        releaseWakeLock();
+        timerAccumulatedMs += Date.now() - timerStartMs;
+        isTimerRunning = false;
+
+        // Visually pause the UI
+        document.getElementById('btn-timer-toggle').innerHTML = `<i data-lucide="play" class="w-6 h-6 md:w-7 md:h-7 fill-current"></i>`;
+        const spinRing = document.getElementById('timer-active-ring');
+        if (spinRing) {
+            spinRing.classList.remove('opacity-100', 'animate-spin-slow');
+            spinRing.classList.add('opacity-0');
+        }
+        lucide.createIcons();
+    }
+
+    // 2. Short session friction
     if (timerSeconds < 60) {
         const isSure = await customConfirm("You've logged less than a minute. Do you want to discard this session?", "Discard Session?", true, "Discard");
-        if (!isSure) return;
-        resetTimer(); return;
+        if (!isSure) {
+            if (wasRunning) window.toggleTimer(); // Auto-resume if cancelled
+            return;
+        }
+        resetTimer();
+        return;
     }
-    const duration = Math.round(timerSeconds / 60);
-    const log = { subject: timerSubject, durationMinutes: duration, date: getLogicalTodayStr(), timestamp: new Date().toISOString(), type: 'timer' };
+
+    // 3. Exam mode friction
+    if (timerMode === 'exam') {
+        const isSure = await customConfirm("You are simulating an exam. Are you sure you want to walk out early?", "Leave Exam Hall?", true, "Exit Early");
+        if (!isSure) {
+            if (wasRunning) window.toggleTimer(); // Auto-resume if cancelled
+            return;
+        }
+    }
+
+    // 4. Proceed to log
+    await processSessionLog();
+}
+function completeCountdownSession() {
+    timerWorker.postMessage('stop');
+    releaseWakeLock();
+
+    timerAccumulatedMs += Date.now() - timerStartMs;
+    isTimerRunning = false;
+    syncMySocialStatus(false, "");
+
+    confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#10b981', '#3b82f6', '#7c3aed'] });
+
+    processSessionLog();
+}
+async function processSessionLog() {
+    const durationMins = Math.floor(timerSeconds / 60);
+    let notes = timerMode !== 'flow' ? `${timerMode.charAt(0).toUpperCase() + timerMode.slice(1)} Session` : '';
+
+    // Task Integration
+    if (linkedTaskId) {
+        const task = state.tasks.find(t => t.id === linkedTaskId);
+        if (task) {
+            notes += notes ? ` - ${task.text}` : task.text;
+
+            const markDone = await customConfirm(`You studied for ${durationMins}m on:\n"${task.text}"\n\nDid you finish it?`, "Session Complete", false, "Mark as Done");
+            if (markDone) {
+                await toggleTask(linkedTaskId, false);
+            }
+        }
+    }
+
+    const log = {
+        subject: timerSubject,
+        durationMinutes: durationMins,
+        date: getLogicalTodayStr(),
+        timestamp: new Date().toISOString(),
+        type: 'timer',
+        mode: timerMode,
+        notes: notes
+    };
+
     try {
         await setDoc(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'studyLogs')), log);
-        showToast(`Logged ${duration}m of ${timerSubject}`);
-        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#7c3aed', '#d946ef'] });
-    } catch (e) { console.error(e); }
+        showToast(`Logged ${durationMins}m of ${timerSubject}`);
+    } catch (e) {
+        console.error("Failed to log session", e);
+    }
 
+    // Guarantee the UI resets to 00:00:00
     resetTimer();
     syncMySocialStatus(false, "");
 }
+window.toggleTimer = function () {
+    const selector = document.getElementById('timer-task-linker');
+    if (selector) linkedTaskId = selector.value || null;
 
-function resetTimer() {
-    clearInterval(timerInterval); isTimerRunning = false;
-    timerStartMs = 0; timerAccumulatedMs = 0; timerSeconds = 0;
-    updateTimerDisplay();
-    document.getElementById('btn-timer-toggle').innerHTML = `<i data-lucide="play" class="w-6 h-6 md:w-8 md:h-8 fill-current"></i>`;
-    document.getElementById('btn-timer-stop').disabled = true;
-    document.getElementById('timer-active-ring').classList.remove('opacity-100', 'animate-spin-slow');
-    document.getElementById('timer-active-ring').classList.add('opacity-0');
+    if (isTimerRunning) {
+        // FIX: Properly stop the Web Worker so it doesn't leak ticks
+        timerWorker.postMessage('stop');
+        releaseWakeLock();
+        timerAccumulatedMs += Date.now() - timerStartMs;
+        isTimerRunning = false;
+        syncMySocialStatus(false, "");
+
+        document.getElementById('btn-timer-toggle').innerHTML = `<i data-lucide="play" class="w-6 h-6 md:w-7 md:h-7 fill-current"></i>`;
+        document.getElementById('btn-timer-stop').disabled = false;
+
+        const spinRing = document.getElementById('timer-active-ring');
+        if (spinRing) {
+            spinRing.classList.remove('opacity-100', 'animate-spin-slow');
+            spinRing.classList.add('opacity-0');
+        }
+    } else {
+        if (timerMode !== 'flow' && Math.floor(timerAccumulatedMs / 1000) >= targetDurationSecs) {
+            resetTimer();
+        }
+
+        timerStartMs = Date.now();
+        isTimerRunning = true;
+        syncMySocialStatus(true, timerSubject);
+
+        // Use Worker & Wake Lock instead of setInterval
+        timerWorker.postMessage('start');
+        requestWakeLock();
+
+        document.getElementById('btn-timer-toggle').innerHTML = `<i data-lucide="pause" class="w-6 h-6 md:w-7 md:h-7 fill-current"></i>`;
+        document.getElementById('btn-timer-stop').disabled = false;
+
+        const spinRing = document.getElementById('timer-active-ring');
+        if (spinRing && timerMode === 'flow') {
+            spinRing.classList.remove('opacity-0');
+            spinRing.classList.add('opacity-100', 'animate-spin-slow');
+        }
+    }
     lucide.createIcons();
 }
 
 function updateTimerDisplay() {
     let totalMs = timerAccumulatedMs;
     if (isTimerRunning) totalMs += (Date.now() - timerStartMs);
-    timerSeconds = Math.floor(totalMs / 1000);
 
-    const h = Math.floor(timerSeconds / 3600).toString().padStart(2, '0');
-    const m = Math.floor((timerSeconds % 3600) / 60).toString().padStart(2, '0');
-    const s = (timerSeconds % 60).toString().padStart(2, '0');
-    document.getElementById('timer-display').innerText = `${h}:${m}:${s}`;
+    let elapsedSecs = Math.floor(totalMs / 1000);
+    let displaySecs = 0;
+
+    if (timerMode === 'flow') {
+        displaySecs = elapsedSecs;
+        timerSeconds = elapsedSecs;
+    } else {
+        displaySecs = targetDurationSecs - elapsedSecs;
+        timerSeconds = elapsedSecs;
+
+        // Dynamic Exact Circumference Fix
+        const ring = document.getElementById('timer-progress-ring');
+        if (ring) {
+            const radius = ring.r.baseVal.value;
+            const circumference = radius * 2 * Math.PI;
+
+            if (!ring.style.strokeDasharray) {
+                ring.style.strokeDasharray = `${circumference} ${circumference}`;
+            }
+
+            const percent = Math.max(0, displaySecs / targetDurationSecs);
+            ring.style.strokeDashoffset = circumference - (percent * circumference);
+        }
+
+        if (displaySecs <= 0) {
+            displaySecs = 0;
+            if (isTimerRunning) {
+                completeCountdownSession();
+            }
+        }
+    }
+
+    const h = Math.floor(displaySecs / 3600).toString().padStart(2, '0');
+    const m = Math.floor((displaySecs % 3600) / 60).toString().padStart(2, '0');
+    const s = (displaySecs % 60).toString().padStart(2, '0');
+
+    const displayEl = document.getElementById('timer-display');
+    if (displayEl) {
+        displayEl.innerText = `${h}:${m}:${s}`;
+    }
+
+    // --- REAL-TIME 'FOCUSED TODAY' UPDATE ---
+    // Makes the UI seamlessly increment your daily total while the timer is actively running
+    if (isTimerRunning) {
+        const todayStr = getLogicalTodayStr();
+        const todayLogs = state.studyLogs.filter(l => l.date === todayStr);
+        let totalMins = todayLogs.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
+
+        // Add the live, un-logged minutes to the total
+        totalMins += Math.floor(timerSeconds / 60);
+
+        let displayTime = `${totalMins}m`;
+        if (totalMins >= 60) {
+            const hrs = Math.floor(totalMins / 60);
+            const mins = totalMins % 60;
+            displayTime = mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
+        }
+        const todayTotalEl = document.getElementById('today-total');
+        if (todayTotalEl) todayTotalEl.innerText = displayTime;
+    }
+
+    // Render to Picture-in-Picture window if active
+    if (typeof isPipActive !== 'undefined' && isPipActive) {
+        drawPiPCanvas();
+    }
 }
 
-// Ensure background tabs perfectly catch up to actual delta time when opened
-document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && isTimerRunning) {
-        updateTimerDisplay();
+function resetTimer() {
+    timerWorker.postMessage('stop'); // NEW
+    releaseWakeLock();               // NEW
+    clearInterval(timerInterval);
+    isTimerRunning = false;
+    timerStartMs = 0;
+    timerAccumulatedMs = 0;
+    timerSeconds = 0;
+
+    updateTimerDisplay();
+
+    const ring = document.getElementById('timer-progress-ring');
+    if (ring) ring.style.strokeDashoffset = 0;
+
+    // Corrected standard icon size
+    document.getElementById('btn-timer-toggle').innerHTML = `<i data-lucide="play" class="w-6 h-6 md:w-7 md:h-7 fill-current"></i>`;
+    document.getElementById('btn-timer-stop').disabled = true;
+
+    const spinRing = document.getElementById('timer-active-ring');
+    if (spinRing) {
+        spinRing.classList.remove('opacity-100', 'animate-spin-slow');
+        spinRing.classList.add('opacity-0');
     }
-});
+    lucide.createIcons();
+}
 
 window.setTimerSubject = function (sub) {
     timerSubject = sub;
@@ -546,38 +857,66 @@ window.setTimerSubject = function (sub) {
             el.classList.add('bg-white', 'dark:bg-[#18181b]', 'text-zinc-500', 'dark:text-zinc-400', 'hover:bg-zinc-50', 'border-zinc-200', 'dark:border-zinc-800');
         }
     });
+
+    // Push the new subject to Squads immediately if you change it mid-session
+    if (typeof isTimerRunning !== 'undefined' && isTimerRunning) {
+        syncMySocialStatus(true, timerSubject);
+    }
 }
 
-function updateTimerStats() {
-    const today = getLocalISODate(new Date());
-    const todayLogs = state.studyLogs.filter(l => l.date === today);
-    const totalMins = todayLogs.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
+window.updateTimerStats = function () {
+    // 1. FIX: Use the exact same logical date string used when saving logs
+    const todayStr = getLogicalTodayStr();
+    const todayLogs = state.studyLogs.filter(l => l.date === todayStr);
+    let totalMins = todayLogs.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
 
+    // 2. LIVE UPDATE: Add currently running session time so it ticks up dynamically
+    if (typeof isTimerRunning !== 'undefined' && isTimerRunning) {
+        totalMins += Math.floor(timerSeconds / 60);
+    }
+
+    // 3. Format beautifully
     let displayTime = `${totalMins}m`;
-    if (totalMins > 60) displayTime = `${(totalMins / 60).toFixed(1)}h`;
-    document.getElementById('today-total').innerText = displayTime;
+    if (totalMins >= 60) {
+        const hrs = Math.floor(totalMins / 60);
+        const mins = totalMins % 60;
+        displayTime = mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
+    }
+    const el = document.getElementById('today-total');
+    if (el) el.innerText = displayTime;
 
+    // --- ORIGINAL STREAK LOGIC ---
     const dates = [...new Set(state.studyLogs.map(l => l.date))].sort().reverse();
-    let streak = 0; let checkDate = getLogicalToday();
+
+    let streak = 0;
+    let checkDate = getLogicalToday();
     const checkStr = getLocalISODate(checkDate);
-    const yesterday = new Date(checkDate); yesterday.setDate(yesterday.getDate() - 1);
+
+    const yesterday = new Date(checkDate);
+    yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = getLocalISODate(yesterday);
 
-    if (dates.includes(checkStr)) { /* active */ }
-    else if (dates.includes(yesterdayStr)) { checkDate = yesterday; }
+    if (dates.includes(checkStr)) { /* active today */ }
+    else if (dates.includes(yesterdayStr)) { checkDate = yesterday; /* streak preserved from yesterday */ }
     else { streak = 0; }
 
     if (streak === 0 && (dates.includes(checkStr) || dates.includes(yesterdayStr))) {
-        let startIndex = dates.indexOf(checkStr); if (startIndex === -1) startIndex = dates.indexOf(yesterdayStr);
+        let startIndex = dates.indexOf(checkStr);
+        if (startIndex === -1) startIndex = dates.indexOf(yesterdayStr);
+
         if (startIndex !== -1) {
-            streak = 1; let currentDate = new Date(dates[startIndex]);
+            streak = 1;
+            let currentDate = new Date(dates[startIndex]);
             for (let i = startIndex + 1; i < dates.length; i++) {
                 currentDate.setDate(currentDate.getDate() - 1);
-                if (dates[i] === getLocalISODate(currentDate)) streak++; else break;
+                if (dates[i] === getLocalISODate(currentDate)) streak++;
+                else break;
             }
         }
     }
-    document.getElementById('streak-count').innerText = streak;
+
+    const streakEl = document.getElementById('streak-count');
+    if (streakEl) streakEl.innerText = streak;
 }
 
 // --- Timer Weekly Bar Chart ---
@@ -1623,7 +1962,7 @@ window.switchView = function (view) {
     if (view === 'stats-questions') { renderQuestionsView(); renderQuestionsChart(); }
     if (view === 'syllabus') renderSyllabusView();
     if (view === 'squad') renderSquadView();
-    if (view === 'timer') { updateSubjectSelectors(); updateTimerStats(); renderRecentLogs(); renderTimerChart(); }
+if (view === 'timer') { updateSubjectSelectors(); updateTimerTaskSelector(); updateTimerStats(); renderRecentLogs(); renderTimerChart(); }
 }
 
 
@@ -1694,7 +2033,7 @@ function updateSubjectSelectors() {
             const colorInfo = getSubjectColor(sub);
             const isActive = timerSubject === sub;
             const activeClass = isActive ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 border-transparent shadow-md' : 'bg-white dark:bg-[#18181b] text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 border-zinc-200 dark:border-zinc-800';
-            timerHtml += `<button onclick="setTimerSubject('${sub}')" data-sub="${sub}" class="timer-subject-pill flex items-center gap-1.5 px-4 py-2 rounded-xl border text-xs font-bold transition-all ${activeClass}"><span class="w-2.5 h-2.5 rounded-full" style="background-color: ${colorInfo.hex}"></span>${sub}</button>`;
+            timerHtml += `<button onclick="setTimerSubject('${sub}')" data-sub="${sub}" class="timer-subject-pill flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl border text-[10px] md:text-xs font-bold transition-all ${activeClass}"><span class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full" style="background-color: ${colorInfo.hex}"></span>${sub}</button>`;
         }); timerContainer.innerHTML = timerHtml;
     }
 }
@@ -2826,6 +3165,7 @@ window.closeRealityCheck = function () {
 }
 
 // --- SQUAD LOGIC ---
+
 // 1. Initialize user's public profile
 async function initSocialProfile(user) {
     const profileRef = doc(db, 'artifacts', appId, 'socialProfiles', user.uid);
@@ -3065,14 +3405,20 @@ window.renderSquadView = function () {
 
         if (friend.isStudying) {
             gradientColor = 'from-rose-500/20';
-            statusHtml = `<div class="flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-900/50 rounded-full text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest"><span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span> Studying ${friend.studySubject || ''}</div>`;
+
+            // Clean up the pill to only show Subject + Mode
+            let modeText = friend.timerMode === 'exam' ? ' (Exam)' : (friend.timerMode === 'pomodoro' ? ' (Pom)' : '');
+            statusHtml = `
+                <div class="flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-900/50 rounded-full text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest max-w-[220px]">
+                    <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0"></span> 
+                    <span class="truncate">Studying ${friend.studySubject || ''}${modeText}</span>
+                </div>`;
         } else if (isIdle) {
             gradientColor = 'from-amber-500/10';
             statusHtml = `<div class="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-900/50 rounded-full text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Idle</div>`;
         } else {
             gradientColor = 'from-zinc-500/5';
 
-            // Generate elegant "Last Seen" text
             let lastSeenText = "Offline";
             if (friend.lastActive) {
                 if (diffMinutes < 60) lastSeenText = `Seen ${Math.round(diffMinutes)}m ago`;
@@ -3085,20 +3431,38 @@ window.renderSquadView = function () {
 
         let tasksHtml = '';
         if (friend.shareTasks && friend.tasks && friend.tasks.length > 0) {
-            tasksHtml = `<div class="mt-5 pt-4 border-t border-zinc-100 dark:border-zinc-800/50"><div class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Today's Focus</div><div class="space-y-2">`;
+            tasksHtml = `<div class="mt-5 pt-4 border-t border-zinc-100 dark:border-zinc-800/50"><div class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Today's Focus</div><div class="space-y-1">`;
 
             friend.tasks.forEach(t => {
-                // Main Task
-                tasksHtml += `<div class="flex items-start gap-2 text-xs font-bold ${t.completed ? 'text-zinc-400 line-through' : 'text-zinc-700 dark:text-zinc-300'}"><i data-lucide="${t.completed ? 'check-circle-2' : 'circle'}" class="w-4 h-4 mt-0.5 shrink-0 ${t.completed ? 'text-emerald-500' : 'text-zinc-300 dark:text-zinc-700'}"></i><span class="leading-tight">${t.text}</span></div>`;
+                // Check if this specific task is currently being timed
+                const isActiveTask = friend.isStudying && friend.studyContext === t.text;
+
+                // Dynamic styling based on if it's the active task
+                const containerClass = isActiveTask ? 'bg-rose-50/80 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-900/50 p-2.5 rounded-xl -mx-2.5 shadow-sm' : 'py-1';
+                const textClass = t.completed ? 'text-zinc-400 line-through' : (isActiveTask ? 'text-rose-600 dark:text-rose-400 font-black' : 'text-zinc-700 dark:text-zinc-300');
+                const iconClass = t.completed ? 'text-emerald-500' : (isActiveTask ? 'text-rose-500' : 'text-zinc-300 dark:text-zinc-700');
+                const iconType = t.completed ? 'check-circle-2' : (isActiveTask ? 'play-circle' : 'circle');
+                const pulseClass = isActiveTask && !t.completed ? 'animate-pulse' : '';
+
+                // Main Task List Item
+                tasksHtml += `
+                <div class="${containerClass} transition-all duration-300">
+                    <div class="flex items-start gap-2 text-xs font-bold ${textClass}">
+                        <i data-lucide="${iconType}" class="w-4 h-4 mt-0.5 shrink-0 ${iconClass} ${pulseClass}"></i>
+                        <span class="leading-tight">${t.text}</span>
+                    </div>`;
 
                 // Subtasks 
                 if (t.subtasks && t.subtasks.length > 0) {
-                    tasksHtml += `<div class="ml-6 mt-1 mb-2 space-y-1.5">`;
+                    tasksHtml += `<div class="ml-6 mt-1.5 space-y-1.5">`;
                     t.subtasks.forEach(st => {
-                        tasksHtml += `<div class="flex items-start gap-2 text-[10px] font-semibold ${st.completed ? 'text-zinc-400 line-through' : 'text-zinc-500 dark:text-zinc-400'}"><i data-lucide="${st.completed ? 'check' : 'minus'}" class="w-3 h-3 mt-0.5 shrink-0 ${st.completed ? 'text-emerald-500' : 'text-zinc-400'}"></i><span class="leading-tight">${st.text}</span></div>`;
+                        // Inherit the red styling slightly for subtasks if the parent task is active
+                        const stTextClass = st.completed ? 'text-zinc-400 line-through' : (isActiveTask ? 'text-rose-500/80 dark:text-rose-400/80' : 'text-zinc-500 dark:text-zinc-400');
+                        tasksHtml += `<div class="flex items-start gap-2 text-[10px] font-semibold ${stTextClass}"><i data-lucide="${st.completed ? 'check' : 'minus'}" class="w-3 h-3 mt-0.5 shrink-0 ${st.completed ? 'text-emerald-500' : 'text-zinc-400'}"></i><span class="leading-tight">${st.text}</span></div>`;
                     });
                     tasksHtml += `</div>`;
                 }
+                tasksHtml += `</div>`; // Close container
             });
             tasksHtml += `</div></div>`;
         } else if (friend.shareTasks && (!friend.tasks || friend.tasks.length === 0)) {
@@ -3154,13 +3518,22 @@ window.renderSquadView = function () {
 
 // 5. Hooks to update YOUR status automatically 
 let heartbeatInterval;
-
 window.syncMySocialStatus = async (isStudying, subject) => {
     if (!ENABLE_SQUAD_FEATURE || !currentUser) return;
+
+    let taskContext = "";
+    // SECURITY FIX: Only grab the task context if they explicitly allow Task Sharing!
+    if (linkedTaskId && isStudying && state.settings.shareTasks !== false) {
+        const task = state.tasks.find(t => t.id === linkedTaskId);
+        if (task) taskContext = task.text;
+    }
+
     try {
         await updateDoc(doc(db, 'artifacts', appId, 'socialProfiles', currentUser.uid), {
             isStudying: isStudying,
             studySubject: isStudying ? subject : null,
+            studyContext: isStudying ? taskContext : null,
+            timerMode: isStudying ? timerMode : null,
             lastActive: new Date().toISOString()
         });
     } catch (e) { console.warn("Could not sync status", e); }
@@ -3452,6 +3825,265 @@ document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible" && isTimerRunning) {
         // Instantly recalculate and paint the correct time to the screen
         updateTimerDisplay();
+    }
+});
+
+// Add this right above toggleFullScreenZen so it catches 'ESC' keys or system back-swipes
+document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && isZenMode) {
+        window.toggleFullScreenZen();
+    }
+});
+
+let isZenMode = false;
+
+window.toggleFullScreenZen = async function () {
+    const container = document.getElementById('timer-container');
+    const icon = document.getElementById('zen-icon');
+    const glow = document.getElementById('zen-ambient-glow');
+    const topControls = document.getElementById('timer-top-controls');
+    const modeSwitcher = document.getElementById('timer-mode-switcher');
+
+    // UI Elements outside the timer that need to be managed
+    const sidebar = document.getElementById('desktop-sidebar');
+    const mobileNav = document.getElementById('mobile-bottom-nav');
+    const mobileHeader = document.querySelector('.md\\:hidden.glass');
+    const musicWidget = document.getElementById('music-widget');
+
+    isZenMode = !isZenMode;
+
+    if (isZenMode) {
+        // --- NATIVE FULLSCREEN & LANDSCAPE LOCK ---
+        try {
+            // 1. Request native browser fullscreen (Hides address bars)
+            if (document.documentElement.requestFullscreen) {
+                await document.documentElement.requestFullscreen();
+            } else if (document.documentElement.webkitRequestFullscreen) {
+                await document.documentElement.webkitRequestFullscreen(); // Safari
+            }
+
+            // 2. Force landscape orientation on mobile devices
+            if (screen.orientation && screen.orientation.lock) {
+                await screen.orientation.lock('landscape');
+            }
+        } catch (err) {
+            console.warn("Could not lock orientation (Normal on standard iOS Safari unless installed as PWA):", err);
+        }
+
+        // Force absolute fullscreen positioning
+        container.className = 'fixed top-0 left-0 w-full h-full z-[200] rounded-none bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-3xl flex flex-col items-center justify-center transition-all duration-700';
+
+        // Hide internal elements
+        if (topControls) { topControls.style.opacity = '0'; setTimeout(() => topControls.style.display = 'none', 300); }
+        if (modeSwitcher) { modeSwitcher.style.opacity = '0'; setTimeout(() => modeSwitcher.style.display = 'none', 300); }
+        if (glow) { glow.classList.remove('opacity-0'); glow.classList.add('opacity-100'); }
+
+        // Hide external app UI (sidebars/navs)
+        if (sidebar) sidebar.style.display = 'none';
+        if (mobileNav) mobileNav.style.display = 'none';
+        if (mobileHeader) mobileHeader.style.display = 'none';
+
+        // BOOST the Music Widget so it floats OVER Zen Mode
+        if (musicWidget) {
+            musicWidget.classList.add('!z-[250]');
+        }
+
+        // Change icon
+        if (icon) { icon.setAttribute('data-lucide', 'minimize'); lucide.createIcons(); }
+
+        // Scale up the dial for Zen (Using w-64 so it vertically fits on mobile landscape screens)
+        const dial = document.getElementById('timer-dial-wrapper');
+        const display = document.getElementById('timer-display');
+        if (dial) {
+            dial.classList.remove('w-56', 'h-56', 'md:w-80', 'md:h-80');
+            dial.classList.add('w-64', 'h-64', 'md:w-[400px]', 'md:h-[400px]');
+        }
+        if (display) {
+            display.classList.remove('text-5xl', 'md:text-[5.5rem]');
+            display.classList.add('text-6xl', 'md:text-[7rem]');
+        }
+
+    } else {
+        // --- UNLOCK ORIENTATION & EXIT FULLSCREEN ---
+        try {
+            if (screen.orientation && screen.orientation.unlock) {
+                screen.orientation.unlock();
+            }
+            if (document.fullscreenElement || document.webkitFullscreenElement) {
+                if (document.exitFullscreen) {
+                    await document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    await document.webkitExitFullscreen();
+                }
+            }
+        } catch (err) {
+            console.warn("Error exiting fullscreen:", err);
+        }
+
+        // Restore standard view classes
+        container.className = 'relative glass-card rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-12 flex flex-col items-center justify-center min-h-[500px] md:min-h-[550px] transition-all duration-700 overflow-hidden group border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm';
+
+        // Show internal elements softly
+        if (topControls) { topControls.style.display = 'flex'; setTimeout(() => topControls.style.opacity = '1', 50); }
+        if (modeSwitcher) { modeSwitcher.style.display = 'flex'; setTimeout(() => modeSwitcher.style.opacity = '1', 50); }
+        if (glow) { glow.classList.add('opacity-0'); glow.classList.remove('opacity-100'); }
+
+        // Restore external app UI 
+        if (sidebar) sidebar.style.display = '';
+        if (mobileNav) mobileNav.style.display = '';
+        if (mobileHeader) mobileHeader.style.display = '';
+
+        // Restore Music Widget Z-index
+        if (musicWidget) {
+            musicWidget.classList.remove('!z-[250]');
+        }
+
+        // Change icon
+        if (icon) { icon.setAttribute('data-lucide', 'maximize'); lucide.createIcons(); }
+
+        // Scale dial down
+        const dial = document.getElementById('timer-dial-wrapper');
+        const display = document.getElementById('timer-display');
+        if (dial) {
+            dial.classList.remove('w-64', 'h-64', 'md:w-[400px]', 'md:h-[400px]');
+            dial.classList.add('w-56', 'h-56', 'md:w-80', 'md:h-80');
+        }
+        if (display) {
+            display.classList.remove('text-6xl', 'md:text-[7rem]');
+            display.classList.add('text-5xl', 'md:text-[5.5rem]');
+        }
+    }
+}
+
+let isPipActive = false;
+let pipCanvasCtx = null;
+
+window.togglePiP = async function () {
+    const video = document.getElementById('pip-video');
+    const canvas = document.getElementById('pip-canvas');
+
+    // If already in PiP, exit it
+    if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+        return;
+    }
+
+    if (!video || !canvas) return;
+
+    // Force an initial draw so the canvas isn't blank when it pops out
+    drawPiPCanvas();
+
+    // Generate the live video stream from the canvas at 30 FPS
+    if (!video.srcObject) {
+        try {
+            const stream = canvas.captureStream(30);
+            video.srcObject = stream;
+            await video.play();
+        } catch (err) {
+            console.warn("Capture stream failed:", err);
+        }
+    }
+
+    // Request the PiP Window (Cross-Browser Support)
+    try {
+        if (video.requestPictureInPicture) {
+            // Standard API (Windows, Mac, Android)
+            await video.requestPictureInPicture();
+            isPipActive = true;
+        } else if (video.webkitSetPresentationMode) {
+            // Apple Proprietary API (iOS, iPadOS, old Safari)
+            video.webkitSetPresentationMode('picture-in-picture');
+            isPipActive = true;
+        } else {
+            throw new Error("PiP API not found");
+        }
+    } catch (error) {
+        console.error("PiP failed:", error);
+        showToast("Picture-in-Picture is not supported on this specific device/browser.");
+    }
+};
+
+// Listen for the user closing the PiP window manually
+document.addEventListener('DOMContentLoaded', () => {
+    const video = document.getElementById('pip-video');
+    if (video) {
+        video.addEventListener('leavepictureinpicture', () => {
+            isPipActive = false;
+        });
+    }
+});
+
+// The renderer that draws your timer perfectly into the video stream
+function drawPiPCanvas() {
+    const canvas = document.getElementById('pip-canvas');
+    if (!canvas) return;
+    if (!pipCanvasCtx) pipCanvasCtx = canvas.getContext('2d');
+
+    const ctx = pipCanvasCtx;
+    const width = canvas.width;
+    const height = canvas.height;
+    const cx = width / 2;
+    const cy = height / 2;
+
+    const displayEl = document.getElementById('timer-display');
+    const timeText = displayEl ? displayEl.innerText : "00:00:00";
+    const isDark = document.documentElement.classList.contains('dark');
+
+    // 1. Draw Background
+    ctx.fillStyle = isDark ? '#09090b' : '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+
+    // 2. Draw Base Ring
+    ctx.lineWidth = 16;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 160, 0, 2 * Math.PI);
+    ctx.strokeStyle = isDark ? '#27272a' : '#f4f4f5';
+    ctx.stroke();
+
+    // 3. Draw Active/Progress Ring
+    if (timerMode !== 'flow') {
+        // Countdown Mode Progress
+        const percent = targetDurationSecs > 0 ? Math.max(0, timerSeconds / targetDurationSecs) : 0;
+        const startAngle = -Math.PI / 2;
+        const endAngle = startAngle + (2 * Math.PI * (1 - percent));
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, 160, startAngle, endAngle, false);
+        ctx.strokeStyle = '#8b5cf6'; // brand-500 (Purple)
+        ctx.stroke();
+    } else {
+        // Flow Mode (Solid ring if running)
+        ctx.beginPath();
+        ctx.arc(cx, cy, 160, 0, 2 * Math.PI);
+        ctx.strokeStyle = isTimerRunning ? '#8b5cf6' : (isDark ? '#27272a' : '#f4f4f5');
+        ctx.stroke();
+    }
+
+    // 4. Draw Time Text
+    ctx.fillStyle = isDark ? '#ffffff' : '#18181b';
+    ctx.font = 'bold 72px "Inter", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(timeText, cx, cy - 10);
+
+    // 5. Draw Subject / Mode Status
+    ctx.font = 'bold 24px "Inter", sans-serif';
+    ctx.fillStyle = '#a1a1aa';
+    const subText = timerSubject || (timerMode.charAt(0).toUpperCase() + timerMode.slice(1));
+    ctx.fillText(subText, cx, cy + 60);
+}
+
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+    // Only auto-switch if the user hasn't explicitly forced a theme this session
+    if (!tempSettings.theme) {
+        const newTheme = event.matches ? 'dark' : 'light';
+        applyTheme(newTheme);
+
+        // Save it to Firebase silently
+        if (currentUser) {
+            updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), { theme: newTheme });
+        }
     }
 });
 
