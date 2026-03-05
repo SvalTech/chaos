@@ -123,12 +123,7 @@
                             class="rounded-lg shadow-2xl border border-zinc-200/50 dark:border-zinc-800/50 overflow-hidden select-none pointer-events-none bg-[#18181b] relative aspect-[4/3]">
                             <img src="hero-dashboard.png" alt="ChaosPrep Dashboard"
                                 class="w-full h-full object-cover opacity-95 hover:opacity-100 transition-opacity absolute inset-0 z-10">
-    
-                            <div
-                                class="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 font-bold text-sm bg-zinc-100 dark:bg-zinc-800/50 z-0">
-                                <i data-lucide="image" class="w-8 h-8 mb-2 opacity-50"></i>
-                                Add 'hero-dashboard.png' here
-                            </div>
+
                         </div>
     
                         <div class="absolute -right-6 top-16 bg-white dark:bg-[#18181b] p-3 pr-5 rounded-xl shadow-xl border border-zinc-200/80 dark:border-zinc-800 flex items-center gap-3 animate-bounce-slight z-20"
@@ -183,10 +178,8 @@
                     <div
                         class="sm:w-1/2 bg-zinc-50 dark:bg-zinc-900/50 relative min-h-[200px] border-l border-zinc-100 dark:border-zinc-800/50">
                         <img src="feature-planner.png" alt="Planner Preview"
-                            class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
-                        <div
-                            class="absolute inset-0 flex items-center justify-center text-xs font-bold text-zinc-400 uppercase tracking-widest -z-10">
-                            Add 'feature-planner.png'</div>
+                            class="absolute inset-0 w-full h-full object-contain group-hover:scale-105 transition-transform duration-700">
+                        
                     </div>
                 </div>
     
@@ -204,10 +197,8 @@
                     <div
                         class="sm:w-1/2 bg-zinc-50 dark:bg-zinc-900/50 relative min-h-[200px] border-l border-zinc-100 dark:border-zinc-800/50">
                         <img src="feature-analytics.png" alt="Analytics Preview"
-                            class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
-                        <div
-                            class="absolute inset-0 flex items-center justify-center text-xs font-bold text-zinc-400 uppercase tracking-widest -z-10">
-                            Add 'feature-analytics.png'</div>
+                            class="absolute inset-0 w-full h-full object-contain group-hover:scale-105 transition-transform duration-700">
+                        
                     </div>
                 </div>
     
@@ -225,10 +216,8 @@
                     <div
                         class="sm:w-1/2 bg-zinc-50 dark:bg-zinc-900/50 relative min-h-[200px] border-l border-zinc-100 dark:border-zinc-800/50">
                         <img src="feature-timer.png" alt="Timer Preview"
-                            class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
-                        <div
-                            class="absolute inset-0 flex items-center justify-center text-xs font-bold text-zinc-400 uppercase tracking-widest -z-10">
-                            Add 'feature-timer.png'</div>
+                            class="absolute inset-0 w-full h-full object-contain group-hover:scale-105 transition-transform duration-700">
+                       
                     </div>
                 </div>
     
@@ -246,10 +235,8 @@
                     <div
                         class="sm:w-1/2 bg-zinc-50 dark:bg-zinc-900/50 relative min-h-[200px] border-l border-zinc-100 dark:border-zinc-800/50">
                         <img src="feature-squad.png" alt="Squad Preview"
-                            class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
-                        <div
-                            class="absolute inset-0 flex items-center justify-center text-xs font-bold text-zinc-400 uppercase tracking-widest -z-10">
-                            Add 'feature-squad.png'</div>
+                            class="absolute inset-0 w-full h-full object-contain group-hover:scale-105 transition-transform duration-700">
+                    
                     </div>
                 </div>
     
@@ -1695,7 +1682,9 @@
                     Score</span>
                 <span id="edit-mock-total" class="text-3xl font-black text-brand-600 dark:text-brand-400">0</span>
             </div>
-            <div class="flex gap-3 justify-end">
+            <div class="flex gap-3 justify-end w-full">
+                <button onclick="resetMockScore()"
+                    class="px-5 py-2.5 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 font-bold text-sm transition-colors mr-auto">Reset</button>
                 <button onclick="closeEditMockModal()"
                     class="px-5 py-2.5 rounded-xl text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-bold text-sm transition-colors">Cancel</button>
                 <button onclick="saveMockBreakdown()"
@@ -2001,7 +1990,60 @@
             </div>
         </div>
     </div>
-
+    <div id="task-context-menu"
+        class="fixed z-[9999] hidden bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-xl border border-zinc-200/80 dark:border-zinc-800 rounded-2xl shadow-floating py-2 w-64 text-sm font-medium transition-opacity duration-200 opacity-0 scale-95 origin-top-left max-h-[80vh] overflow-y-auto custom-scrollbar">
+    
+        <button onclick="ctxAction('toggle-done')"
+            class="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-3 transition-colors"><i
+                data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i> Toggle Status</button>
+        <button onclick="ctxAction('edit-text')"
+            class="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-3 transition-colors"><i
+                data-lucide="edit-3" class="w-4 h-4 text-zinc-400"></i> Quick Rename</button>
+    
+        <div class="h-px bg-zinc-100 dark:bg-zinc-800/50 my-1.5 mx-3"></div>
+    
+        <div class="px-4 py-1 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Move Task
+        </div>
+        <button onclick="ctxAction('move-today')"
+            class="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-3 transition-colors"><i
+                data-lucide="calendar-check" class="w-4 h-4 text-brand-500"></i> Move to Today</button>
+        <button onclick="ctxAction('move-tomorrow')"
+            class="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-3 transition-colors"><i
+                data-lucide="arrow-right-circle" class="w-4 h-4 text-brand-500"></i> Move to Tomorrow</button>
+        <button onclick="ctxAction('push-week')"
+            class="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-3 transition-colors"><i
+                data-lucide="calendar-days" class="w-4 h-4 text-brand-500"></i> Push to Next Week</button>
+    
+        <div class="h-px bg-zinc-100 dark:bg-zinc-800/50 my-1.5 mx-3"></div>
+    
+        
+        <div class="px-4 py-1 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Schedule</div>
+        <button onclick="ctxAction('repeat-daily')"
+            class="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-3 transition-colors"><i
+                data-lucide="repeat" class="w-4 h-4 text-indigo-400"></i> Daily (Next 7 days)</button>
+        <button onclick="ctxAction('repeat-weekly')"
+            class="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-3 transition-colors">
+            <i data-lucide="calendar-range" class="w-4 h-4 text-indigo-400"></i>
+            <span id="ctx-btn-repeat-weekly-text">Every Week (1 Month)</span>
+        </button>
+    
+        <div class="h-px bg-zinc-100 dark:bg-zinc-800/50 my-1.5 mx-3"></div>
+    
+        <div class="px-4 py-1 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Clipboard
+        </div>
+        <button onclick="ctxAction('copy')"
+            class="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-3 transition-colors"><i
+                data-lucide="copy" class="w-4 h-4 text-zinc-400"></i> Copy Task</button>
+        <button onclick="ctxAction('duplicate')"
+            class="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-3 transition-colors"><i
+                data-lucide="copy-plus" class="w-4 h-4 text-zinc-400"></i> Duplicate Here</button>
+    
+        <div class="h-px bg-zinc-100 dark:bg-zinc-800/50 my-1.5 mx-3"></div>
+    
+        <button onclick="ctxAction('delete')"
+            class="w-full text-left px-4 py-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-600 dark:text-rose-400 flex items-center gap-3 transition-colors"><i
+                data-lucide="trash-2" class="w-4 h-4 text-rose-500"></i> Delete Task</button>
+    </div>
     <script type="module" src="script.js"></script>
 </body>
 

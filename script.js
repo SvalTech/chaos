@@ -382,7 +382,7 @@ function setupListeners(user) {
             if (state.currentView === 'calendar') renderCalendar();
             if (state.currentView === 'syllabus') renderSyllabusView();
             if (state.currentView === 'timer') { updateSubjectSelectors(); updateTimerStats(); renderRecentLogs(); renderTimerChart(); }
-            if (state.currentView === 'stats') renderMockStats();
+            if (state.currentView === 'stats-mocks') renderMockStats();
             if (state.settings.shareTasks !== false) syncMySocialTasks();
         } else setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'config'), state.settings);
     });
@@ -391,7 +391,7 @@ function setupListeners(user) {
         state.tasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         if (state.currentView === 'calendar') renderCalendar();
         if (state.currentView === 'calendar' && !window.isReordering) renderCalendar();
-        if (state.currentView === 'stats') renderMockStats();
+        if (state.currentView === 'stats-mocks') renderMockStats();
         if (currentDayViewDate && !document.getElementById('day-view-modal').classList.contains('hidden')) openDayView(currentDayViewDate);
 
         // NEW SYNC HOOK: Update public profile when tasks change
@@ -1758,7 +1758,7 @@ window.renderCalendar = function () {
             tasks.forEach(t => {
                 const styleClass = t.completed ? 'line-through opacity-40 grayscale' : '';
                 const colors = getSubjectColor(t.subject); const colorClass = state.settings.theme === 'dark' ? colors.dark : colors.light;
-                taskListHTML += `<div draggable="true" ondragstart="handleDragStart(event, '${t.id}')" class="task-item text-xs font-bold flex items-center gap-2 px-2.5 py-2 rounded-xl border transition-all shadow-sm ${colorClass} ${styleClass}"><i data-lucide="grip-vertical" class="w-3 h-3 opacity-30 shrink-0 pointer-events-none"></i><span class="truncate pointer-events-none flex-1 tracking-tight">${t.text}</span></div>`;
+                taskListHTML += `<div data-id="${t.id}" draggable="true" ondragstart="handleDragStart(event, '${t.id}')" class="task-item text-xs font-bold flex items-center gap-2 px-2.5 py-2 rounded-xl border transition-all shadow-sm ${colorClass} ${styleClass}"><i data-lucide="grip-vertical" class="w-3 h-3 opacity-30 shrink-0 pointer-events-none"></i><span class="truncate pointer-events-none flex-1 tracking-tight">${t.text}</span></div>`;
             });
             taskListHTML += '</div>';
         }
@@ -1837,7 +1837,7 @@ window.toggleTarget = async function (id, status) { try { await updateDoc(doc(db
 window.requestDelete = function (type, id) { itemToDelete = { type, id }; const modal = document.getElementById('confirm-modal'); modal.classList.remove('hidden'); setTimeout(() => modal.classList.remove('opacity-0'), 10); }
 document.getElementById('confirm-delete-btn').onclick = async () => {
     if (!itemToDelete) return; const { type, id } = itemToDelete; let col = '';
-    if (type === 'task') { col = 'tasks'; state.tasks = state.tasks.filter(t => t.id !== id); renderCalendar(); if (state.currentView === 'stats') renderMockStats(); if (currentDayViewDate && !document.getElementById('day-view-modal').classList.contains('hidden')) openDayView(currentDayViewDate); }
+    if (type === 'task') { col = 'tasks'; state.tasks = state.tasks.filter(t => t.id !== id); renderCalendar(); if (state.currentView === 'stats-mocks') renderMockStats(); if (currentDayViewDate && !document.getElementById('day-view-modal').classList.contains('hidden')) openDayView(currentDayViewDate); }
     else if (type === 'target') { col = 'weeklyTargets'; state.targets = state.targets.filter(t => t.id !== id); renderWeeklyView(); }
     else if (type === 'studyLog') { col = 'studyLogs'; state.studyLogs = state.studyLogs.filter(t => t.id !== id); renderRecentLogs(); updateTimerStats(); renderTimerChart(); }
     else if (type === 'errorLog') { col = 'errorLogs'; state.errorLogs = state.errorLogs.filter(t => t.id !== id); renderErrorLogs(); }
@@ -1888,11 +1888,48 @@ window.renderMockStats = function () {
     const gridColor = state.settings.theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'; const textColor = state.settings.theme === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
 
     mockChartInstance = new Chart(ctx, {
-        type: 'line', data: { labels: scored.map(t => new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' })), datasets: datasets },
+        type: 'line',
+        data: {
+            // CHANGED: Use the task text (test name) instead of the date for the x-axis labels
+            labels: scored.map(t => t.text || 'Mock Test'),
+            datasets: datasets
+        },
         options: {
             responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-            plugins: { legend: { display: false }, tooltip: { backgroundColor: state.settings.theme === 'dark' ? '#18181b' : '#ffffff', titleColor: state.settings.theme === 'dark' ? '#fff' : '#000', bodyColor: state.settings.theme === 'dark' ? '#a1a1aa' : '#52525b', borderColor: state.settings.theme === 'dark' ? '#27272a' : '#e4e4e7', borderWidth: 1, padding: 16, titleFont: { size: 14, weight: 'bold', family: 'Inter' }, bodyFont: { size: 13, family: 'Inter' }, cornerRadius: 16, displayColors: true, usePointStyle: true, boxPadding: 6, filter: function (ti) { return ti.dataset.hidden !== true; } } },
-            scales: { y: { beginAtZero: true, max: globalMax, grid: { display: true, color: gridColor, drawBorder: false }, ticks: { font: { size: 11, family: 'Inter', weight: '600' }, color: textColor } }, x: { grid: { display: false, drawBorder: false }, ticks: { font: { size: 11, family: 'Inter', weight: '600' }, color: textColor } } }
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: state.settings.theme === 'dark' ? '#18181b' : '#ffffff',
+                    titleColor: state.settings.theme === 'dark' ? '#fff' : '#000',
+                    bodyColor: state.settings.theme === 'dark' ? '#a1a1aa' : '#52525b',
+                    borderColor: state.settings.theme === 'dark' ? '#27272a' : '#e4e4e7',
+                    borderWidth: 1, padding: 16, titleFont: { size: 14, weight: 'bold', family: 'Inter' },
+                    bodyFont: { size: 13, family: 'Inter' }, cornerRadius: 16, displayColors: true,
+                    usePointStyle: true, boxPadding: 6, filter: function (ti) { return ti.dataset.hidden !== true; },
+                    // CHANGED: Added custom tooltip title to show Test Name + Date on hover
+                    callbacks: {
+                        title: function (tooltipItems) {
+                            const index = tooltipItems[0].dataIndex;
+                            const test = scored[index];
+                            const dateStr = new Date(test.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+                            return `${test.text || 'Mock Test'}  •  ${dateStr}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: { beginAtZero: true, max: globalMax, grid: { display: true, color: gridColor, drawBorder: false }, ticks: { font: { size: 11, family: 'Inter', weight: '600' }, color: textColor } },
+                x: {
+                    grid: { display: false, drawBorder: false }, ticks: {
+                        font: { size: 11, family: 'Inter', weight: '600' }, color: textColor,
+                        // Optional: Truncate super long names so the chart doesn't squish
+                        callback: function (value, index, values) {
+                            const label = this.getLabelForValue(value);
+                            return label.length > 15 ? label.substring(0, 15) + '...' : label;
+                        }
+                    }
+                }
+            }
         }
     });
 
@@ -1907,15 +1944,18 @@ window.renderMockStats = function () {
         updateBtnStyle(); filterContainer.appendChild(btn);
     });
 
-    const list = document.getElementById('mock-history-list'); list.innerHTML = '';
-    [...mockTasks].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((t, index) => {
-        const el = document.createElement('div');
-        // Added stagger-item
-        el.className = "stagger-item flex flex-col p-5 md:p-6 bg-white dark:bg-[#18181b] rounded-3xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm gap-4 relative overflow-hidden group hover:-translate-y-1 transition-transform";
-        el.style.animationDelay = `${index * 60}ms`;
+    // ... [Keep the Chart.js code above exactly as is] ...
 
-        const marksVal = t.marks !== undefined && t.marks !== null ? t.marks : '--'; const maxVal = t.maxMarks || 300;
+    const list = document.getElementById('mock-history-list');
+
+    // OPTIMIZATION: Build a single HTML string instead of appending DOM nodes in a loop
+    let historyHtml = '';
+
+    [...mockTasks].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((t, index) => {
+        const marksVal = t.marks !== undefined && t.marks !== null ? t.marks : '--';
+        const maxVal = t.maxMarks || 300;
         let breakdownHtml = '';
+
         if (t.subjectMarks) {
             breakdownHtml = '<div class="flex flex-wrap gap-2 mt-3">';
             Object.entries(t.subjectMarks).forEach(([sub, score]) => {
@@ -1925,11 +1965,39 @@ window.renderMockStats = function () {
                 if (sub === 'Maths') colorClass = 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 border-blue-200 dark:border-blue-900/50';
                 if (sub === 'Biology') colorClass = 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50';
                 breakdownHtml += `<span class="text-[10px] font-black px-2.5 py-1 rounded-lg border ${colorClass} uppercase tracking-wider">${sub.substring(0, 3)}: ${score}</span>`;
-            }); breakdownHtml += '</div>';
+            });
+            breakdownHtml += '</div>';
         }
-        el.innerHTML = `<div class="flex justify-between items-start w-full relative z-10"><div class="flex-1"><div class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 mb-1 uppercase tracking-widest">${formatDate(t.date)}</div><div class="font-black text-lg text-zinc-900 dark:text-white tracking-tight">${t.text || 'Mock Test'}</div>${breakdownHtml}</div><div class="flex flex-col items-end gap-2"><div class="flex items-baseline gap-0.5"><span class="text-3xl font-black text-brand-600 dark:text-brand-400 tracking-tighter">${marksVal}</span><span class="text-sm font-bold text-zinc-400">/${maxVal}</span></div><button onclick="openEditMockModal('${t.id}')" class="text-xs font-bold text-zinc-500 hover:text-brand-600 bg-zinc-100 dark:bg-zinc-800 hover:bg-brand-50 dark:hover:bg-brand-900/30 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100"><i data-lucide="edit-2" class="w-3 h-3"></i> Edit</button></div></div>`;
-        list.appendChild(el);
-    }); lucide.createIcons();
+
+        historyHtml += `
+        <div class="stagger-item flex flex-col p-5 md:p-6 bg-white dark:bg-[#18181b] rounded-3xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm gap-4 relative overflow-hidden group hover:-translate-y-1 transition-transform" style="animation-delay: ${index * 60}ms">
+            <div class="flex justify-between items-start w-full relative z-10">
+                <div class="flex-1">
+                    <div class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 mb-1 uppercase tracking-widest">${formatDate(t.date)}</div>
+                    <div class="font-black text-lg text-zinc-900 dark:text-white tracking-tight">${t.text || 'Mock Test'}</div>
+                    ${breakdownHtml}
+                </div>
+                <div class="flex flex-col items-end gap-2">
+                    <div class="flex items-baseline gap-0.5">
+                        <span class="text-3xl font-black text-brand-600 dark:text-brand-400 tracking-tighter">${marksVal}</span>
+                        <span class="text-sm font-bold text-zinc-400">/${maxVal}</span>
+                    </div>
+                    <div class="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                        <button onclick="requestDelete('task', '${t.id}')" class="text-xs font-bold text-rose-500 hover:text-rose-600 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1.5">
+                            <i data-lucide="trash-2" class="w-3 h-3"></i> Delete
+                        </button>
+                        <button onclick="openEditMockModal('${t.id}')" class="text-xs font-bold text-zinc-500 hover:text-brand-600 bg-zinc-100 dark:bg-zinc-800 hover:bg-brand-50 dark:hover:bg-brand-900/30 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1.5">
+                            <i data-lucide="edit-2" class="w-3 h-3"></i> Edit
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    });
+
+    // Inject the fully built string once
+    list.innerHTML = historyHtml;
+    lucide.createIcons();
 }
 
 window.openEditMockModal = function (id) {
@@ -4349,6 +4417,235 @@ window.escapeHtml = function (unsafe) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+}
+
+let activeCtxTaskId = null;
+window.copiedTaskData = null;
+
+// Listen for right clicks on tasks
+// Listen for right clicks on tasks
+document.addEventListener('contextmenu', (e) => {
+    if (state.currentView !== 'calendar') return;
+
+    const taskItem = e.target.closest('.task-item');
+    const dayCard = e.target.closest('.day-card');
+    const ctxMenu = document.getElementById('task-context-menu');
+
+    if (taskItem) {
+        e.preventDefault();
+        activeCtxTaskId = taskItem.dataset.id;
+
+        const task = state.tasks.find(t => t.id === activeCtxTaskId);
+        if (task) {
+            // Get the day of the week (e.g., "Monday", "Tuesday")
+            const dayName = new Date(task.date).toLocaleDateString('en-US', { weekday: 'long' });
+            const weeklyTextSpan = document.getElementById('ctx-btn-repeat-weekly-text');
+            if (weeklyTextSpan) {
+                weeklyTextSpan.textContent = `Every ${dayName} (1 Month)`;
+            }
+        }
+
+        // 1. Unhide briefly to let the browser calculate its actual height
+        ctxMenu.classList.remove('hidden');
+        const menuWidth = ctxMenu.offsetWidth;
+        const menuHeight = ctxMenu.offsetHeight;
+
+        let x = e.clientX;
+        let y = e.clientY;
+
+        // 2. Prevent clipping on the right side
+        if (x + menuWidth > window.innerWidth) {
+            x = window.innerWidth - menuWidth - 10;
+        }
+
+        // 3. Prevent clipping on the bottom (Flip upwards if needed)
+        if (y + menuHeight > window.innerHeight) {
+            y = e.clientY - menuHeight; // Open upwards from cursor
+
+            // If the screen is super tiny and it goes off the top too, pin it 10px from the top
+            if (y < 10) {
+                y = 10;
+            }
+        }
+
+        ctxMenu.style.left = `${x}px`;
+        ctxMenu.style.top = `${y}px`;
+
+        // Small delay for the pop-in animation
+        setTimeout(() => {
+            ctxMenu.classList.remove('opacity-0', 'scale-95');
+            ctxMenu.classList.add('opacity-100', 'scale-100');
+        }, 10);
+    }
+    // Paste logic: If right-clicking empty space on a day card while holding a copied task
+    else if (dayCard && window.copiedTaskData) {
+        e.preventDefault();
+        const dateStr = dayCard.querySelector('button[onclick^="event.stopPropagation"]').getAttribute('onclick').match(/'([^']+)'/)[1];
+        if (dateStr) ctxPasteTask(dateStr);
+    }
+});
+
+// Hide context menu if the user scrolls the page (Standard OS behavior)
+window.addEventListener('scroll', () => {
+    const menu = document.getElementById('task-context-menu');
+    if (!menu.classList.contains('hidden')) {
+        menu.classList.remove('opacity-100', 'scale-100');
+        menu.classList.add('opacity-0', 'scale-95');
+        menu.classList.add('hidden')
+    }
+}, { passive: true, capture: true }); // capture: true ensures it catches scrolling inside the calendar div too
+
+// Hide menu when clicking anywhere else
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('#task-context-menu')) {
+        const menu = document.getElementById('task-context-menu');
+        menu.classList.remove('opacity-100', 'scale-100');
+        menu.classList.add('opacity-0', 'scale-95');
+        setTimeout(() => menu.classList.add('hidden'), 200);
+    }
+});
+
+// Core Context Menu Actions
+// Core Context Menu Actions
+window.ctxAction = async function (action) {
+    if (!activeCtxTaskId || !currentUser) return;
+
+    // Close menu immediately for a responsive feel
+    const menu = document.getElementById('task-context-menu');
+    menu.classList.add('opacity-0', 'scale-95');
+    setTimeout(() => menu.classList.add('hidden'), 200);
+
+    const task = state.tasks.find(t => t.id === activeCtxTaskId);
+    if (!task) return;
+
+    // Helper to extract clean task data (removes ID so Firestore can make a new one)
+    const { id, ...cleanTaskData } = task;
+    const taskRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', activeCtxTaskId);
+
+    try {
+        // --- QUICK ACTIONS ---
+        if (action === 'toggle-done') {
+            await updateDoc(taskRef, { completed: !task.completed });
+            showToast(task.completed ? "Marked as pending" : "Marked as completed!");
+        }
+        else if (action === 'edit-text') {
+            // Assuming your customPrompt takes (Title, Message, DefaultValue) 
+            // Adjust the parameters if your function signature is slightly different!
+            const newText = await window.customPrompt(
+                "Quick Rename",
+                task.text,
+                task.text
+            );
+
+            // Only update if they actually typed something new and didn't cancel
+            if (newText && newText.trim() !== "" && newText.trim() !== task.text) {
+                await updateDoc(taskRef, { text: newText.trim() });
+                showToast("Task renamed");
+            }
+        }
+        // --- TIME TRAVEL (MOVE) ---
+        else if (action === 'move-today') {
+            await updateDoc(taskRef, { date: getLocalISODate(new Date()) });
+            showToast("Moved to Today");
+        }
+        else if (action === 'move-tomorrow') {
+            const tmrw = new Date(); tmrw.setDate(tmrw.getDate() + 1);
+            await updateDoc(taskRef, { date: getLocalISODate(tmrw) });
+            showToast("Moved to Tomorrow");
+        }
+        else if (action === 'push-week') {
+            const nextWk = new Date(task.date); nextWk.setDate(nextWk.getDate() + 7);
+            await updateDoc(taskRef, { date: getLocalISODate(nextWk) });
+            showToast("Pushed to Next Week");
+        }
+        // --- SCHEDULING (REPEAT) ---
+        // ... [Inside window.ctxAction] ...
+
+        else if (action === 'repeat-daily') {
+            const batch = writeBatch(db);
+            for (let i = 1; i <= 7; i++) {
+                let d = new Date(task.date);
+                d.setDate(d.getDate() + i);
+                const ref = doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks'));
+                batch.set(ref, { ...cleanTaskData, completed: false, date: getLocalISODate(d), createdAt: new Date().toISOString() });
+            }
+            await batch.commit();
+            showToast("Repeating daily for a week!");
+        }
+        else if (action === 'repeat-weekly') {
+            const batch = writeBatch(db);
+            // Get the day name for the success toast
+            const dayName = new Date(task.date).toLocaleDateString('en-US', { weekday: 'long' });
+
+            // Loop 4 times, adding 7, 14, 21, and 28 days
+            for (let i = 1; i <= 4; i++) {
+                let d = new Date(task.date);
+                d.setDate(d.getDate() + (i * 7));
+                const ref = doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks'));
+                batch.set(ref, { ...cleanTaskData, completed: false, date: getLocalISODate(d), createdAt: new Date().toISOString() });
+            }
+            await batch.commit();
+            showToast(`Scheduled for the next 4 ${dayName}s!`);
+        }
+        // --- CLIPBOARD ---
+        else if (action === 'copy') {
+            window.copiedTaskData = { ...cleanTaskData, completed: false };
+            showToast("Task Copied! Right-click any day to paste.");
+        }
+        else if (action === 'duplicate') {
+            const newTask = { ...cleanTaskData, completed: false, createdAt: new Date().toISOString(), order: 999 };
+            await setDoc(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks')), newTask);
+            showToast("Duplicated");
+        }
+        // --- DANGER ---
+        else if (action === 'delete') {
+            await deleteDoc(taskRef);
+            showToast("Task deleted");
+        }
+    } catch (e) {
+        console.error("Context Action Error:", e);
+        showToast("Action failed");
+    }
+
+    // Refresh icons since we modified DOM (optional safeguard)
+    setTimeout(() => lucide.createIcons(), 50);
+};
+
+window.ctxPasteTask = async function (dateStr) {
+    if (!window.copiedTaskData || !currentUser) return;
+
+    try {
+        const newTask = {
+            ...window.copiedTaskData,
+            date: dateStr,
+            completed: false,
+            createdAt: new Date().toISOString(),
+            order: 999
+        };
+        await setDoc(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks')), newTask);
+        showToast("Task Pasted");
+    } catch (e) {
+        console.error("Paste Error:", e);
+    }
+};
+
+window.resetMockScore = async function () {
+    const id = document.getElementById('edit-mock-id').value;
+    const isSure = await customConfirm("Reset this mock to unattempted? This will clear your scores.", "Reset Mock", true, "Reset");
+    if (!isSure) return;
+
+    try {
+        await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', id), {
+            marks: null,
+            subjectMarks: null,
+            completed: false
+        });
+        showToast("Mock reset to unattempted");
+        closeEditMockModal();
+    } catch (e) {
+        console.error(e);
+        showToast("Error resetting mock");
+    }
 }
 
 initAuth(); lucide.createIcons();
