@@ -26,8 +26,8 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
-  <script type="module" crossorigin src="./assets/main-8-_sgTY1.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/main-BQlX7lnb.css">
+  <script type="module" crossorigin src="./assets/main-elVu7rPk.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/main-CPv5C7BB.css">
 <script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TCK0S6VC58"></script>
 <script>
@@ -44,64 +44,66 @@
     <div id="app-background"></div>
 
     <div id="login-screen"
-        class="fixed inset-0 z-[70] bg-[#FAFAFA] dark:bg-[#0A0A0A] overflow-y-auto custom-scrollbar transition-opacity duration-500 hidden selection:bg-zinc-900 selection:text-white font-sans">
-
+        class="fixed inset-0 z-[70] bg-[#FAFAFA] dark:bg-[#0A0A0A] overflow-y-auto custom-scrollbar transition-opacity duration-500 hidden selection:bg-zinc-900 selection:text-white font-sans scroll-smooth">
+    
         <div class="fixed inset-0 z-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none"
             style="background-image: radial-gradient(#000 1px, transparent 1px); background-size: 24px 24px;">
         </div>
-
+    
         <nav
             class="sticky top-0 z-50 bg-[#FAFAFA]/90 dark:bg-[#0A0A0A]/90 backdrop-blur-md border-b border-zinc-200/50 dark:border-zinc-800/50 px-6 py-4">
             <div class="max-w-7xl mx-auto flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <img src="logo.png" alt="ChaosPrep Logo"
-                        class="w-10 h-10 rounded-xl shrink-0 object-contain shadow-sm">
+                    <img src="logo.png" alt="ChaosPrep Logo" class="w-10 h-10 rounded-xl shrink-0 object-contain shadow-sm">
                     <div class="flex flex-col justify-center">
-                        <h1 class="text-xl font-black text-zinc-900 dark:text-white tracking-tight leading-none">
-                            ChaosPrep</h1>
+                        <h1 class="text-xl font-black text-zinc-900 dark:text-white tracking-tight leading-none">ChaosPrep
+                        </h1>
                         <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">by
                             sval.tech</span>
                     </div>
                 </div>
-                <a href="docs.html"
-                    class="text-xs font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white uppercase tracking-widest mr-4 hidden sm:block transition-colors">Docs</a>
-                <button onclick="signInWithGoogle()"
-                    class="px-5 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl font-bold text-xs uppercase tracking-widest hover:border-zinc-400 dark:hover:border-zinc-600 text-zinc-700 dark:text-zinc-300 shadow-sm transition-all active:scale-95">
-                    Sign In
-                </button>
+                <div class="flex items-center gap-4">
+                    <a href="docs.html"
+                        class="text-xs font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white uppercase tracking-widest hidden sm:block transition-colors">Docs</a>
+                    <button onclick="signInWithGoogle()"
+                        class="px-5 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg font-bold text-xs uppercase tracking-widest hover:border-zinc-400 dark:hover:border-zinc-600 text-zinc-700 dark:text-zinc-300 shadow-sm transition-all active:scale-95">
+                        Sign In
+                    </button>
+                </div>
             </div>
         </nav>
-        <!-- Test comment to test github workflow-->
-
-        <header class="max-w-7xl mx-auto px-6 min-h-[calc(100vh-80px)] flex items-center relative z-10 py-12">
-            <div class="grid lg:grid-cols-2 gap-12 lg:gap-20 w-full items-center">
-
+    
+        <header class="max-w-7xl mx-auto px-6 pt-16 pb-24 flex items-center relative z-10 min-h-[calc(100vh-80px)]">
+            <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 w-full items-center">
+    
                 <div class="flex flex-col justify-center text-left">
+    
                     <div
-                        class="inline-flex items-center bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50 rounded-full mb-8 self-start px-4 py-1.5">
+                        class="inline-flex items-center bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50 rounded-full mb-8 self-start px-4 py-1.5 shadow-sm">
                         <span
-                            class="text-[11px] font-bold uppercase tracking-[0.1em] text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 1,900+ Students tracking today
+                            class="text-[11px] font-bold uppercase tracking-[0.1em] text-zinc-600 dark:text-zinc-400 flex items-center gap-2">
+                            
+                            1,900+ Students tracking daily
                         </span>
                     </div>
-
+    
                     <h1
                         class="text-5xl md:text-7xl lg:text-[80px] font-black text-zinc-900 dark:text-white tracking-tighter leading-[1.05] mb-6">
-                        Master your <br> daily chaos.
+                        Master your <br>
+                        <span class="text-brand-500">daily chaos.</span>
                     </h1>
-
+    
                     <p
                         class="text-lg md:text-xl text-zinc-600 dark:text-zinc-400 leading-relaxed font-medium mb-10 max-w-lg">
-                        The quiet, distraction-free tracking system for JEE, NEET and competitive exam aspirants. Zero
-                        AI fluff. Zero feed
-                        scrolling. Just the tools you need to hit your targets and visualize your growth.
+                        The quiet, distraction-free tracking system for JEE, NEET and competitive exam aspirants. Just the tools you need to hit your targets and visualize your growth.
                     </p>
-
+    
                     <div>
                         <button onclick="signInWithGoogle()"
-                            class="h-14 w-full sm:w-auto px-8 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold text-base rounded-2xl flex items-center justify-center gap-3 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95">
+                            class="h-14 w-full sm:w-auto px-8 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold text-base rounded-xl flex items-center justify-center gap-3 shadow-lg shadow-zinc-900/20 dark:shadow-white/10 hover:shadow-brand-500/25 hover:-translate-y-1 transition-all duration-300 active:scale-95 group">
                             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                                class="w-5 h-5 bg-white rounded-full p-0.5" alt="">
+                                class="w-6 h-6 bg-white rounded-full p-0.5 group-hover:scale-110 transition-transform"
+                                alt="Google">
                             Start Tracking — It's Free
                         </button>
                         <p
@@ -110,74 +112,159 @@
                         </p>
                     </div>
                 </div>
-
-                <div class="flex flex-col gap-4 lg:pl-10">
-                    <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2 px-2">Everything you need,
-                        nothing you don't</h3>
-
-                    <div
-                        class="p-5 bg-white dark:bg-[#111] rounded-[1.5rem] border border-zinc-200/80 dark:border-zinc-800 shadow-sm flex gap-4">
-                        <div
-                            class="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 shrink-0">
-                            <i data-lucide="calendar-check" class="w-5 h-5"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-sm font-bold text-zinc-900 dark:text-white mb-1">Daily & Weekly Targets</h4>
-                            <p class="text-xs font-medium text-zinc-500 dark:text-zinc-400 leading-relaxed">Break down
-                                massive syllabi into executable daily tasks and track your weekly completion rate.</p>
-                        </div>
+    
+                <div class="relative w-full mt-8 lg:mt-0 hidden sm:block">
+                    <div class="absolute inset-0 bg-brand-500/10 rounded-full blur-[100px] opacity-60 pointer-events-none">
                     </div>
-
+    
                     <div
-                        class="p-5 bg-white dark:bg-[#111] rounded-[1.5rem] border border-zinc-200/80 dark:border-zinc-800 shadow-sm flex gap-4">
+                        class="relative w-full transform md:[transform:perspective(1000px)_rotateX(8deg)_rotateY(-12deg)] md:hover:[transform:perspective(1000px)_rotateX(0deg)_rotateY(0deg)] transition-all duration-700 ease-out z-10">
+    
                         <div
-                            class="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 shrink-0">
-                            <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+                            class="rounded-lg shadow-2xl border border-zinc-200/50 dark:border-zinc-800/50 overflow-hidden select-none pointer-events-none bg-[#18181b] relative aspect-[4/3]">
+                            <img src="hero-dashboard.png" alt="ChaosPrep Dashboard"
+                                class="w-full h-full object-cover opacity-95 hover:opacity-100 transition-opacity absolute inset-0 z-10">
+    
+                            <div
+                                class="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 font-bold text-sm bg-zinc-100 dark:bg-zinc-800/50 z-0">
+                                <i data-lucide="image" class="w-8 h-8 mb-2 opacity-50"></i>
+                                Add 'hero-dashboard.png' here
+                            </div>
                         </div>
-                        <div>
-                            <h4 class="text-sm font-bold text-zinc-900 dark:text-white mb-1">Mock & Error Analytics</h4>
-                            <p class="text-xs font-medium text-zinc-500 dark:text-zinc-400 leading-relaxed">Log your
-                                mock
-                                scores, track performance trajectories, and categorize your mistakes to never repeat
-                                them.
-                            </p>
+    
+                        <div class="absolute -right-6 top-16 bg-white dark:bg-[#18181b] p-3 pr-5 rounded-xl shadow-xl border border-zinc-200/80 dark:border-zinc-800 flex items-center gap-3 animate-bounce-slight z-20"
+                            style="animation-delay: 150ms;">
+                            <div
+                                class="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20">
+                                <i data-lucide="flame" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <div class="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Study Streak</div>
+                                <div class="text-sm font-black text-zinc-900 dark:text-white">14 Days</div>
+                            </div>
                         </div>
+    
+                        <div class="absolute -left-8 bottom-16 bg-white dark:bg-[#18181b] p-3 pr-5 rounded-xl shadow-xl border border-zinc-200/80 dark:border-zinc-800 flex items-center gap-3 animate-bounce-slight z-20"
+                            style="animation-delay: 600ms;">
+                            <div
+                                class="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+                                <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <div class="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Mock Score</div>
+                                <div class="text-sm font-black text-zinc-900 dark:text-white">+45</div>
+                            </div>
+                        </div>
+    
                     </div>
-
-                    <div
-                        class="p-5 bg-white dark:bg-[#111] rounded-[1.5rem] border border-zinc-200/80 dark:border-zinc-800 shadow-sm flex gap-4">
-                        <div
-                            class="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 shrink-0">
-                            <i data-lucide="timer" class="w-5 h-5"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-sm font-bold text-zinc-900 dark:text-white mb-1">Focus Timer & Streaks</h4>
-                            <p class="text-xs font-medium text-zinc-500 dark:text-zinc-400 leading-relaxed">Clock your
-                                actual deep work hours, maintain daily study streaks, and listen to built-in focus
-                                radio.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div
-                        class="p-5 bg-white dark:bg-[#111] rounded-[1.5rem] border border-zinc-200/80 dark:border-zinc-800 shadow-sm flex gap-4">
-                        <div
-                            class="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 shrink-0">
-                            <i data-lucide="users" class="w-5 h-5"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-sm font-bold text-zinc-900 dark:text-white mb-1">Accountability Squad</h4>
-                            <p class="text-xs font-medium text-zinc-500 dark:text-zinc-400 leading-relaxed">Add friends
-                                via
-                                invite codes and keep each other in check. Surround yourself with winners.</p>
-                        </div>
-                    </div>
-
                 </div>
-
+    
             </div>
         </header>
-
+    
+        <section class="max-w-7xl mx-auto px-6 py-24 relative z-10 border-t border-zinc-200/50 dark:border-zinc-800/50">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-5xl font-black text-zinc-900 dark:text-white tracking-tighter">Everything you
+                    need,<br>nothing you don't.</h2>
+            </div>
+    
+            <div class="grid lg:grid-cols-2 gap-6 md:gap-8">
+    
+                <div
+                    class="bg-white dark:bg-[#111] rounded-[2rem] border border-zinc-200/80 dark:border-zinc-800 shadow-sm flex flex-col sm:flex-row overflow-hidden group hover:border-brand-500/30 transition-colors">
+                    <div class="p-8 sm:w-1/2 flex flex-col justify-center">
+                        <div
+                            class="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 mb-6 shrink-0 group-hover:text-brand-500 transition-colors">
+                            <i data-lucide="calendar-check" class="w-6 h-6"></i>
+                        </div>
+                        <h4 class="text-xl font-bold text-zinc-900 dark:text-white mb-3">Daily & Weekly Targets</h4>
+                        <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400 leading-relaxed">Break down massive
+                            syllabi into executable daily tasks and track your weekly completion rate.</p>
+                    </div>
+                    <div
+                        class="sm:w-1/2 bg-zinc-50 dark:bg-zinc-900/50 relative min-h-[200px] border-l border-zinc-100 dark:border-zinc-800/50">
+                        <img src="feature-planner.png" alt="Planner Preview"
+                            class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                        <div
+                            class="absolute inset-0 flex items-center justify-center text-xs font-bold text-zinc-400 uppercase tracking-widest -z-10">
+                            Add 'feature-planner.png'</div>
+                    </div>
+                </div>
+    
+                <div
+                    class="bg-white dark:bg-[#111] rounded-[2rem] border border-zinc-200/80 dark:border-zinc-800 shadow-sm flex flex-col sm:flex-row overflow-hidden group hover:border-blue-500/30 transition-colors">
+                    <div class="p-8 sm:w-1/2 flex flex-col justify-center">
+                        <div
+                            class="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 mb-6 shrink-0 group-hover:text-blue-500 transition-colors">
+                            <i data-lucide="bar-chart-2" class="w-6 h-6"></i>
+                        </div>
+                        <h4 class="text-xl font-bold text-zinc-900 dark:text-white mb-3">Mock & Error Analytics</h4>
+                        <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400 leading-relaxed">Log your mock
+                            scores, track performance trajectories, and categorize your mistakes to never repeat them.</p>
+                    </div>
+                    <div
+                        class="sm:w-1/2 bg-zinc-50 dark:bg-zinc-900/50 relative min-h-[200px] border-l border-zinc-100 dark:border-zinc-800/50">
+                        <img src="feature-analytics.png" alt="Analytics Preview"
+                            class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                        <div
+                            class="absolute inset-0 flex items-center justify-center text-xs font-bold text-zinc-400 uppercase tracking-widest -z-10">
+                            Add 'feature-analytics.png'</div>
+                    </div>
+                </div>
+    
+                <div
+                    class="bg-white dark:bg-[#111] rounded-[2rem] border border-zinc-200/80 dark:border-zinc-800 shadow-sm flex flex-col sm:flex-row overflow-hidden group hover:border-orange-500/30 transition-colors">
+                    <div class="p-8 sm:w-1/2 flex flex-col justify-center">
+                        <div
+                            class="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 mb-6 shrink-0 group-hover:text-orange-500 transition-colors">
+                            <i data-lucide="timer" class="w-6 h-6"></i>
+                        </div>
+                        <h4 class="text-xl font-bold text-zinc-900 dark:text-white mb-3">Focus Timer & Streaks</h4>
+                        <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400 leading-relaxed">Clock your actual
+                            deep work hours, maintain daily study streaks, and listen to built-in focus radio.</p>
+                    </div>
+                    <div
+                        class="sm:w-1/2 bg-zinc-50 dark:bg-zinc-900/50 relative min-h-[200px] border-l border-zinc-100 dark:border-zinc-800/50">
+                        <img src="feature-timer.png" alt="Timer Preview"
+                            class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                        <div
+                            class="absolute inset-0 flex items-center justify-center text-xs font-bold text-zinc-400 uppercase tracking-widest -z-10">
+                            Add 'feature-timer.png'</div>
+                    </div>
+                </div>
+    
+                <div
+                    class="bg-white dark:bg-[#111] rounded-[2rem] border border-zinc-200/80 dark:border-zinc-800 shadow-sm flex flex-col sm:flex-row overflow-hidden group hover:border-emerald-500/30 transition-colors">
+                    <div class="p-8 sm:w-1/2 flex flex-col justify-center">
+                        <div
+                            class="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 mb-6 shrink-0 group-hover:text-emerald-500 transition-colors">
+                            <i data-lucide="users" class="w-6 h-6"></i>
+                        </div>
+                        <h4 class="text-xl font-bold text-zinc-900 dark:text-white mb-3">Accountability Squad</h4>
+                        <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400 leading-relaxed">Add friends via
+                            invite codes and keep each other in check. Surround yourself with winners.</p>
+                    </div>
+                    <div
+                        class="sm:w-1/2 bg-zinc-50 dark:bg-zinc-900/50 relative min-h-[200px] border-l border-zinc-100 dark:border-zinc-800/50">
+                        <img src="feature-squad.png" alt="Squad Preview"
+                            class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                        <div
+                            class="absolute inset-0 flex items-center justify-center text-xs font-bold text-zinc-400 uppercase tracking-widest -z-10">
+                            Add 'feature-squad.png'</div>
+                    </div>
+                </div>
+    
+            </div>
+    
+            <div class="mt-16 text-center">
+                <button onclick="signInWithGoogle()"
+                    class="px-8 py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold rounded-xl shadow-lg hover:-translate-y-1 transition-all active:scale-95 inline-flex items-center gap-3">
+                    Start crushing your targets
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </section>
+    
         <footer
             class="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center gap-4 relative z-10 border-t border-zinc-200/50 dark:border-zinc-800/50">
             <div class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 tracking-widest uppercase">
@@ -186,7 +273,6 @@
             <div class="flex items-center gap-6">
                 <a href="docs.html"
                     class="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors uppercase tracking-widest">Docs</a>
-
                 <a href="https://sval.tech/studylocus/privacypolicy.html"
                     class="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors uppercase tracking-widest">Privacy</a>
                 <a href="https://sval.tech/studylocus/termsandconditions.html"
@@ -194,6 +280,7 @@
             </div>
         </footer>
     </div>
+
     <!-- Loading Overlay -->
     <div id="loading-overlay"
         class="fixed inset-0 z-[100] bg-zinc-50 dark:bg-[#09090b] flex items-center justify-center transition-opacity duration-500">
