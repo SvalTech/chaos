@@ -222,7 +222,7 @@
                                     Planner & Subtasks</a></li>
                             <li><a href="#timer"
                                     class="nav-link block px-3 py-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-white transition-colors">Timer,
-                                    PiP & Zen Mode</a></li>
+                                    PiP & Radio</a></li>
                             <li><a href="#daily-qs"
                                     class="nav-link block px-3 py-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-white transition-colors">Daily
                                     Questions Tracker</a></li>
@@ -242,11 +242,14 @@
                         </h4>
                         <ul class="space-y-1 text-sm font-semibold text-zinc-600 dark:text-zinc-400">
                             <li><a href="#squads-intro"
-                                    class="nav-link block px-3 py-2 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-700 dark:hover:text-brand-300 transition-colors">How
-                                    Squads Work</a></li>
-                            <li><a href="#squads-live"
-                                    class="nav-link block px-3 py-2 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-700 dark:hover:text-brand-300 transition-colors">Live
-                                    Status & Syncing</a></li>
+                                    class="nav-link block px-3 py-2 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-700 dark:hover:text-brand-300 transition-colors">Accountability
+                                    Loop</a></li>
+                            <li><a href="#squads-profile"
+                                    class="nav-link block px-3 py-2 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-700 dark:hover:text-brand-300 transition-colors">Customizing
+                                    Your Identity</a></li>
+                            <li><a href="#squads-privacy"
+                                    class="nav-link block px-3 py-2 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-700 dark:hover:text-brand-300 transition-colors">Safety
+                                    & Privacy</a></li>
                         </ul>
                     </div>
 
@@ -262,7 +265,7 @@
                                     class="nav-link block px-3 py-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-white transition-colors">Day
                                     Rollover (Night Owls)</a></li>
                             <li><a href="#data"
-                                    class="nav-link block px-3 py-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-white transition-colors">Export
+                                    class="nav-link block px-3 py-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-white transition-colors">Backup
                                     & Calendar (.ics)</a></li>
                             <li><a href="#reality"
                                     class="nav-link block px-3 py-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 transition-colors">Reality
@@ -297,7 +300,8 @@
                 <section id="setup">
                     <h2
                         class="flex items-center gap-3 text-zinc-900 dark:text-white border-zinc-200 dark:border-zinc-800">
-                        <i data-lucide="settings-2" class="w-7 h-7 text-brand-500"></i> Initial Setup</h2>
+                        <i data-lucide="settings-2" class="w-7 h-7 text-brand-500"></i> Initial Setup
+                    </h2>
                     <p class="text-zinc-600 dark:text-zinc-400">When you first sign in, configure your environment to
                         match your specific goals. ChaosPrep automatically adapts its interface based on your choices.
                     </p>
@@ -308,8 +312,9 @@
                                 JEE Advanced, NEET, or Custom. This automatically filters your Syllabus and configures
                                 your Reality Check countdown.</li>
                             <li><strong>Add Custom Subjects:</strong> Studying for boards or a state exam? Use the
-                                <code>+ Custom</code> button in the Quick Add Task menu or Settings to add subjects like
-                                "English" or "CS".</li>
+                                <code>+ Manage</code> button in the Quick Add Task menu to add subjects like
+                                "English" or "CS".
+                            </li>
                             <li><strong>Set your Target Year:</strong> Select the year you are appearing for the exam to
                                 ensure accurate timeline tracking.</li>
                         </ul>
@@ -322,28 +327,32 @@
                 <section id="planner">
                     <h2
                         class="flex items-center gap-3 text-zinc-900 dark:text-white border-zinc-200 dark:border-zinc-800">
-                        <i data-lucide="calendar" class="w-7 h-7 text-brand-500"></i> Daily Planner & Subtasks</h2>
+                        <i data-lucide="calendar" class="w-7 h-7 text-brand-500"></i> Daily Planner & Subtasks
+                    </h2>
                     <p class="text-zinc-600 dark:text-zinc-400">The Planner transforms broad syllabus goals into
                         executable, bite-sized daily tasks.</p>
-
-                    <h3 class="text-zinc-900 dark:text-white">Adding and Reordering Tasks</h3>
-                    <p class="text-zinc-600 dark:text-zinc-400">Click the <code>+ Add Task</code> button on any day
-                        card. Write your objective and select a subject. To reorganize your day, click the specific Day
-                        Card to open the <strong>Day View</strong>, then grab the <i data-lucide="grip-vertical"
-                            class="w-4 h-4 inline text-zinc-400"></i> handle to drag and drop tasks into your preferred
-                        execution order.</p>
 
                     <h3 class="text-zinc-900 dark:text-white">Subtasks (Micro-Checklists)</h3>
                     <p class="text-zinc-600 dark:text-zinc-400">Complex chapters need breaking down. Inside the
                         <strong>Day View</strong>, click the <em>"Add subtask..."</em> input below any main task to
-                        create a nested checklist (e.g., Task: Rotational Motion -> Subtasks: Watch Lecture, Read NCERT,
-                        Solve 50 Qs).</p>
+                        create a nested checklist. These subtasks also sync to your <strong>Squad</strong>, allowing
+                        your
+                        friends to see the exact grain of your progress.
+                    </p>
+
+                    <h3 class="text-zinc-900 dark:text-white">Smart Reordering</h3>
+                    <p class="text-zinc-600 dark:text-zinc-400">To reorganize your day, click a specific Day Card to
+                        open
+                        the <strong>Day View</strong>. Grab the <i data-lucide="grip-vertical"
+                            class="w-4 h-4 inline text-zinc-400"></i> handle to drag tasks into your preferred
+                        execution order. This order is preserved across all your devices.</p>
                 </section>
 
                 <section id="timer">
                     <h2
                         class="flex items-center gap-3 text-zinc-900 dark:text-white border-zinc-200 dark:border-zinc-800">
-                        <i data-lucide="timer" class="w-7 h-7 text-brand-500"></i> Timer, PiP & Zen Mode</h2>
+                        <i data-lucide="timer" class="w-7 h-7 text-brand-500"></i> Timer, PiP & Focus Radio
+                    </h2>
                     <p class="text-zinc-600 dark:text-zinc-400">Clock actual deep work hours. The Timer view prevents
                         you from lying to yourself about your productivity.</p>
 
@@ -352,111 +361,89 @@
                             class="bg-white dark:bg-[#18181b] p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
                             <h4 class="font-bold text-zinc-900 dark:text-white mb-2 flex items-center gap-2"><i
                                     data-lucide="maximize" class="w-4 h-4 text-brand-500"></i> Full-Screen Zen Mode</h4>
-                            <p class="text-sm text-zinc-600 dark:text-zinc-400">Click the expand icon in the top right
-                                of the timer. This locks your device into a distraction-free landscape mode, hiding all
-                                menus and nav bars.</p>
+                            <p class="text-sm text-zinc-600 dark:text-zinc-400">Click the expand icon. This locks your
+                                device into a distraction-free <strong>landscape mode</strong>, hiding all navigation.
+                                On mobile, it utilizes the Screen Wake Lock API to prevent your screen from dimming.</p>
                         </div>
                         <div
                             class="bg-white dark:bg-[#18181b] p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
                             <h4 class="font-bold text-zinc-900 dark:text-white mb-2 flex items-center gap-2"><i
                                     data-lucide="picture-in-picture-2" class="w-4 h-4 text-brand-500"></i>
-                                Picture-in-Picture (PiP)</h4>
-                            <p class="text-sm text-zinc-600 dark:text-zinc-400">On desktop, click the PiP icon to pop
-                                the timer out into a floating window that stays on top of your screen while you read
-                                PDFs or watch lectures.</p>
+                                Video PiP</h4>
+                            <p class="text-sm text-zinc-600 dark:text-zinc-400">Click the PiP icon to pop the timer out
+                                into a floating window. ChaosPrep generates a <strong>live video stream</strong> from a
+                                canvas, so your focus time stays visible even while you read PDFs or watch YouTube
+                                lectures.
+                            </p>
                         </div>
                     </div>
 
                     <ul class="text-zinc-700 dark:text-zinc-300">
-                        <li><strong>Anti-Throttling:</strong> Unlike normal browser timers that pause when you switch
-                            tabs, ChaosPrep uses a background Web Worker and Screen Wake Locks to ensure your timer
-                            never loses a second.</li>
-                        <li><strong>Task Linking:</strong> Before starting the timer, use the dropdown to link an active
-                            task. When you stop studying, it will prompt you to mark that specific task as completed.
-                        </li>
-                        <li><strong>Focus Radio:</strong> Toggle the floating music icon to stream live Lofi, Synthwave,
-                            or Classical focus music directly via YouTube without needing a premium subscription.</li>
+                        <li><strong>Task Linking:</strong> Use the dropdown below the timer to link a task for today.
+                            When you finish studying, the app will ask if you completed that task and mark it for you
+                            automatically.</li>
+                        <li><strong>Anti-Throttling:</strong> Most browser timers pause when you switch tabs to save
+                            battery. ChaosPrep uses an <strong>Inline Web Worker</strong> to ensure your timer never
+                            loses a second, even in the background.</li>
+                        <li><strong>Focus Radio:</strong> The music widget provides high-quality live streams (Lofi,
+                            Classical, Synthwave) designed for focus. It works seamlessly behind the timer.</li>
                     </ul>
                 </section>
 
                 <section id="daily-qs">
                     <h2
                         class="flex items-center gap-3 text-zinc-900 dark:text-white border-zinc-200 dark:border-zinc-800">
-                        <i data-lucide="check-square" class="w-7 h-7 text-emerald-500"></i> Daily Questions Tracker</h2>
+                        <i data-lucide="check-square" class="w-7 h-7 text-emerald-500"></i> Daily Questions Tracker
+                    </h2>
                     <p class="text-zinc-600 dark:text-zinc-400">Theory is useless without execution. The Daily Questions
                         tracker holds you accountable for your actual problem-solving volume.</p>
                     <ul class="text-zinc-700 dark:text-zinc-300">
-                        <li><strong>Set Your Target:</strong> Click the target number (default 50) to set how many
-                            questions you aim to solve daily.</li>
-                        <li><strong>Log by Subject:</strong> Enter the exact number of questions solved per subject. The
-                            dashboard instantly tallies your total.</li>
-                        <li><strong>Maintain the Streak:</strong> Hitting your daily target extends your Flame Streak <i
-                                data-lucide="flame" class="w-4 h-4 inline text-orange-500"></i>. Missing a day resets it
-                            to zero.</li>
+                        <li><strong>Flame Streak:</strong> Hitting your daily target (default 50) extends your streak
+                            <i data-lucide="flame" class="w-4 h-4 inline text-orange-500"></i>. The system calculates
+                            this based on your <strong>Logical Today</strong> (respecting your Night Owl settings).
+                        </li>
+                        <li><strong>Subject Breakdown:</strong> Log exactly how many questions you solved per subject to
+                            see where your practice effort is being spent.</li>
                     </ul>
                 </section>
 
                 <section id="analytics">
                     <h2
                         class="flex items-center gap-3 text-zinc-900 dark:text-white border-zinc-200 dark:border-zinc-800">
-                        <i data-lucide="bar-chart-2" class="w-7 h-7 text-brand-500"></i> Mocks & Error Analytics</h2>
-                    <p class="text-zinc-600 dark:text-zinc-400">Data drives improvement. ChaosPrep separates your
-                        analytics into Mock Test tracking and detailed Error categorization.</p>
+                        <i data-lucide="bar-chart-2" class="w-7 h-7 text-brand-500"></i> Mocks & Error Analytics
+                    </h2>
 
-                    <h3 class="text-zinc-900 dark:text-white">Logging a Mock Test</h3>
-                    <p class="text-zinc-600 dark:text-zinc-400">To log a mock, add a task and select
-                        <strong>Mock</strong> as the subject. This unlocks special score input fields. Enter your
-                        obtained and max marks. Once saved, this data maps to the interactive trajectory chart in the
-                        Stats view.</p>
+                    <h3 class="text-zinc-900 dark:text-white">Performance Trajectory</h3>
+                    <p class="text-zinc-600 dark:text-zinc-400">Log your mock scores by subject to unlock the
+                        Performance Trajectory chart. You can filter the chart to view your growth in specific subjects
+                        (e.g., just Physics) to see where you are peaking or plateauing.</p>
 
-                    <h3 class="text-zinc-900 dark:text-white">Error Tracking (Mistake Profiles)</h3>
-                    <p class="text-zinc-600 dark:text-zinc-400">Don't just look at the final score; analyze the failure
-                        points. Log specific mistakes by Subject, Chapter, and Type:</p>
+                    <h3 class="text-zinc-900 dark:text-white">The Error Log</h3>
+                    <p class="text-zinc-600 dark:text-zinc-400">Don't just log the marks; log the <strong>Mistake
+                            Profile</strong>.
+                        Categorize every error into one of four types:</p>
                     <div
                         class="bg-zinc-50 dark:bg-zinc-900/50 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 my-6">
                         <ul class="text-zinc-700 dark:text-zinc-300 !mb-0">
-                            <li><strong class="text-rose-500">Conceptual:</strong> You didn't know or misunderstood the
-                                core theory.</li>
-                            <li><strong class="text-blue-500">Calculative:</strong> You knew the method, but messed up
-                                the math/algebra.</li>
-                            <li><strong class="text-amber-500">Silly Mistake:</strong> Misread the question, marked the
-                                wrong bubble, unit conversion error, etc.</li>
-                            <li><strong class="text-purple-500">Formula:</strong> Forgot or misapplied a specific
-                                formula.</li>
+                            <li><strong class="text-rose-500">Conceptual:</strong> Misunderstood the core theory.</li>
+                            <li><strong class="text-blue-500">Calculative:</strong> Knew the logic, but failed the math.
+                            </li>
+                            <li><strong class="text-amber-500">Silly Mistake:</strong> Misread the question or bubble.
+                            </li>
+                            <li><strong class="text-purple-500">Formula:</strong> Forgot or misapplied a formula.</li>
                         </ul>
                     </div>
-                    <p class="text-zinc-600 dark:text-zinc-400">The system generates a dynamic "Mistake Profile"
-                        Doughnut chart so you know exactly which error types are bleeding your marks.</p>
                 </section>
 
                 <section id="syllabus">
                     <h2
                         class="flex items-center gap-3 text-zinc-900 dark:text-white border-zinc-200 dark:border-zinc-800">
-                        <i data-lucide="book-open-check" class="w-7 h-7 text-brand-500"></i> Syllabus Tracker</h2>
-                    <p class="text-zinc-600 dark:text-zinc-400">A comprehensive, pre-loaded list of chapters based on
-                        standard syllabus guidelines.</p>
-                    <p class="text-zinc-600 dark:text-zinc-400">Instead of simple checkboxes, ChaosPrep uses a weighted
-                        phased approach:</p>
-                    <div class="flex flex-wrap gap-2 my-4">
-                        <span
-                            class="px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 text-xs font-bold rounded-lg border border-zinc-200 dark:border-zinc-700">To
-                            Do (0%)</span>
-                        <i data-lucide="arrow-right" class="w-4 h-4 text-zinc-400 self-center"></i>
-                        <span
-                            class="px-3 py-1.5 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-lg border border-amber-200 dark:border-amber-900/50">Doing
-                            (50%)</span>
-                        <i data-lucide="arrow-right" class="w-4 h-4 text-zinc-400 self-center"></i>
-                        <span
-                            class="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-lg border border-emerald-200 dark:border-emerald-900/50">Done
-                            (100%)</span>
-                        <i data-lucide="arrow-right" class="w-4 h-4 text-zinc-400 self-center"></i>
-                        <span
-                            class="px-3 py-1.5 bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 text-xs font-bold rounded-lg border border-brand-200 dark:border-brand-900/50">Mastered
-                            (100%)</span>
-                    </div>
-                    <p class="text-zinc-600 dark:text-zinc-400">Expand any chapter to also track your <strong>Revision
-                            Count</strong> (R1, R2...) and toggle whether you've completed <strong>PYQs</strong> for
-                        that specific topic.</p>
+                        <i data-lucide="book-open-check" class="w-7 h-7 text-brand-500"></i> Syllabus Tracker
+                    </h2>
+                    <p class="text-zinc-600 dark:text-zinc-400">A comprehensive, pre-loaded list of chapters. Use the
+                        weighted phased approach (Doing → Done → Mastered) to visualize your coverage. Expand any
+                        chapter to track <strong>Revisions</strong> (R1, R2...) and <strong>PYQ</strong> completion.
+                    </p>
                 </section>
 
                 <hr class="my-16 border-zinc-200 dark:border-zinc-800/50">
@@ -466,46 +453,28 @@
                     <div
                         class="bg-brand-50/50 dark:bg-brand-500/5 border border-brand-200 dark:border-brand-500/20 rounded-[2.5rem] p-8 md:p-10 mb-8 shadow-sm">
                         <h2 class="flex items-center gap-3 !mt-0 !mb-4 !border-none text-brand-900 dark:text-brand-300">
-                            <i data-lucide="users" class="w-8 h-8 text-brand-500"></i> Squads (Multiplayer)</h2>
-                        <p class="text-brand-800 dark:text-brand-200/80 font-medium leading-relaxed mb-0">Studying for
-                            competitive exams is incredibly isolating. Squads is a multiplayer accountability feature
-                            designed to simulate the feeling of studying in a library with your hardest-working friends.
-                            See when they focus, share daily targets, and win together.</p>
+                            <i data-lucide="users" class="w-8 h-8 text-brand-500"></i> Squads (Multiplayer)
+                        </h2>
+                        <p class="text-brand-800 dark:text-brand-200/80 font-medium leading-relaxed mb-0">Squads is an
+                            accountability feature designed to simulate studying in a library with your hardest-working
+                            friends. It’s built on <strong>mutual connections</strong>—you only see the people who
+                            have also added you.</p>
                     </div>
 
-                    <h3 class="text-zinc-900 dark:text-white mt-12">Building Your Squad</h3>
-                    <p class="text-zinc-600 dark:text-zinc-400">Unlike WhatsApp or Discord, <strong>there are no
-                            centralized "Group Links."</strong> Squads are built entirely through mutual, 1-on-1
-                        connections. This prevents massive, distracting groups from forming.</p>
-
-                    <ol class="text-zinc-700 dark:text-zinc-300 space-y-4">
-                        <li><strong>Find Your Code:</strong> Go to the Squad view. At the top, you will see your unique
-                            6-character Invite Code.</li>
-                        <li><strong>Share It:</strong> Click the code to copy it, or use the "Link" button to generate a
-                            direct invite URL.</li>
-                        <li><strong>Mutual Connection:</strong> To form a squad of 3 people (You, Alice, and Bob),
-                            everyone must mutually add each other. You must add Alice, Alice must add Bob, and Bob must
-                            add You.</li>
-                    </ol>
-                </section>
-
-                <section id="squads-live">
-                    <h3 class="text-zinc-900 dark:text-white">Live Status & The "Pulse"</h3>
-                    <p class="text-zinc-600 dark:text-zinc-400">The most powerful feature of Squads is live presence. We
-                        don't track location or keystrokes—we track focus state.</p>
+                    <h3 class="text-zinc-900 dark:text-white mt-12">The Live Focus Dot</h3>
+                    <p class="text-zinc-600 dark:text-zinc-400">When someone in your squad starts their timer, their
+                        avatar instantly glows with a pulsing ring. We track three states:</p>
 
                     <div class="grid sm:grid-cols-3 gap-4 my-8">
                         <div
                             class="border border-rose-200 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-500/5 p-5 rounded-3xl">
                             <div class="flex items-center gap-2 mb-3">
-                                <span
-                                    class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)]"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
                                 <span
                                     class="text-[10px] font-black text-rose-700 dark:text-rose-400 uppercase tracking-widest">Studying</span>
                             </div>
-                            <p class="text-xs text-rose-600/80 dark:text-rose-300/80 font-medium leading-relaxed">When a
-                                user turns on their Timer, their status instantly turns red. The pulse indicates deep
-                                focus.</p>
+                            <p class="text-xs text-rose-600/80 dark:text-rose-300/80 font-medium leading-relaxed">Timer
+                                is active. Deep focus.</p>
                         </div>
                         <div
                             class="border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-500/5 p-5 rounded-3xl">
@@ -514,29 +483,48 @@
                                 <span
                                     class="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest">Idle</span>
                             </div>
-                            <p class="text-xs text-amber-600/80 dark:text-amber-300/80 font-medium leading-relaxed">The
-                                timer is off, but the user has interacted with the app within the last 15 minutes.
-                                Taking a break.</p>
+                            <p class="text-xs text-amber-600/80 dark:text-amber-300/80 font-medium leading-relaxed">App
+                                is open, but timer is off.</p>
                         </div>
                         <div
                             class="border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/50 p-5 rounded-3xl">
                             <div class="flex items-center gap-2 mb-3">
-                                <span class="w-2.5 h-2.5 rounded-full bg-zinc-400 dark:bg-zinc-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-zinc-400"></span>
                                 <span
                                     class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Offline</span>
                             </div>
-                            <p class="text-xs text-zinc-500 font-medium leading-relaxed">The user has closed the app or
-                                hasn't interacted for over 15 minutes. Shows "Seen X hrs ago".</p>
+                            <p class="text-xs text-zinc-500 font-medium leading-relaxed">App closed for >15 minutes.</p>
                         </div>
                     </div>
+                </section>
 
-                    <h3 class="text-zinc-900 dark:text-white">Task Syncing (Privacy First)</h3>
-                    <p class="text-zinc-600 dark:text-zinc-400">By default, tasks scheduled for <strong>Today</strong>
-                        are visible to your Squad. As you check them off in your planner, they cross out on your
-                        friends' screens in real-time, creating positive peer pressure.</p>
-                    <p class="text-zinc-600 dark:text-zinc-400">If you prefer to keep your to-do list private, go to
-                        <strong>Settings &rarr; Share Tasks</strong> and toggle it off. Your friends will still see your
-                        live study status, but your tasks will say <em>"Tasks hidden"</em>.</p>
+                <section id="squads-profile">
+                    <h3 class="text-zinc-900 dark:text-white">Customizing Your Squad Identity</h3>
+                    <p class="text-zinc-600 dark:text-zinc-400">Express yourself within your squad. You can customize
+                        these in <strong>Settings</strong>:</p>
+
+                    <ul class="text-zinc-700 dark:text-zinc-300">
+                        <li><strong>GIF Banners:</strong> Paste any direct <code>.gif</code> or <code>.jpg</code> URL
+                            to set a custom profile background. (Must be an <code>https</code> link).</li>
+                        <li><strong>Avatar Shapes:</strong> Choose between a classic <strong>Circle</strong> or a
+                            modern <strong>Squircle</strong> frame for your avatar.</li>
+                        <li><strong>Profile Quote:</strong> Set a short status (max 60 chars) like <em>"AIR 1 or
+                                nothing"</em>
+                            to motivate your squad.</li>
+                    </ul>
+                </section>
+
+                <section id="squads-privacy">
+                    <h3 class="text-zinc-900 dark:text-white">Safety & Privacy</h3>
+                    <p class="text-zinc-600 dark:text-zinc-400">You are in full control of who sees your data:</p>
+                    <ul class="text-zinc-700 dark:text-zinc-300">
+                        <li><strong>Share Tasks Toggle:</strong> By default, your "Today" tasks sync to your friends.
+                            Toggle this off in Settings to keep your to-do list private while still sharing focus
+                            status.</li>
+                        <li><strong>Blocking:</strong> If someone becomes distracting, click the <i data-lucide="ban"
+                                class="w-3.5 h-3.5 inline"></i> Block button on their card. This permanently cuts the
+                            mutual connection and prevents them from finding you again.</li>
+                    </ul>
                 </section>
 
                 <hr class="my-16 border-zinc-200 dark:border-zinc-800/50">
@@ -545,46 +533,37 @@
                 <section id="customization">
                     <h2
                         class="flex items-center gap-3 text-zinc-900 dark:text-white border-zinc-200 dark:border-zinc-800">
-                        <i data-lucide="palette" class="w-7 h-7 text-brand-500"></i> Themes, Colors & Atmosphere</h2>
-                    <p class="text-zinc-600 dark:text-zinc-400">Make the workspace entirely yours. Access these in
-                        Settings:</p>
+                        <i data-lucide="palette" class="w-7 h-7 text-brand-500"></i> Themes & Atmosphere
+                    </h2>
                     <ul class="text-zinc-700 dark:text-zinc-300">
-                        <li><strong>Accent Themes:</strong> Not a fan of the default Purple? Switch your entire UI to
-                            Matcha (Green), Cobalt (Blue), Crimson (Red), or Monochrome (Minimalist B&W).</li>
-                        <li><strong>Subject Colors:</strong> Assign custom colors (Rose, Amber, Emerald, Cyan, etc.) to
-                            specific subjects. These colors reflect across your planner tags and stat charts.</li>
-                        <li><strong>Atmosphere:</strong> Choose a preset background (Minimal, Space, Ocean) or paste a
-                            custom image URL to set an immersive wallpaper that sits behind the frosted glass UI.</li>
-                        <li><strong>Lite Mode:</strong> Running ChaosPrep on a budget device? Toggle Lite Mode to
-                            disable heavy glass blurs, shadows, and animations to save battery and boost speed.</li>
+                        <li><strong>Accent Themes:</strong> Switch between Matcha (Green), Cobalt (Blue), Crimson (Red),
+                            or Monochrome. These update your buttons, rings, and task tags.</li>
+                        <li><strong>Lite Mode:</strong> Disables intensive CSS blurs and animations. Ideal for
+                            improving battery life or speed on budget devices.</li>
                     </ul>
                 </section>
 
                 <section id="rollover">
                     <h2
                         class="flex items-center gap-3 text-zinc-900 dark:text-white border-zinc-200 dark:border-zinc-800">
-                        <i data-lucide="moon" class="w-7 h-7 text-brand-500"></i> Day Rollover (Night Owls)</h2>
-                    <p class="text-zinc-600 dark:text-zinc-400">By default, calendar apps reset at 12:00 AM. If you are
-                        a student who studies until 3:00 AM, having your planner jump to "Tomorrow" mid-session is
-                        frustrating and breaks your streaks.</p>
-                    <p class="text-zinc-600 dark:text-zinc-400"><strong>The Fix:</strong> Change your <strong>Day
-                            Rollover</strong> setting. If set to 4:00 AM, ChaosPrep considers it "Today" until 3:59 AM.
-                        Your tasks, streaks, and charts won't reset until you actually go to sleep.</p>
+                        <i data-lucide="moon" class="w-7 h-7 text-brand-500"></i> Day Rollover (Night Owls)
+                    </h2>
+                    <p class="text-zinc-600 dark:text-zinc-400">If you study until 3:00 AM, standard calendars breaking
+                        your "Today" at midnight is annoying. Change your <strong>Day Rollover</strong> to 4:00 AM.
+                        ChaosPrep will consider it "Today" until you actually go to sleep.</p>
                 </section>
 
                 <section id="data">
                     <h2
                         class="flex items-center gap-3 text-zinc-900 dark:text-white border-zinc-200 dark:border-zinc-800">
-                        <i data-lucide="database" class="w-7 h-7 text-brand-500"></i> Data & Calendar Export</h2>
-                    <p class="text-zinc-600 dark:text-zinc-400">Your data belongs to you. In Settings, you can manage it
-                        freely:</p>
+                        <i data-lucide="database" class="w-7 h-7 text-brand-500"></i> Backup & Calendar Export
+                    </h2>
                     <ul class="text-zinc-700 dark:text-zinc-300">
-                        <li><strong>Export to Calendar (.ics):</strong> Generates a standard calendar file containing
-                            all your past and future tasks. You can import this into Google Calendar, Apple Calendar, or
-                            Outlook to view your study plan alongside your life events.</li>
-                        <li><strong>JSON Backup/Restore:</strong> Export your entire database (tasks, logs, settings,
-                            syllabus) as a local `.json` file. You can import this file later to restore your exact
-                            state across devices or accounts.</li>
+                        <li><strong>Export to Calendar (.ics):</strong> Generates a calendar file of all your tasks.
+                            Import this into Google or Apple Calendar to see your study schedule alongside life events.
+                        </li>
+                        <li><strong>JSON Backup:</strong> Your entire history (tasks, scores, syllabus) can be exported
+                            as a single file for manual backup.</li>
                     </ul>
                 </section>
 
@@ -593,13 +572,10 @@
                         class="bg-rose-50 dark:bg-rose-500/5 border border-rose-200 dark:border-rose-900/50 rounded-[2.5rem] p-8 md:p-10 my-12 shadow-sm">
                         <h2 class="flex items-center gap-3 !mt-0 !mb-4 !border-none text-rose-900 dark:text-rose-400"><i
                                 data-lucide="alert-triangle" class="w-8 h-8 text-rose-500"></i> Reality Check</h2>
-                        <p class="text-rose-800 dark:text-rose-300/80 font-medium leading-relaxed mb-4">Clicking the
-                            countdown pill in the sidebar/header opens the Reality Check. It's designed to be brutal.
-                        </p>
                         <p class="text-rose-800 dark:text-rose-300/80 font-medium leading-relaxed mb-0">It calculates
-                            exactly how many days, "sleeps", and Sundays you have left until your exam. It also
-                            calculates your <strong>Wasted Potential</strong>—showing exactly how many total hours of
-                            prep time you will lose before the exam if you waste just 2 hours every day. No excuses.</p>
+                            exactly how many "sleeps" and Sundays you have left until your exam. It also
+                            shows your <strong>Wasted Potential</strong>—the total hours of prep time you lose if
+                            you waste just 2 hours every day. Brutal honesty is the best motivator.</p>
                     </div>
                 </section>
 
@@ -629,7 +605,7 @@
                 <h4 class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Core Features</h4>
                 <ul class="space-y-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                     <li><a href="#planner" class="mobile-nav-link block py-2">Daily Planner</a></li>
-                    <li><a href="#timer" class="mobile-nav-link block py-2">Timer, PiP & Zen Mode</a></li>
+                    <li><a href="#timer" class="mobile-nav-link block py-2">Timer & Focus Radio</a></li>
                     <li><a href="#daily-qs" class="mobile-nav-link block py-2">Daily Questions</a></li>
                     <li><a href="#analytics" class="mobile-nav-link block py-2">Analytics</a></li>
                     <li><a href="#syllabus" class="mobile-nav-link block py-2">Syllabus Tracker</a></li>
@@ -638,8 +614,9 @@
             <div>
                 <h4 class="text-[10px] font-bold text-brand-500 uppercase tracking-widest mb-3">Squads</h4>
                 <ul class="space-y-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                    <li><a href="#squads-intro" class="mobile-nav-link block py-2">How Squads Work</a></li>
-                    <li><a href="#squads-live" class="mobile-nav-link block py-2">Live Status & Syncing</a></li>
+                    <li><a href="#squads-intro" class="mobile-nav-link block py-2">Accountability Loop</a></li>
+                    <li><a href="#squads-profile" class="mobile-nav-link block py-2">Customizing Profile</a></li>
+                    <li><a href="#squads-privacy" class="mobile-nav-link block py-2">Safety & Privacy</a></li>
                 </ul>
             </div>
             <div>

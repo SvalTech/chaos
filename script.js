@@ -66,7 +66,7 @@ state = {
     weeklyViewDate: getLogicalToday(),
     timerChartWeekDate: getLogicalToday(),
     currentView: 'calendar',
-    settings: { examType: 'JEE Main', session: 'Apr', targetYear: 2026, targetDate: '2026-04-01', customSubjects: [], subjectColors: {}, theme: 'light', bgUrl: '', showCountdown: true, dailyQuestionTarget: 50, liteMode: true, dayRolloverHour: 0 },
+    settings: { examType: 'JEE Main', session: 'Apr', targetYear: 2026, targetDate: '2026-04-01', customSubjects: [], subjectColors: {}, theme: 'dark', bgUrl: '', showCountdown: true, dailyQuestionTarget: 50, liteMode: true, dayRolloverHour: 0 },
     syllabusData: { status: {}, meta: {} }, syllabusOpenStates: {}
 };
 
@@ -819,7 +819,6 @@ function updateTimerDisplay() {
         drawPiPCanvas();
     }
 }
-
 function resetTimer() {
     timerWorker.postMessage('stop'); // NEW
     releaseWakeLock();               // NEW
@@ -828,6 +827,9 @@ function resetTimer() {
     timerStartMs = 0;
     timerAccumulatedMs = 0;
     timerSeconds = 0;
+
+    // ADD THIS LINE: Explicitly tell the squad database you are no longer studying
+    window.syncMySocialStatus(false, "");
 
     updateTimerDisplay();
 
@@ -1391,6 +1393,40 @@ window.applyTheme = function (theme) {
     if (state.currentView === 'stats') renderMockStats();
 }
 
+window.setBannerTheme = function (themeName) {
+    tempSettings.bannerTheme = themeName;
+
+    // Update the UI rings around the buttons
+    document.querySelectorAll('.banner-btn').forEach(btn => {
+        btn.classList.remove('border-zinc-900', 'dark:border-white');
+        btn.classList.add('border-transparent');
+    });
+
+    const activeBtn = document.getElementById(`banner-btn-${themeName}`);
+    if (activeBtn) {
+        activeBtn.classList.add('border-zinc-900', 'dark:border-white');
+        activeBtn.classList.remove('border-transparent');
+    }
+
+    markSettingsDirty();
+}
+
+window.setAvatarShape = function (shape) {
+    tempSettings.avatarShape = shape;
+
+    // Reset buttons
+    const btns = ['circle', 'squircle'];
+    btns.forEach(b => {
+        document.getElementById(`shape-btn-${b}`).classList.remove('bg-brand-50', 'text-brand-600', 'border-brand-200', 'dark:bg-brand-900/20', 'dark:text-brand-400', 'dark:border-brand-800');
+    });
+
+    // Highlight active
+    const activeBtn = document.getElementById(`shape-btn-${shape}`);
+    if (activeBtn) activeBtn.classList.add('bg-brand-50', 'text-brand-600', 'border-brand-200', 'dark:bg-brand-900/20', 'dark:text-brand-400', 'dark:border-brand-800');
+
+    markSettingsDirty();
+}
+
 window.setAccentTheme = function (themeName) {
     tempSettings.accentTheme = themeName;
     applyAccentTheme(themeName);
@@ -1543,6 +1579,39 @@ window.saveSettings = async function () {
 
     tempSettings.bgUrl = document.getElementById('settings-bg-url').value;
     updateTargetDateConfig();
+
+    /// --- BULLETPROOF SQUAD SETTINGS SAVE ---
+    const bannerUrlInput = document.getElementById('settings-banner-url').value.trim();
+    const safeBannerUrl = isValidImageUrl(bannerUrlInput) ? bannerUrlInput : null;
+    const profileQuote = document.getElementById('settings-profile-quote').value.trim();
+
+    // 1. Explicitly force these into tempSettings so they are GUARANTEED to save to your private settings/config
+    tempSettings.bannerTheme = tempSettings.bannerTheme ?? state.settings?.bannerTheme ?? 'default';
+    tempSettings.avatarShape = tempSettings.avatarShape ?? state.settings?.avatarShape ?? 'circle';
+    tempSettings.bannerUrl = safeBannerUrl;
+    tempSettings.profileQuote = profileQuote;
+
+    // 2. Immediately merge into state.settings so UI re-renders (like dark mode toggles) instantly use the new values
+    state.settings = { ...state.settings, ...tempSettings };
+
+    // 3. Determine if the public squad profile actually needs an update
+    const profileNeedsUpdate = (
+        state.myProfile?.bannerTheme !== state.settings.bannerTheme ||
+        state.myProfile?.bannerUrl !== state.settings.bannerUrl ||
+        state.myProfile?.profileQuote !== state.settings.profileQuote ||
+        state.myProfile?.avatarShape !== state.settings.avatarShape
+    );
+
+    // 4. Push to the public database
+    if (profileNeedsUpdate) {
+        updateDoc(doc(db, 'artifacts', appId, 'socialProfiles', currentUser.uid), {
+            bannerTheme: state.settings.bannerTheme,
+            bannerUrl: state.settings.bannerUrl,
+            profileQuote: state.settings.profileQuote,
+            avatarShape: state.settings.avatarShape
+        }).catch(e => console.error("Failed to sync profile extras", e));
+    }
+
     try {
         await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), { ...state.settings, ...tempSettings });
         resetSettingsDirty();
@@ -2390,6 +2459,34 @@ window.openSettings = () => {
         }
     }
 
+    // Setup Squad BGs toggle
+    if (tempSettings.showSquadBGs === undefined) tempSettings.showSquadBGs = true;
+    const bgKnob = document.getElementById('squadbgs-knob');
+    const bgToggle = document.getElementById('squadbgs-toggle');
+    if (bgKnob && bgToggle) {
+        if (tempSettings.showSquadBGs) {
+            bgKnob.style.transform = 'translateX(20px)';
+            bgToggle.className = "relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300";
+        } else {
+            bgKnob.style.transform = 'translateX(0)';
+            bgToggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300";
+        }
+    }
+
+    // --- BULLETPROOF SQUAD SETTINGS LOAD ---
+    setTimeout(() => {
+        // Use ?? (Nullish Coalescing) so empty strings ("") are respected and not overwritten
+        const bTheme = tempSettings.bannerTheme ?? state.settings?.bannerTheme ?? state.myProfile?.bannerTheme ?? 'default';
+        const aShape = tempSettings.avatarShape ?? state.settings?.avatarShape ?? state.myProfile?.avatarShape ?? 'circle';
+        const bUrl = tempSettings.bannerUrl ?? state.settings?.bannerUrl ?? state.myProfile?.bannerUrl ?? '';
+        const pQuote = tempSettings.profileQuote ?? state.settings?.profileQuote ?? state.myProfile?.profileQuote ?? '';
+
+        window.setBannerTheme(bTheme);
+        window.setAvatarShape(aShape);
+        document.getElementById('settings-banner-url').value = bUrl;
+        document.getElementById('settings-profile-quote').value = pQuote;
+    }, 50);
+
     resetSettingsDirty();
     renderSubjectColorSettings();
     updateLiteModeToggleUI(tempSettings.liteMode);
@@ -2424,6 +2521,25 @@ window.toggleLiteModeSetting = () => {
     applyLiteMode(tempSettings.liteMode); // Preview immediately
     markSettingsDirty();
 }
+
+window.toggleSquadBGsSetting = function () {
+    if (tempSettings.showSquadBGs === undefined) tempSettings.showSquadBGs = true;
+    tempSettings.showSquadBGs = !tempSettings.showSquadBGs;
+
+    const bgKnob = document.getElementById('squadbgs-knob');
+    const bgToggle = document.getElementById('squadbgs-toggle');
+    if (bgKnob && bgToggle) {
+        if (tempSettings.showSquadBGs) {
+            bgKnob.style.transform = 'translateX(20px)';
+            bgToggle.className = "relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300";
+        } else {
+            bgKnob.style.transform = 'translateX(0)';
+            bgToggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300";
+        }
+    }
+    markSettingsDirty();
+}
+
 
 function updateLiteModeToggleUI(isLite) {
     const knob = document.getElementById('litemode-knob');
@@ -3202,14 +3318,19 @@ function setupSquadListeners(user) {
     onSnapshot(doc(db, 'artifacts', appId, 'socialProfiles', user.uid), (docSnap) => {
         if (docSnap.exists()) {
             state.myProfile = docSnap.data();
+            // Force a re-render of the friend code check/squad view
             if (state.currentView === 'squad') renderSquadView();
         }
     });
 
     onSnapshot(friendsRef, (snapshot) => {
-        const currentFriendUids = snapshot.docs.map(d => d.id);
+        let currentFriendUids = snapshot.docs.map(d => d.id);
 
-        // Remove listeners for friends who were deleted
+        // 🔴 SECURITY FILTER: Automatically hide and ignore any blocked users
+        const blockedList = state.myProfile?.blockedUsers || [];
+        currentFriendUids = currentFriendUids.filter(uid => !blockedList.includes(uid));
+
+        // Remove listeners for friends who were deleted or blocked
         Object.keys(squadListeners).forEach(uid => {
             if (!currentFriendUids.includes(uid)) {
                 squadListeners[uid](); // call unsubscribe
@@ -3281,7 +3402,6 @@ window.editDisplayName = async () => {
         }
     }
 };
-
 window.submitAddFriend = async () => {
     const code = document.getElementById('friend-code-input').value.trim().toUpperCase();
     if (code.length !== 6) { showToast("Invalid code format"); return; }
@@ -3300,13 +3420,42 @@ window.submitAddFriend = async () => {
         } else {
             const friendDoc = querySnapshot.docs[0];
             const friendUid = friendDoc.id;
+            const friendData = friendDoc.data();
+            const friendName = friendData.name || "this user";
 
-            // 1. Add them to YOUR list
+            // CHECK: Did YOU block THEM?
+            const myBlocked = state.myProfile?.blockedUsers || [];
+            if (myBlocked.includes(friendUid)) {
+                btn.disabled = false;
+                btn.innerText = "Connect";
+
+                // Offer to unblock via a custom confirm dialog
+                const wantToUnblock = await customConfirm(
+                    `You have blocked ${friendName}. Would you like to unblock them to send a squad request?`,
+                    "User Blocked",
+                    false,
+                    "Unblock & Connect"
+                );
+
+                if (wantToUnblock) {
+                    await window.unblockUser(friendUid, friendName);
+                    // Recursively call submit again to complete the connection
+                    return window.submitAddFriend();
+                }
+                return;
+            }
+
+            // CHECK: Did THEY block YOU?
+            const theirBlocked = friendData.blockedUsers || [];
+            if (theirBlocked.includes(currentUser.uid)) {
+                showToast("Cannot connect to this user.");
+                btn.disabled = false; btn.innerText = "Connect"; return;
+            }
+
+            // Standard connection logic
             await setDoc(doc(db, 'artifacts', appId, 'socialFriends', currentUser.uid, 'list', friendUid), {
                 addedAt: new Date().toISOString()
             });
-
-            // 2. Add YOU to THEIR list (Mutual Squad Connection)
             await setDoc(doc(db, 'artifacts', appId, 'socialFriends', friendUid, 'list', currentUser.uid), {
                 addedAt: new Date().toISOString()
             });
@@ -3329,21 +3478,49 @@ window.copyFriendCode = () => {
         showToast("Code Copied!");
     }
 }
-
-window.removeFriend = async (friendUid) => {
-    const isSure = await customConfirm("Are you sure you want to remove them from your accountability squad?", "Remove Squad Member", true, "Remove");
+window.removeFriend = async (friendUid, friendName = "this user") => {
+    // strict warning added here
+    const isSure = await customConfirm(`Are you sure you want to remove ${friendName}? You will need their invite code to reconnect.`, "Remove Friend", true, "Remove");
     if (!isSure) return;
+
     try {
-        // 1. Remove them from YOUR list
         await deleteDoc(doc(db, 'artifacts', appId, 'socialFriends', currentUser.uid, 'list', friendUid));
-
-        // 2. Remove YOU from THEIR list (Mutual removal)
         await deleteDoc(doc(db, 'artifacts', appId, 'socialFriends', friendUid, 'list', currentUser.uid));
-
-        showToast("Removed from Squad");
+        showToast(`Removed ${friendName}`);
     } catch (e) {
         console.error(e);
-        showToast("Error removing from squad");
+        showToast("Error removing user");
+    }
+};
+
+window.blockFriend = async (friendUid, friendName = "this user") => {
+    // strict warning added here
+    const isSure = await customConfirm(`Are you sure you want to block ${friendName}? This is permanent and you will not be able to reconnect with them.`, "Block User", true, "Block");
+    if (!isSure) return;
+
+    try {
+        await updateDoc(doc(db, 'artifacts', appId, 'socialProfiles', currentUser.uid), {
+            blockedUsers: arrayUnion(friendUid)
+        });
+        await deleteDoc(doc(db, 'artifacts', appId, 'socialFriends', currentUser.uid, 'list', friendUid));
+        await deleteDoc(doc(db, 'artifacts', appId, 'socialFriends', friendUid, 'list', currentUser.uid));
+        showToast(`Blocked ${friendName}`);
+    } catch (e) {
+        console.error(e);
+        showToast("Error blocking user");
+    }
+};
+
+window.unblockUser = async (friendUid, friendName) => {
+    if (!currentUser) return;
+    try {
+        await updateDoc(doc(db, 'artifacts', appId, 'socialProfiles', currentUser.uid), {
+            blockedUsers: arrayRemove(friendUid)
+        });
+        showToast(`Unblocked ${friendName}`);
+    } catch (e) {
+        console.error("Failed to unblock:", e);
+        showToast("Error unblocking user");
     }
 };
 
@@ -3354,12 +3531,8 @@ window.renderSquadView = function () {
 
     grid.innerHTML = '';
 
-    // Merge your own profile with your friends' profiles
-    // Merge your own profile with your friends' profiles
     const displayList = [];
-    if (state.myProfile) {
-        displayList.push({ ...state.myProfile, isMe: true });
-    }
+    if (state.myProfile) displayList.push({ ...state.myProfile, isMe: true });
 
     // Sort friends by Activity Status (Studying > Idle > Offline)
     const sortedSquad = [...state.squad].sort((a, b) => {
@@ -3373,148 +3546,214 @@ window.renderSquadView = function () {
         const aIsIdle = !a.isStudying && aDiff <= 15;
         const bIsIdle = !b.isStudying && bDiff <= 15;
 
-        // 1. Studying takes top priority
         if (a.isStudying && !b.isStudying) return -1;
         if (!a.isStudying && b.isStudying) return 1;
-
-        // 2. Idle takes second priority
         if (aIsIdle && !bIsIdle) return -1;
         if (!aIsIdle && bIsIdle) return 1;
 
-        // 3. Tie-breaker: Most recently active appears higher
         return bLastActive - aLastActive;
     });
 
     displayList.push(...sortedSquad);
 
     displayList.forEach(friend => {
-        const card = document.createElement('div');
-        card.className = "glass-card p-6 rounded-[2rem] border border-zinc-200/80 dark:border-zinc-800 shadow-sm relative overflow-hidden flex flex-col";
 
-        // Calculate time since last active
+        if (friend.isMe && state.settings) {
+            friend.bannerTheme = state.settings.bannerTheme ?? friend.bannerTheme;
+            friend.bannerUrl = state.settings.bannerUrl ?? friend.bannerUrl;
+            friend.profileQuote = state.settings.profileQuote ?? friend.profileQuote;
+            friend.avatarShape = state.settings.avatarShape ?? friend.avatarShape;
+        }
+        const card = document.createElement('div');
+
         const now = new Date();
         const lastActiveDate = friend.lastActive ? new Date(friend.lastActive) : new Date(0);
         const diffMinutes = (now - lastActiveDate) / (1000 * 60);
 
-        // Status Logic (15 min threshold for Idle)
         const isIdle = !friend.isStudying && diffMinutes <= 15;
         const isOffline = !friend.isStudying && diffMinutes > 15;
 
-        let gradientColor = 'from-zinc-500/5';
-        let statusHtml = '';
+        // Tasks calculations
+        const totalTasks = (friend.shareTasks && friend.tasks) ? friend.tasks.length : 0;
+        const completedTasks = totalTasks > 0 ? friend.tasks.filter(t => t.completed).length : 0;
+        const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-        if (friend.isStudying) {
-            gradientColor = 'from-rose-500/20';
+        // 1. APPLY CUSTOM BANNER (Color or Image)
+        // 1. APPLY CUSTOM BANNER (Color or Image)
+        const bTheme = friend.bannerTheme || 'default';
+        let bannerBgClass = '';
+        let bannerImageHtml = '';
 
-            // Clean up the pill to only show Subject + Mode
-            let modeText = friend.timerMode === 'exam' ? ' (Exam)' : (friend.timerMode === 'pomodoro' ? ' (Pom)' : '');
-            statusHtml = `
-                <div class="flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-900/50 rounded-full text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest max-w-[220px]">
-                    <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0"></span> 
-                    <span class="truncate">Studying ${friend.studySubject || ''}${modeText}</span>
-                </div>`;
-        } else if (isIdle) {
-            gradientColor = 'from-amber-500/10';
-            statusHtml = `<div class="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-900/50 rounded-full text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Idle</div>`;
+        // Check if the user has disabled custom backgrounds in their settings
+        const allowCustomBgs = state.settings.showSquadBGs !== false;
+
+        if (allowCustomBgs && friend.bannerUrl && isValidImageUrl(friend.bannerUrl)) {
+            // Apply Custom Image using an img tag so it survives theme toggles
+            bannerImageHtml = `<img src="${escapeHtml(friend.bannerUrl)}" class="absolute inset-0 w-full h-full object-cover rounded-t-[2rem] z-0 pointer-events-none" />`;
+            bannerImageHtml += `<div class="absolute inset-0 bg-black/10 dark:bg-black/20 rounded-t-[2rem] z-0 pointer-events-none"></div>`;
         } else {
-            gradientColor = 'from-zinc-500/5';
-
-            let lastSeenText = "Offline";
-            if (friend.lastActive) {
-                if (diffMinutes < 60) lastSeenText = `Seen ${Math.round(diffMinutes)}m ago`;
-                else if (diffMinutes < 1440) lastSeenText = `Seen ${Math.round(diffMinutes / 60)}h ago`;
-                else lastSeenText = `Seen ${Math.round(diffMinutes / 1440)}d ago`;
-            }
-
-            statusHtml = `<div class="flex items-center gap-1.5 px-2.5 py-1 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full text-[10px] font-bold text-zinc-500 uppercase tracking-widest"><span class="w-2 h-2 rounded-full bg-zinc-400"></span> ${lastSeenText}</div>`;
+            // Apply Theme Fallback (Used if GIF is invalid OR if user disabled GIFs in settings)
+            const bannerStyles = {
+                'default': 'bg-gradient-to-br from-zinc-200/50 to-zinc-100/30 dark:from-zinc-800/80 dark:to-zinc-800/30',
+                'lavender': 'bg-gradient-to-br from-purple-400/40 to-brand-500/20 dark:from-purple-600/40 dark:to-brand-900/30',
+                'rose': 'bg-gradient-to-br from-rose-400/40 to-pink-500/20 dark:from-rose-600/40 dark:to-pink-900/30',
+                'emerald': 'bg-gradient-to-br from-emerald-400/40 to-teal-500/20 dark:from-emerald-600/40 dark:to-teal-900/30',
+                'sky': 'bg-gradient-to-br from-sky-400/40 to-blue-500/20 dark:from-sky-600/40 dark:to-blue-900/30'
+            };
+            bannerBgClass = bannerStyles[bTheme] || bannerStyles['default'];
         }
 
+        // 2. APPLY AVATAR RING STATUS & SHAPE
+        let avatarRing = 'border-white dark:border-[#18181b]';
+        let statusText = '';
+        let statusIcon = '';
+        const shapeClass = friend.avatarShape === 'squircle' ? 'rounded-2xl' : 'rounded-full';
+
+        if (friend.isStudying) {
+            const isExam = friend.timerMode === 'exam';
+            avatarRing = isExam ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)]' : 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.5)]';
+
+            statusIcon = `<span class="relative flex h-2 w-2 mr-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full ${isExam ? 'bg-purple-400' : 'bg-rose-400'} opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 ${isExam ? 'bg-purple-500' : 'bg-rose-500'}"></span></span>`;
+            statusText = `<span class="${isExam ? 'text-purple-600 dark:text-purple-400' : 'text-rose-600 dark:text-rose-400'}">Focus: ${friend.studySubject || 'Studying'}</span>`;
+        } else if (isIdle) {
+            avatarRing = 'border-amber-400';
+            statusIcon = `<span class="w-2 h-2 rounded-full bg-amber-500 mr-1.5"></span>`;
+            statusText = `<span class="text-amber-600 dark:text-amber-400">Idle</span>`; // Changed to Idle
+        } else {
+            let timeText = "Offline";
+            if (friend.lastActive) {
+                if (diffMinutes < 60) timeText = `Seen ${Math.round(diffMinutes)}m ago`;
+                else if (diffMinutes < 1440) timeText = `Seen ${Math.round(diffMinutes / 60)}h ago`;
+                else timeText = `Seen ${Math.round(diffMinutes / 1440)}d ago`;
+            }
+            statusIcon = `<span class="w-1.5 h-1.5 rounded-full bg-zinc-400 mr-1.5 opacity-50"></span>`;
+            statusText = `<span class="text-zinc-500">${timeText}</span>`;
+        }
+
+        // 3. GENERATE INNER AVATAR (Image or Initial)
+        const avatarImg = friend.avatar
+            ? `<img src="${friend.avatar}" class="w-full h-full object-cover ${shapeClass}">`
+            : `<div class="w-full h-full ${shapeClass} bg-gradient-to-br from-brand-400 to-brand-600 text-white flex items-center justify-center font-black text-2xl shadow-inner">${friend.name.charAt(0)}</div>`;
+
+        // 4. PROFILE QUOTE
+        const quoteHtml = friend.profileQuote ? `<p class="text-xs text-zinc-500 dark:text-zinc-400 italic mb-3 leading-snug">"${escapeHtml(friend.profileQuote)}"</p>` : '';
+
+        // 5. TASK LIST GENERATION
         let tasksHtml = '';
-        if (friend.shareTasks && friend.tasks && friend.tasks.length > 0) {
-            tasksHtml = `<div class="mt-5 pt-4 border-t border-zinc-100 dark:border-zinc-800/50"><div class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Today's Focus</div><div class="space-y-1">`;
-
+        if (friend.shareTasks && totalTasks > 0) {
+            tasksHtml = `<div class="space-y-1 mt-1">`;
             friend.tasks.forEach(t => {
-                // Check if this specific task is currently being timed
                 const isActiveTask = friend.isStudying && friend.studyContext === t.text;
+                const containerClass = isActiveTask ? 'bg-white dark:bg-[#27272a] border border-zinc-200 dark:border-zinc-700 shadow-sm p-2.5 rounded-xl my-2' : 'py-1.5 px-1';
+                const textClass = t.completed ? 'text-zinc-400 line-through' : (isActiveTask ? 'text-zinc-900 dark:text-white font-black' : 'text-zinc-700 dark:text-zinc-300 font-semibold');
+                const iconClass = t.completed ? 'text-emerald-500' : (isActiveTask ? 'text-brand-500 animate-pulse' : 'text-zinc-300 dark:text-zinc-600');
+                const iconType = t.completed ? 'check-circle-2' : (isActiveTask ? 'loader-2' : 'circle');
 
-                // Dynamic styling based on if it's the active task
-                const containerClass = isActiveTask ? 'bg-rose-50/80 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-900/50 p-2.5 rounded-xl -mx-2.5 shadow-sm' : 'py-1';
-                const textClass = t.completed ? 'text-zinc-400 line-through' : (isActiveTask ? 'text-rose-600 dark:text-rose-400 font-black' : 'text-zinc-700 dark:text-zinc-300');
-                const iconClass = t.completed ? 'text-emerald-500' : (isActiveTask ? 'text-rose-500' : 'text-zinc-300 dark:text-zinc-700');
-                const iconType = t.completed ? 'check-circle-2' : (isActiveTask ? 'play-circle' : 'circle');
-                const pulseClass = isActiveTask && !t.completed ? 'animate-pulse' : '';
-
-                // Main Task List Item
                 tasksHtml += `
                 <div class="${containerClass} transition-all duration-300">
-                    <div class="flex items-start gap-2 text-xs font-bold ${textClass}">
-                        <i data-lucide="${iconType}" class="w-4 h-4 mt-0.5 shrink-0 ${iconClass} ${pulseClass}"></i>
-                        <span class="leading-tight">${t.text}</span>
+                    <div class="flex items-start gap-2.5 text-xs ${textClass}">
+                        <i data-lucide="${iconType}" class="w-4 h-4 mt-0.5 shrink-0 ${iconClass} ${isActiveTask && !t.completed ? 'animate-spin-slow' : ''}"></i>
+                        <span class="leading-relaxed">${t.text}</span>
                     </div>`;
 
-                // Subtasks 
                 if (t.subtasks && t.subtasks.length > 0) {
-                    tasksHtml += `<div class="ml-6 mt-1.5 space-y-1.5">`;
+                    tasksHtml += `<div class="ml-6 mt-1.5 space-y-1.5 border-l-2 border-zinc-100 dark:border-zinc-800 pl-3">`;
                     t.subtasks.forEach(st => {
-                        // Inherit the red styling slightly for subtasks if the parent task is active
-                        const stTextClass = st.completed ? 'text-zinc-400 line-through' : (isActiveTask ? 'text-rose-500/80 dark:text-rose-400/80' : 'text-zinc-500 dark:text-zinc-400');
-                        tasksHtml += `<div class="flex items-start gap-2 text-[10px] font-semibold ${stTextClass}"><i data-lucide="${st.completed ? 'check' : 'minus'}" class="w-3 h-3 mt-0.5 shrink-0 ${st.completed ? 'text-emerald-500' : 'text-zinc-400'}"></i><span class="leading-tight">${st.text}</span></div>`;
+                        const stTextClass = st.completed ? 'text-zinc-400 line-through' : 'text-zinc-500 dark:text-zinc-400 font-medium';
+                        tasksHtml += `<div class="flex items-start gap-2 text-[10px] ${stTextClass}"><i data-lucide="${st.completed ? 'check' : 'minus'}" class="w-3 h-3 mt-0.5 shrink-0 ${st.completed ? 'text-emerald-500' : 'text-zinc-400'}"></i><span class="leading-tight">${st.text}</span></div>`;
                     });
                     tasksHtml += `</div>`;
                 }
-                tasksHtml += `</div>`; // Close container
+                tasksHtml += `</div>`;
             });
-            tasksHtml += `</div></div>`;
-        } else if (friend.shareTasks && (!friend.tasks || friend.tasks.length === 0)) {
-            tasksHtml = `<div class="mt-5 pt-4 border-t border-zinc-100 dark:border-zinc-800/50"><div class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Today's Focus</div><p class="text-xs text-zinc-400 italic">No tasks set for today.</p></div>`;
+            tasksHtml += `</div>`;
+        } else if (friend.shareTasks && totalTasks === 0) {
+            tasksHtml = `<div class="flex flex-col items-center justify-center py-6 text-center"><i data-lucide="coffee" class="w-6 h-6 text-zinc-300 dark:text-zinc-700 mb-2"></i><p class="text-xs text-zinc-400 italic">No targets set today.</p></div>`;
         } else {
-            tasksHtml = `<div class="mt-5 pt-4 border-t border-zinc-100 dark:border-zinc-800/50"><p class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest italic text-center">Tasks hidden</p></div>`;
+            tasksHtml = `<div class="flex flex-col items-center justify-center py-6 text-center"><i data-lucide="lock" class="w-6 h-6 text-zinc-300 dark:text-zinc-700 mb-2"></i><p class="text-xs text-zinc-400 italic">Tasks are private.</p></div>`;
         }
 
-        // Add (You) to your own name and hide the remove button
         const displayName = friend.isMe ? `${friend.name} (You)` : friend.name;
-        const removeBtnHtml = friend.isMe ? '' : `<button onclick="removeFriend('${friend.uid}')" class="text-zinc-300 dark:text-zinc-600 hover:text-rose-500 transition-colors p-1"><i data-lucide="user-minus" class="w-4 h-4"></i></button>`;
+        const safeName = friend.name.replace(/'/g, "\\'");
 
-        const avatar = friend.avatar ? `<img src="${friend.avatar}" class="w-12 h-12 rounded-full object-cover shadow-sm">` : `<div class="w-12 h-12 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-600 flex items-center justify-center font-black text-lg">${friend.name.charAt(0)}</div>`;
+        // Buttons restyled for the white/dark card background
+        const actionBtnsHtml = friend.isMe ? '' : `
+            <div class="flex items-center gap-1">
+                <button onclick="removeFriend('${friend.uid}', '${safeName}')" title="Remove" class="w-8 h-8 flex items-center justify-center rounded-xl text-zinc-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-900/20 dark:hover:text-rose-500 transition-colors">
+                    <i data-lucide="user-minus" class="w-4 h-4"></i>
+                </button>
+                <button onclick="blockFriend('${friend.uid}', '${safeName}')" title="Block" class="w-8 h-8 flex items-center justify-center rounded-xl text-zinc-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-500 transition-colors">
+                    <i data-lucide="ban" class="w-4 h-4"></i>
+                </button>
+            </div>
+        `;
+
+        // 6. CARD ASSEMBLY
+        card.className = "glass-card p-0 rounded-[2rem] border border-zinc-200/80 dark:border-zinc-800 shadow-sm relative overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-md";
 
         card.innerHTML = `
-            <div class="absolute inset-x-0 top-0 h-24 bg-gradient-to-b ${gradientColor} to-transparent pointer-events-none transition-colors duration-500"></div>
-            <div class="flex justify-between items-start mb-4 relative z-10">
-                <div class="flex items-center gap-3">
-                    ${avatar}
-                    <div>
-                        <div class="font-black text-zinc-900 dark:text-white tracking-tight">${displayName}</div>
-                        <div class="mt-1">${statusHtml}</div>
+            <div class="h-24 w-full ${bannerBgClass} border-b border-zinc-200 dark:border-zinc-800 relative">
+                ${bannerImageHtml}
+                <div class="absolute -bottom-8 left-6 w-[72px] h-[72px] ${shapeClass} border-[3px] ${avatarRing} shadow-sm bg-white dark:bg-[#18181b] z-10 transition-all duration-500 flex items-center justify-center">
+                    ${avatarImg}
+                </div>
+            </div>
+            
+            <div class="pt-10 px-6 pb-6 flex flex-col flex-1">
+                <div class="flex justify-between items-start mb-2 gap-2">
+                    <div class="min-w-0 flex-1">
+                        <h3 class="font-black text-xl text-zinc-900 dark:text-white tracking-tight leading-none mb-2 truncate">${displayName}</h3>
+                        ${quoteHtml}
+                        <div class="flex items-center text-[10px] font-bold uppercase tracking-widest bg-zinc-50 dark:bg-zinc-800/50 px-2.5 py-1.5 rounded-lg w-max border border-zinc-100 dark:border-zinc-700/50 mb-4">
+                            ${statusIcon} ${statusText}
+                        </div>
+                    </div>
+                    <div class="shrink-0 mt-[-4px]">
+                        ${actionBtnsHtml}
                     </div>
                 </div>
-                ${removeBtnHtml}
+
+                ${totalTasks > 0 && friend.shareTasks ? `
+                <div class="mb-4">
+                    <div class="flex justify-between text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">
+                        <span>Daily Completion</span>
+                        <span class="${progress === 100 ? 'text-emerald-500' : 'text-zinc-500 dark:text-zinc-400'}">${completedTasks}/${totalTasks}</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden shadow-inner-dark dark:shadow-inner-light">
+                        <div class="h-full ${progress === 100 ? 'bg-emerald-500' : 'bg-brand-500'} transition-all duration-1000 ease-out" style="width: ${progress}%"></div>
+                    </div>
+                </div>` : ''}
+
+                <div class="flex-1 w-full">
+                    ${tasksHtml}
+                </div>
             </div>
-            ${tasksHtml}
         `;
         grid.appendChild(card);
     });
 
-    // Add a neat dashed card if you don't have any friends yet to prompt you to invite people
+    // 7. EMPTY STATE HANDLING
     if (state.squad.length === 0) {
         grid.innerHTML += `
-            <div class="glass-card p-6 rounded-[2rem] border border-zinc-200/80 dark:border-zinc-800 shadow-sm flex flex-col items-center justify-center text-center px-4 border-dashed bg-zinc-50/50 dark:bg-[#18181b]/50 min-h-[200px]">
-                <div class="w-12 h-12 bg-brand-50 dark:bg-brand-900/20 text-brand-500 rounded-2xl flex items-center justify-center mb-3 shadow-sm">
-                    <i data-lucide="user-plus" class="w-6 h-6"></i>
+            <div class="glass-card p-8 rounded-[2.5rem] border-2 border-dashed border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col items-center justify-center text-center bg-transparent min-h-[250px] col-span-full md:col-span-1">
+                <div class="w-16 h-16 bg-brand-50 dark:bg-brand-900/20 text-brand-500 rounded-full flex items-center justify-center mb-4 shadow-inner-light">
+                    <i data-lucide="users" class="w-8 h-8"></i>
                 </div>
-                <h3 class="text-base font-bold text-zinc-900 dark:text-white mb-1 tracking-tight">Build Your Squad</h3>
-                <p class="text-xs text-zinc-500 dark:text-zinc-400 max-w-xs mb-4">
-                    Studying is easier together. Send an invite link to share tasks.
+                <h3 class="text-lg font-black text-zinc-900 dark:text-white mb-2 tracking-tight">Your Squad is Empty</h3>
+                <p class="text-sm text-zinc-500 dark:text-zinc-400 max-w-xs mb-6 font-medium leading-relaxed">
+                    Accountability is the fastest way to improve. Invite a friend to start tracking tasks together.
                 </p>
                 <button onclick="window.copyInviteLink()" 
-                    class="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-md hover:bg-brand-700">
-                    <i data-lucide="link" class="w-3 h-3"></i>
-                    <span>Copy Link</span>
+                    class="flex items-center justify-center gap-2 w-full py-3.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-floating">
+                    <i data-lucide="link" class="w-4 h-4"></i>
+                    <span>Copy Invite Link</span>
                 </button>
             </div>`;
     }
 
     lucide.createIcons();
 }
+
 
 // 5. Hooks to update YOUR status automatically 
 let heartbeatInterval;
@@ -4086,5 +4325,30 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', eve
         }
     }
 });
+
+// Validates that the URL is a safe, secure image link
+window.isValidImageUrl = function (url) {
+    if (!url) return false;
+    try {
+        const parsed = new URL(url);
+        // Enforce HTTPS
+        if (parsed.protocol !== 'https:') return false;
+        // Check for common image extensions
+        const validExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+        return validExts.some(ext => parsed.pathname.toLowerCase().endsWith(ext));
+    } catch (e) {
+        return false;
+    }
+}
+
+// Prevents HTML injection in profile quotes
+window.escapeHtml = function (unsafe) {
+    return (unsafe || '').toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
 
 initAuth(); lucide.createIcons();
