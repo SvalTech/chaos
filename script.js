@@ -814,9 +814,58 @@ function updateTimerDisplay() {
         if (todayTotalEl) todayTotalEl.innerText = displayTime;
     }
 
-    // Render to Picture-in-Picture window if active
+    // --- PICTURE-IN-PICTURE SYNC ---
     if (typeof isPipActive !== 'undefined' && isPipActive) {
-        drawPiPCanvas();
+        if (pipWindow && pipWindow.document) {
+
+            const pipDisplay = pipWindow.document.getElementById('pip-timer-display');
+            if (pipDisplay) pipDisplay.innerText = `${h}:${m}:${s}`;
+
+            const pipRing = pipWindow.document.getElementById('pip-progress-ring');
+            if (pipRing && timerMode !== 'flow') {
+                const radius = pipRing.r.baseVal.value;
+                const circumference = radius * 2 * Math.PI;
+                pipRing.style.strokeDasharray = `${circumference} ${circumference}`;
+                const percent = targetDurationSecs > 0 ? Math.max(0, displaySecs / targetDurationSecs) : 0;
+                pipRing.style.strokeDashoffset = circumference - (percent * circumference);
+            }
+
+            // CSS-ONLY BUTTON SYNC - Guaranteed to work
+            const playIcon = pipWindow.document.getElementById('pip-icon-play');
+            const pauseIcon = pipWindow.document.getElementById('pip-icon-pause');
+            if (playIcon && pauseIcon) {
+                if (isTimerRunning) {
+                    playIcon.classList.replace('block', 'hidden');
+                    pauseIcon.classList.replace('hidden', 'block');
+                } else {
+                    playIcon.classList.replace('hidden', 'block');
+                    pauseIcon.classList.replace('block', 'hidden');
+                }
+            }
+
+            const pipStop = pipWindow.document.getElementById('pip-stop-btn');
+            if (pipStop) {
+                if (isTimerRunning) {
+                    pipStop.classList.remove('opacity-50', 'pointer-events-none');
+                } else {
+                    pipStop.classList.add('opacity-50', 'pointer-events-none');
+                }
+            }
+
+            const pipActiveRing = pipWindow.document.getElementById('pip-active-ring');
+            if (pipActiveRing && timerMode === 'flow') {
+                if (isTimerRunning) pipActiveRing.classList.remove('pip-paused');
+                else pipActiveRing.classList.add('pip-paused');
+            }
+
+            const pipSubject = pipWindow.document.getElementById('pip-subject');
+            if (pipSubject && pipSubject.innerText !== (timerSubject || 'Focus Session')) {
+                pipSubject.innerText = timerSubject || 'Focus Session';
+            }
+
+        } else {
+            if (typeof drawPiPCanvas === 'function') drawPiPCanvas();
+        }
     }
 }
 function resetTimer() {
@@ -1391,6 +1440,18 @@ window.applyTheme = function (theme) {
     }
     if (state.currentView === 'timer') renderTimerChart();
     if (state.currentView === 'stats') renderMockStats();
+    // --- LIVE PIP DARK MODE SYNC ---
+    if (typeof pipWindow !== 'undefined' && pipWindow && pipWindow.document) {
+        pipWindow.document.documentElement.className = theme === 'dark' ? 'dark' : 'light';
+        const pipBody = pipWindow.document.body;
+        if (theme === 'dark') {
+            pipBody.classList.replace('bg-zinc-50', 'bg-[#09090b]');
+            pipBody.classList.replace('text-zinc-900', 'text-white');
+        } else {
+            pipBody.classList.replace('bg-[#09090b]', 'bg-zinc-50');
+            pipBody.classList.replace('text-white', 'text-zinc-900');
+        }
+    }
 }
 
 window.setBannerTheme = function (themeName) {
@@ -3757,11 +3818,43 @@ window.renderSquadView = function () {
         `;
 
         // 6. CARD ASSEMBLY
-        card.className = "glass-card p-0 rounded-[2rem] border border-zinc-200/80 dark:border-zinc-800 shadow-sm relative overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-md";
+
+        // --- VIP / ROLE CONFIGURATION ---
+        const VIP_USERS = {
+            "KLh2R14NZCZinFvgCm6DtzghkBf2": { role: "Creator", icon: "zap" },
+            // "TEMPLATE": { role: "Beta Tester", icon: "beaker" }
+        };
+
+        const vip = VIP_USERS[friend.uid];
+
+        let cardClasses = "glass-card p-0 rounded-[2rem] border relative overflow-hidden flex flex-col transition-all duration-500 hover:-translate-y-1 ";
+
+        let devBadge = '';
+        let premiumBannerFx = '';
+
+        if (vip) {
+            cardClasses += " border-brand-500 shadow-[0_0_35px_-10px_rgba(139,92,246,0.4)] hover:shadow-[0_0_50px_-10px_rgba(139,92,246,0.6)] ring-1 ring-brand-500/50 z-10";
+
+            premiumBannerFx = `<div class="absolute inset-0 bg-gradient-to-r from-brand-500/20 via-fuchsia-500/20 to-brand-500/20 animate-pulse pointer-events-none z-10 mix-blend-overlay"></div>`;
+
+            devBadge = `
+                <span class="ml-2 relative group cursor-default shrink-0 inline-flex mt-0.5">
+                    <span class="absolute inset-0 bg-gradient-to-r from-brand-500 to-fuchsia-500 rounded-full blur-sm opacity-60 group-hover:opacity-100 transition duration-500"></span>
+                    <span class="relative inline-flex items-center gap-1 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border border-zinc-700 dark:border-zinc-200 shadow-sm">
+                        <i data-lucide="${vip.icon}" class="w-3 h-3 text-brand-400 dark:text-brand-600 fill-current"></i> ${vip.role}
+                    </span>
+                </span>
+            `;
+        } else {
+            cardClasses += " border-zinc-200/80 dark:border-zinc-800 shadow-sm hover:shadow-md";
+        }
+
+        card.className = cardClasses;
 
         card.innerHTML = `
             <div class="h-24 w-full ${bannerBgClass} border-b border-zinc-200 dark:border-zinc-800 relative">
                 ${bannerImageHtml}
+                ${premiumBannerFx}
                 <div class="absolute -bottom-8 left-6 w-[72px] h-[72px] ${shapeClass} border-[3px] ${avatarRing} shadow-sm bg-white dark:bg-[#18181b] z-10 transition-all duration-500 flex items-center justify-center">
                     ${avatarImg}
                 </div>
@@ -3770,7 +3863,9 @@ window.renderSquadView = function () {
             <div class="pt-10 px-6 pb-6 flex flex-col flex-1">
                 <div class="flex justify-between items-start mb-2 gap-2">
                     <div class="min-w-0 flex-1">
-                        <h3 class="font-black text-xl text-zinc-900 dark:text-white tracking-tight leading-none mb-2 truncate">${displayName}</h3>
+                        <h3 class="font-black text-xl text-zinc-900 dark:text-white tracking-tight leading-none mb-2 truncate flex items-center">
+                            ${displayName} ${devBadge}
+                        </h3>
                         ${quoteHtml}
                         <div class="flex items-center text-[10px] font-bold uppercase tracking-widest bg-zinc-50 dark:bg-zinc-800/50 px-2.5 py-1.5 rounded-lg w-max border border-zinc-100 dark:border-zinc-700/50 mb-4">
                             ${statusIcon} ${statusText}
@@ -4263,122 +4358,155 @@ window.toggleFullScreenZen = async function () {
 }
 
 let isPipActive = false;
-let pipCanvasCtx = null;
+let pipWindow = null;
 
 window.togglePiP = async function () {
+    if ('documentPictureInPicture' in window) {
+        if (pipWindow) {
+            pipWindow.close();
+            return;
+        }
+
+        try {
+            // Force 2:1 Landscape Ratio
+            pipWindow = await documentPictureInPicture.requestWindow({
+                width: 500,
+                height: 250,
+            });
+
+            pipWindow.document.documentElement.className = document.documentElement.className;
+            const isDark = document.documentElement.className.includes('dark');
+            const bgClass = isDark ? 'bg-[#09090b]' : 'bg-zinc-50';
+            const textClass = isDark ? 'text-white' : 'text-zinc-900';
+
+            [...document.styleSheets].forEach((styleSheet) => {
+                try {
+                    const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
+                    const style = pipWindow.document.createElement('style');
+                    style.textContent = cssRules;
+                    pipWindow.document.head.appendChild(style);
+                } catch (e) {
+                    const link = pipWindow.document.createElement('link');
+                    link.rel = 'stylesheet';
+                    link.type = styleSheet.type;
+                    link.media = styleSheet.media;
+                    link.href = styleSheet.href;
+                    pipWindow.document.head.appendChild(link);
+                }
+            });
+
+            pipWindow.document.head.innerHTML += `
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+                <style>
+                    body { margin: 0; padding: 0; }
+                    button { outline: none !important; -webkit-tap-highlight-color: transparent; }
+                    @keyframes pip-spin { 100% { transform: rotate(360deg); } }
+                    .animate-pip-spin { animation: pip-spin 4s linear infinite; }
+                    .pip-paused { animation-play-state: paused !important; }
+                </style>
+            `;
+
+            // Strict flex-row to force horizontal landscape layout
+            pipWindow.document.body.className = `${bgClass} ${textClass} font-sans select-none antialiased h-screen w-screen overflow-hidden flex items-center justify-center transition-colors duration-300`;
+
+            pipWindow.document.body.innerHTML = `
+                <div class="flex flex-row items-center justify-between w-full px-8 py-4 gap-8">
+                    
+                    <div class="relative flex items-center justify-center w-[160px] h-[160px] shrink-0">
+                        <svg class="absolute inset-0 w-full h-full transform -rotate-90 pointer-events-none" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="45" stroke="currentColor" stroke-width="6" fill="none" class="text-zinc-200 dark:text-zinc-800" />
+                            <circle id="pip-progress-ring" cx="50" cy="50" r="45" stroke="currentColor" stroke-width="6" fill="none" class="text-[#7c3aed] transition-all duration-1000 ease-linear ${timerMode === 'flow' ? 'hidden' : ''}" stroke-linecap="round" />
+                        </svg>
+                        
+                        <div id="pip-active-ring" class="absolute inset-0 rounded-full border-[6px] border-[#7c3aed] border-t-transparent border-l-transparent opacity-0 transition-opacity duration-300 pointer-events-none ${timerMode === 'flow' ? 'opacity-100 animate-pip-spin' : ''} ${!isTimerRunning ? 'pip-paused' : ''}"></div>
+                        
+                        <div id="pip-timer-display" class="text-4xl font-black tabular-nums tracking-tighter relative z-10 leading-none">
+                            ${document.getElementById('timer-display').innerText}
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col items-start justify-center flex-1 min-w-0">
+                        <div class="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 px-3 py-1 bg-zinc-200/50 dark:bg-zinc-800/50 rounded-md" id="pip-mode-label">
+                            ${timerMode === 'flow' ? 'Flow State' : 'Exam Simulator'}
+                        </div>
+                        
+                        <div class="text-2xl font-black text-[#7c3aed] mb-6 truncate w-full" id="pip-subject">
+                            ${timerSubject || 'Focus Session'}
+                        </div>
+                        
+                        <div class="flex items-center gap-4">
+                            <button id="pip-toggle-btn" class="w-16 h-16 rounded-2xl bg-[#7c3aed] text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all">
+                                <i data-lucide="play" id="pip-icon-play" class="w-8 h-8 fill-current pointer-events-none ${isTimerRunning ? 'hidden' : 'block'}"></i>
+                                <i data-lucide="pause" id="pip-icon-pause" class="w-8 h-8 fill-current pointer-events-none ${isTimerRunning ? 'block' : 'hidden'}"></i>
+                            </button>
+                            
+                            <button id="pip-stop-btn" class="${isTimerRunning ? '' : 'opacity-50 pointer-events-none'} w-14 h-14 rounded-2xl bg-zinc-200 dark:bg-[#18181b] border border-zinc-300 dark:border-zinc-800 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-500/20 flex items-center justify-center shadow-sm hover:scale-105 active:scale-95 transition-all">
+                                <i data-lucide="square" class="w-6 h-6 fill-current pointer-events-none"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            pipWindow.document.getElementById('pip-toggle-btn').addEventListener('click', () => window.toggleTimer());
+            pipWindow.document.getElementById('pip-stop-btn').addEventListener('click', () => {
+                window.stopTimer();
+                pipWindow.close();
+            });
+
+            pipWindow.addEventListener('keydown', (e) => {
+                if (e.code === 'Space') { e.preventDefault(); window.toggleTimer(); }
+                if (e.code === 'Escape') { e.preventDefault(); pipWindow.close(); }
+            });
+
+            // Initialize Lucide exactly ONCE
+            if (window.lucide) window.lucide.createIcons({ root: pipWindow.document.body });
+
+            pipWindow.addEventListener("pagehide", () => {
+                pipWindow = null;
+                isPipActive = false;
+            });
+
+            isPipActive = true;
+            updateTimerDisplay();
+
+        } catch (error) {
+            console.error("Document PiP failed:", error);
+            if (typeof fallbackVideoPiP === 'function') fallbackVideoPiP();
+        }
+    } else {
+        if (typeof fallbackVideoPiP === 'function') fallbackVideoPiP();
+    }
+};
+// Keep your old logic strictly as a fallback
+async function fallbackVideoPiP() {
     const video = document.getElementById('pip-video');
     const canvas = document.getElementById('pip-canvas');
-
-    // If already in PiP, exit it
     if (document.pictureInPictureElement) {
         await document.exitPictureInPicture();
         return;
     }
-
     if (!video || !canvas) return;
-
-    // Force an initial draw so the canvas isn't blank when it pops out
     drawPiPCanvas();
-
-    // Generate the live video stream from the canvas at 30 FPS
     if (!video.srcObject) {
         try {
             const stream = canvas.captureStream(30);
             video.srcObject = stream;
             await video.play();
-        } catch (err) {
-            console.warn("Capture stream failed:", err);
-        }
+        } catch (err) { console.warn("Capture stream failed:", err); }
     }
-
-    // Request the PiP Window (Cross-Browser Support)
     try {
         if (video.requestPictureInPicture) {
-            // Standard API (Windows, Mac, Android)
             await video.requestPictureInPicture();
             isPipActive = true;
         } else if (video.webkitSetPresentationMode) {
-            // Apple Proprietary API (iOS, iPadOS, old Safari)
             video.webkitSetPresentationMode('picture-in-picture');
             isPipActive = true;
-        } else {
-            throw new Error("PiP API not found");
         }
     } catch (error) {
         console.error("PiP failed:", error);
-        showToast("Picture-in-Picture is not supported on this specific device/browser.");
+        showToast("Picture-in-Picture is not supported on this device/browser.");
     }
-};
-
-// Listen for the user closing the PiP window manually
-document.addEventListener('DOMContentLoaded', () => {
-    const video = document.getElementById('pip-video');
-    if (video) {
-        video.addEventListener('leavepictureinpicture', () => {
-            isPipActive = false;
-        });
-    }
-});
-
-// The renderer that draws your timer perfectly into the video stream
-function drawPiPCanvas() {
-    const canvas = document.getElementById('pip-canvas');
-    if (!canvas) return;
-    if (!pipCanvasCtx) pipCanvasCtx = canvas.getContext('2d');
-
-    const ctx = pipCanvasCtx;
-    const width = canvas.width;
-    const height = canvas.height;
-    const cx = width / 2;
-    const cy = height / 2;
-
-    const displayEl = document.getElementById('timer-display');
-    const timeText = displayEl ? displayEl.innerText : "00:00:00";
-    const isDark = document.documentElement.classList.contains('dark');
-
-    // 1. Draw Background
-    ctx.fillStyle = isDark ? '#09090b' : '#ffffff';
-    ctx.fillRect(0, 0, width, height);
-
-    // 2. Draw Base Ring
-    ctx.lineWidth = 16;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.arc(cx, cy, 160, 0, 2 * Math.PI);
-    ctx.strokeStyle = isDark ? '#27272a' : '#f4f4f5';
-    ctx.stroke();
-
-    // 3. Draw Active/Progress Ring
-    if (timerMode !== 'flow') {
-        // Countdown Mode Progress
-        const percent = targetDurationSecs > 0 ? Math.max(0, timerSeconds / targetDurationSecs) : 0;
-        const startAngle = -Math.PI / 2;
-        const endAngle = startAngle + (2 * Math.PI * (1 - percent));
-
-        ctx.beginPath();
-        ctx.arc(cx, cy, 160, startAngle, endAngle, false);
-        ctx.strokeStyle = '#8b5cf6'; // brand-500 (Purple)
-        ctx.stroke();
-    } else {
-        // Flow Mode (Solid ring if running)
-        ctx.beginPath();
-        ctx.arc(cx, cy, 160, 0, 2 * Math.PI);
-        ctx.strokeStyle = isTimerRunning ? '#8b5cf6' : (isDark ? '#27272a' : '#f4f4f5');
-        ctx.stroke();
-    }
-
-    // 4. Draw Time Text
-    ctx.fillStyle = isDark ? '#ffffff' : '#18181b';
-    ctx.font = 'bold 72px "Inter", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(timeText, cx, cy - 10);
-
-    // 5. Draw Subject / Mode Status
-    ctx.font = 'bold 24px "Inter", sans-serif';
-    ctx.fillStyle = '#a1a1aa';
-    const subText = timerSubject || (timerMode.charAt(0).toUpperCase() + timerMode.slice(1));
-    ctx.fillText(subText, cx, cy + 60);
 }
 
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
@@ -4645,6 +4773,36 @@ window.resetMockScore = async function () {
     } catch (e) {
         console.error(e);
         showToast("Error resetting mock");
+    }
+}
+
+// ==========================================
+// SIDEBAR COLLAPSE LOGIC
+// ==========================================
+window.toggleSidebar = function () {
+    const sidebar = document.getElementById('desktop-sidebar');
+    const openBtn = document.getElementById('desktop-sidebar-open');
+
+    // Toggle the negative margin to slide it out of view
+    sidebar.classList.toggle('md:-ml-[320px]');
+
+    const isCollapsed = sidebar.classList.contains('md:-ml-[320px]');
+
+    if (isCollapsed) {
+        // Fade in and slide the floating open button
+        openBtn.classList.remove('opacity-0', 'pointer-events-none', '-translate-x-4');
+        openBtn.classList.add('opacity-100', 'translate-x-0');
+
+        // Optional: Trigger a chart resize since the main container just got wider
+        setTimeout(() => {
+            if (mockChartInstance) mockChartInstance.resize();
+            if (timerChartInstance) timerChartInstance.resize();
+            if (questionsChartInstance) questionsChartInstance.resize();
+        }, 300);
+    } else {
+        // Hide the floating button
+        openBtn.classList.add('opacity-0', 'pointer-events-none', '-translate-x-4');
+        openBtn.classList.remove('opacity-100', 'translate-x-0');
     }
 }
 
