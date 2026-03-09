@@ -266,60 +266,67 @@ window.checkPendingInvitesUI = function () {
     const inviteId = urlParams.get('invite');
 
     if (inviteId) {
-        // 1. Upgrade the hero badge with a contained, pulsing purple dot
+        // 1. Upgrade the hero badge to glow and pulse
         const badgeContainer = document.querySelector('#login-screen header .inline-flex');
         if (badgeContainer) {
-            badgeContainer.className = 'inline-flex items-center bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-700/50 rounded-full mb-8 self-start px-4 py-1.5 shadow-sm';
-
-            // Fixed the mismatched quote that caused the HTML to break and glitch
             badgeContainer.innerHTML = `
-                <span class="text-[11px] font-bold uppercase tracking-[0.1em] text-brand-600 dark:text-brand-400 flex items-center gap-2">
-                    <span class="relative flex h-2 w-2">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
-                    </span>
-                    Squad Invite Pending
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
                 </span>
+                <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-brand-300 drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]">Squad Invite Pending</span>
+            `;
+            // Make the pill border and shadow glow harder
+            badgeContainer.classList.add('shadow-[0_0_30px_rgba(139,92,246,0.4)]', 'border-brand-500/60');
+        }
+
+        // 2. Adjust Hero Title to a cinematic invite message
+        const heroTitle = document.querySelector('#login-screen header h1');
+        if (heroTitle) {
+            heroTitle.innerHTML = `
+                Your squad is <br>
+                <span class="bg-clip-text text-transparent bg-gradient-to-r from-brand-300 via-brand-500 to-fuchsia-600 animate-pulse">waiting.</span>
             `;
         }
 
-        // 2. Adjust ONLY the main Hero Title (Targeting 'header h1' protects your nav logo)
-        const heroTitle = document.querySelector('#login-screen header h1');
-        if (heroTitle) {
-            heroTitle.innerHTML = `Your squad is <br> waiting.`;
-        }
-
-        // 3. Update the subtitle to explain the context
-        const subtitle = document.querySelector('#login-screen header p.text-lg');
+        // 3. Update subtitle context
+        const subtitle = document.querySelector('#login-screen header p');
         if (subtitle) {
-            subtitle.innerHTML = `You've been invited to an accountability squad. <strong class="text-zinc-900 dark:text-white">Sign in to accept your invite</strong>, sync your targets, and start winning together.`;
+            subtitle.innerHTML = `You've been invited to an accountability squad. <strong class="text-white drop-shadow-md">Sign in to accept your invite</strong>, sync your targets, and start winning together.`;
         }
 
-        // 4. Highlight the "Accountability Squad" feature card (The 4th item in the list)
-        const featureCards = document.querySelectorAll('#login-screen header .p-5');
+        // 4. Transform the main CTA button into a glowing brand-colored action
+        const ctaBtn = document.querySelector('#login-screen header button');
+        if (ctaBtn) {
+            ctaBtn.className = 'relative h-16 w-full sm:w-auto px-10 bg-brand-600 text-white font-black text-lg rounded-2xl flex items-center justify-center gap-3 hover:scale-[1.02] transition-all active:scale-95 shadow-[0_0_40px_rgba(139,92,246,0.4)] border border-brand-400/50';
+            ctaBtn.innerHTML = `
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6 h-6 bg-white rounded-full p-0.5 shadow-sm" alt="Google">
+                Sign In to Join Squad
+            `;
+        }
+
+        // 5. Highlight the "Accountability Squad" Bento Card (The 4th item in the grid)
+        const featureCards = document.querySelectorAll('#login-screen section .grid > div');
         if (featureCards && featureCards.length >= 4) {
             const squadCard = featureCards[3];
 
-            // Pop the card out with a scale transform, a thicker border, and a soft glow
-            squadCard.className = 'p-5 bg-brand-50/30 dark:bg-brand-900/10 rounded-[1.5rem] border-2 border-brand-400 dark:border-brand-600 flex gap-4 transition-all transform scale-[1.03] shadow-[0_8px_30px_rgba(139,92,246,0.12)] relative overflow-hidden';
+            // Pop the card out in 3D with a permanent purple glow
+            squadCard.classList.remove('border-white/10', 'hover:border-emerald-500/50');
+            squadCard.classList.add('border-brand-500', 'shadow-[0_0_50px_rgba(139,92,246,0.2)]', 'scale-[1.02]', '-translate-y-2');
 
-            // Make the icon block solid purple so it stands out from the other gray features
-            const iconContainer = squadCard.querySelector('div.w-10');
-            if (iconContainer) {
-                iconContainer.className = 'w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center text-white shrink-0 shadow-md';
+            // Force the background gradient to be permanently visible and purple
+            const bgGradient = squadCard.querySelector('.absolute.inset-0');
+            if (bgGradient) {
+                bgGradient.classList.remove('from-emerald-500/10', 'opacity-0', 'group-hover:opacity-100');
+                bgGradient.classList.add('from-brand-500/20', 'opacity-100');
             }
-        }
 
-        // 5. Transform the main CTA button into a glowing primary action
-        const ctaBtn = document.querySelector('#login-screen header button');
-        if (ctaBtn) {
-            // Swap to a vibrant brand-colored button with a custom purple shadow-glow
-            ctaBtn.className = 'h-14 w-full sm:w-auto px-8 bg-brand-600 hover:bg-brand-500 text-white font-bold text-base rounded-2xl flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(139,92,246,0.35)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] hover:-translate-y-1 transition-all active:scale-95';
-
-            ctaBtn.innerHTML = `
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5 bg-white rounded-full p-0.5" alt="Google">
-                Sign In to Join Squad
-            `;
+            // Make the icon block solid glowing purple instead of emerald
+            const iconContainer = squadCard.querySelector('.w-14.h-14');
+            if (iconContainer) {
+                iconContainer.classList.remove('text-emerald-400', 'bg-white/5', 'border-white/10');
+                iconContainer.classList.add('text-brand-300', 'bg-brand-500/20', 'border-brand-500/50', 'shadow-[0_0_20px_rgba(139,92,246,0.4)]');
+            }
         }
     }
 }
@@ -442,26 +449,33 @@ window.processPendingInvite = async function () {
             });
 
             // 2. Mutual add: Add YOU to THEIR squad list
-            // Your Firestore rules explicitly allow this because request.auth.uid == friendId!
             await setDoc(doc(db, 'artifacts', appId, 'socialFriends', inviterUid, 'list', currentUser.uid), {
                 addedAt: new Date().toISOString()
             });
 
-            showToast("Added new friend to squad!");
-
-            // 3. Clean up the URL so it doesn't trigger again if they refresh the page
+            // 3. Clean up the URL instantly so it doesn't trigger again on refresh
             window.history.replaceState({}, document.title, window.location.pathname);
 
-            // Force a re-render of the squad view if it's open
-            if (typeof renderSquadView === 'function' && state.currentView === 'squad') renderSquadView();
+            // 4. Snap the UI straight to the Squad Tab
+            if (typeof switchView === 'function') {
+                switchView('squad');
+            }
+
+            // 5. Hit them with the cinematic confirmation
+            showToast("Squad joined. No excuses now.");
 
         } catch (error) {
             console.error("Error processing invite:", error);
             showToast("Could not process invite link.");
         }
     } else if (inviterUid === currentUser.uid) {
-        // Just clean the URL if they clicked their own link
+        // If they clicked their own link by mistake
         window.history.replaceState({}, document.title, window.location.pathname);
+
+        // Still route them to the squad tab so the click doesn't feel "broken"
+        if (typeof switchView === 'function') {
+            switchView('squad');
+        }
     }
 }
 // --- TIMER LOGIC & STATE ---

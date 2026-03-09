@@ -43,226 +43,259 @@
     <div id="app-background"></div>
 
     <div id="login-screen"
-        class="fixed inset-0 z-[70] bg-[#FAFAFA] dark:bg-[#0A0A0A] overflow-y-auto custom-scrollbar transition-opacity duration-500 hidden selection:bg-zinc-900 selection:text-white font-sans scroll-smooth">
+        class="fixed inset-0 z-[70] bg-black overflow-y-auto overflow-x-hidden custom-scrollbar transition-opacity duration-700 font-sans scroll-smooth selection:bg-brand-500 selection:text-white text-zinc-100">
     
-        <div class="fixed inset-0 z-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none"
-            style="background-image: radial-gradient(#000 1px, transparent 1px); background-size: 24px 24px;">
+        <style>
+            @keyframes fade-up-cinematic {
+                0% {
+                    opacity: 0;
+                    transform: translateY(30px) scale(0.95);
+                    filter: blur(10px);
+                }
+    
+                100% {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                    filter: blur(0);
+                }
+            }
+    
+            .animate-fade-up {
+                animation: fade-up-cinematic 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                opacity: 0;
+            }
+    
+            .delay-100 {
+                animation-delay: 100ms;
+            }
+    
+            .delay-200 {
+                animation-delay: 200ms;
+            }
+    
+            .delay-300 {
+                animation-delay: 300ms;
+            }
+    
+            .delay-400 {
+                animation-delay: 400ms;
+            }
+    
+            /* The grid background for tech vibes */
+            .bg-grid-pattern {
+                background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+                background-size: 40px 40px;
+                mask-image: radial-gradient(ellipse 80% 50% at 50% 0%, #000 70%, transparent 100%);
+                -webkit-mask-image: radial-gradient(ellipse 80% 50% at 50% 0%, #000 70%, transparent 100%);
+            }
+        </style>
+    
+        <div class="absolute inset-0 bg-grid-pattern pointer-events-none z-0"></div>
+        <div
+            class="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-brand-600/30 blur-[120px] rounded-[100%] pointer-events-none z-0">
         </div>
     
-        <nav
-            class="sticky top-0 z-50 bg-[#FAFAFA]/90 dark:bg-[#0A0A0A]/90 backdrop-blur-md border-b border-zinc-200/50 dark:border-zinc-800/50 px-6 py-4">
+        <nav class="relative z-50 px-6 py-6 animate-fade-up">
             <div class="max-w-7xl mx-auto flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <img src="logo.png" alt="ChaosPrep Logo" class="w-10 h-10 rounded-xl shrink-0 object-contain shadow-sm">
+                <div class="flex items-center gap-3 group cursor-pointer">
+                    <div class="relative">
+                        <div
+                            class="absolute inset-0 bg-brand-500 blur-md opacity-0 group-hover:opacity-50 transition-opacity">
+                        </div>
+                        <img src="logo.png" alt="ChaosPrep Logo"
+                            class="relative w-10 h-10 rounded-xl shrink-0 object-contain shadow-[0_0_15px_rgba(255,255,255,0.1)] border border-white/10">
+                    </div>
                     <div class="flex flex-col justify-center">
-                        <h1 class="text-xl font-black text-zinc-900 dark:text-white tracking-tight leading-none">ChaosPrep
-                        </h1>
+                        <h1
+                            class="text-xl font-black text-white tracking-tight leading-none group-hover:text-brand-400 transition-colors">
+                            ChaosPrep</h1>
                         <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">by
                             sval.tech</span>
                     </div>
                 </div>
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-6">
                     <a href="docs.html"
-                        class="text-xs font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white uppercase tracking-widest hidden sm:block transition-colors">Docs</a>
+                        class="text-xs font-bold text-zinc-400 hover:text-white uppercase tracking-widest hidden sm:block transition-colors">Docs</a>
                     <button onclick="signInWithGoogle()"
-                        class="px-5 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg font-bold text-xs uppercase tracking-widest hover:border-zinc-400 dark:hover:border-zinc-600 text-zinc-700 dark:text-zinc-300 shadow-sm transition-all active:scale-95">
+                        class="px-5 py-2.5 bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest text-white shadow-sm transition-all active:scale-95">
                         Sign In
                     </button>
                 </div>
             </div>
         </nav>
     
-        <header class="max-w-7xl mx-auto px-6 pt-16 pb-24 flex items-center relative z-10 min-h-[calc(100vh-80px)]">
-            <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 w-full items-center">
+        <header
+            class="relative max-w-7xl mx-auto px-6 pt-20 pb-32 flex flex-col items-center justify-center text-center z-10 min-h-[85vh]">
     
-                <div class="flex flex-col justify-center text-left">
+            <div
+                class="animate-fade-up delay-100 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-brand-500/30 bg-brand-500/10 backdrop-blur-md mb-8 shadow-[0_0_20px_rgba(139,92,246,0.15)]">
+                <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-brand-300">2,000+ Students tracking
+                    daily</span>
+            </div>
     
+            <h1
+                class="animate-fade-up delay-200 text-6xl md:text-8xl lg:text-[100px] font-black text-white tracking-tighter leading-[1.05] mb-8 max-w-5xl drop-shadow-2xl">
+                Master the chaos.<br>
+                <span class="bg-clip-text text-transparent bg-gradient-to-r from-zinc-100 via-zinc-400 to-zinc-600">Conquer
+                    the exam.</span>
+            </h1>
+    
+            <p
+                class="animate-fade-up delay-300 text-lg md:text-xl text-zinc-400 leading-relaxed font-medium mb-12 max-w-2xl">
+                The quiet, distraction-free tracking system for JEE, NEET and competitive aspirants. Just the tools you need
+                to hit your targets and visualize your growth. No excuses.
+            </p>
+    
+            <div class="animate-fade-up delay-400 flex flex-col items-center gap-4 w-full sm:w-auto z-20">
+                <div class="relative group w-full sm:w-auto">
                     <div
-                        class="inline-flex items-center bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50 rounded-full mb-8 self-start px-4 py-1.5 shadow-sm">
-                        <span
-                            class="text-[11px] font-bold uppercase tracking-[0.1em] text-zinc-600 dark:text-zinc-400 flex items-center gap-2">
-                            
-                            1,900+ Students tracking daily
-                        </span>
+                        class="absolute -inset-1 bg-gradient-to-r from-brand-600 to-fuchsia-600 rounded-2xl blur-lg opacity-60 group-hover:opacity-100 transition duration-500 group-hover:duration-200">
                     </div>
+                    <button onclick="signInWithGoogle()"
+                        class="relative h-16 w-full sm:w-auto px-10 bg-white text-black font-black text-lg rounded-2xl flex items-center justify-center gap-3 hover:scale-[1.02] transition-all active:scale-95">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6 h-6"
+                            alt="Google">
+                        Start Tracking — It's Free
+                    </button>
+                </div>
+                <p class="text-[11px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 mt-2">
+                    <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Private & Secure
+                </p>
+            </div>
     
-                    <h1
-                        class="text-5xl md:text-7xl lg:text-[80px] font-black text-zinc-900 dark:text-white tracking-tighter leading-[1.05] mb-6">
-                        Master your <br>
-                        <span class="text-brand-500">daily chaos.</span>
-                    </h1>
-    
-                    <p
-                        class="text-lg md:text-xl text-zinc-600 dark:text-zinc-400 leading-relaxed font-medium mb-10 max-w-lg">
-                        The quiet, distraction-free tracking system for JEE, NEET and competitive exam aspirants. Just the tools you need to hit your targets and visualize your growth.
-                    </p>
-    
-                    <div>
-                        <button onclick="signInWithGoogle()"
-                            class="h-14 w-full sm:w-auto px-8 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold text-base rounded-xl flex items-center justify-center gap-3 shadow-lg shadow-zinc-900/20 dark:shadow-white/10 hover:shadow-brand-500/25 hover:-translate-y-1 transition-all duration-300 active:scale-95 group">
-                            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                                class="w-6 h-6 bg-white rounded-full p-0.5 group-hover:scale-110 transition-transform"
-                                alt="Google">
-                            Start Tracking — It's Free
-                        </button>
-                        <p
-                            class="mt-4 text-[11px] font-medium text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                            <i data-lucide="shield-check" class="w-3 h-3"></i> Private & secure.
-                        </p>
-                    </div>
+            <div class="animate-fade-up delay-400 relative w-full mt-24 sm:mt-32 perspective-[2000px] z-10">
+                <div
+                    class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-20 pointer-events-none translate-y-20 scale-y-110">
                 </div>
     
-                <div class="relative w-full mt-8 lg:mt-0 hidden sm:block">
-                    <div class="absolute inset-0 bg-brand-500/10 rounded-full blur-[100px] opacity-60 pointer-events-none">
-                    </div>
-    
+                <div
+                    class="relative rounded-[2rem] border border-white/10 bg-[#09090b]/80 shadow-[0_0_100px_rgba(139,92,246,0.15)] overflow-hidden transform rotateX-[12deg] hover:rotateX-[2deg] transition-transform duration-1000 ease-out will-change-transform max-w-6xl mx-auto backdrop-blur-xl">
                     <div
-                        class="relative w-full transform md:[transform:perspective(1000px)_rotateX(8deg)_rotateY(-12deg)] md:hover:[transform:perspective(1000px)_rotateX(0deg)_rotateY(0deg)] transition-all duration-700 ease-out z-10">
-    
-                        <div
-                            class="rounded-lg shadow-2xl border border-zinc-200/50 dark:border-zinc-800/50 overflow-hidden select-none pointer-events-none bg-[#18181b] relative aspect-[4/3]">
-                            <img src="hero-dashboard.png" alt="ChaosPrep Dashboard"
-                                class="w-full h-full object-cover opacity-95 hover:opacity-100 transition-opacity absolute inset-0 z-10">
-
-                        </div>
-    
-                        <div class="absolute -right-6 top-16 bg-white dark:bg-[#18181b] p-3 pr-5 rounded-xl shadow-xl border border-zinc-200/80 dark:border-zinc-800 flex items-center gap-3 animate-bounce-slight z-20"
-                            style="animation-delay: 150ms;">
-                            <div
-                                class="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20">
-                                <i data-lucide="flame" class="w-5 h-5"></i>
-                            </div>
-                            <div>
-                                <div class="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Study Streak</div>
-                                <div class="text-sm font-black text-zinc-900 dark:text-white">14 Days</div>
-                            </div>
-                        </div>
-    
-                        <div class="absolute -left-8 bottom-16 bg-white dark:bg-[#18181b] p-3 pr-5 rounded-xl shadow-xl border border-zinc-200/80 dark:border-zinc-800 flex items-center gap-3 animate-bounce-slight z-20"
-                            style="animation-delay: 600ms;">
-                            <div
-                                class="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-                                <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
-                            </div>
-                            <div>
-                                <div class="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Mock Score</div>
-                                <div class="text-sm font-black text-zinc-900 dark:text-white">+45</div>
-                            </div>
-                        </div>
-    
+                        class="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-1000 z-10 pointer-events-none">
                     </div>
+                    <img src="hero-dashboard.png" alt="ChaosPrep Dashboard"
+                        class="w-full h-auto object-cover opacity-90 relative z-0">
                 </div>
-    
             </div>
         </header>
     
-        <section class="max-w-7xl mx-auto px-6 py-24 relative z-10 border-t border-zinc-200/50 dark:border-zinc-800/50">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl md:text-5xl font-black text-zinc-900 dark:text-white tracking-tighter">Everything you
-                    need,<br>nothing you don't.</h2>
+        <section class="relative max-w-7xl mx-auto px-6 py-32 z-20">
+            <div
+                class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-px bg-gradient-to-r from-transparent via-white/20 to-transparent">
             </div>
     
-            <div class="grid lg:grid-cols-2 gap-6 md:gap-8">
+            <div class="text-center mb-20">
+                <h2 class="text-4xl md:text-6xl font-black text-white tracking-tighter mb-4">Everything you need.<br><span
+                        class="text-zinc-600">Nothing you don't.</span></h2>
+            </div>
+    
+            <div class="grid md:grid-cols-2 gap-6 md:gap-8">
     
                 <div
-                    class="bg-white dark:bg-[#111] rounded-[2rem] border border-zinc-200/80 dark:border-zinc-800 shadow-sm flex flex-col sm:flex-row overflow-hidden group hover:border-brand-500/30 transition-colors">
-                    <div class="p-8 sm:w-1/2 flex flex-col justify-center">
-                        <div
-                            class="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 mb-6 shrink-0 group-hover:text-brand-500 transition-colors">
-                            <i data-lucide="calendar-check" class="w-6 h-6"></i>
-                        </div>
-                        <h4 class="text-xl font-bold text-zinc-900 dark:text-white mb-3">Daily & Weekly Targets</h4>
-                        <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400 leading-relaxed">Break down massive
-                            syllabi into executable daily tasks and track your weekly completion rate.</p>
-                    </div>
+                    class="group relative bg-[#111] rounded-[2.5rem] border border-white/10 overflow-hidden hover:border-brand-500/50 transition-colors duration-500">
                     <div
-                        class="sm:w-1/2 bg-zinc-50 dark:bg-zinc-900/50 relative min-h-[200px] border-l border-zinc-100 dark:border-zinc-800/50">
-                        <img src="feature-planner.png" alt="Planner Preview"
-                            class="absolute inset-0 w-full h-full object-contain group-hover:scale-105 transition-transform duration-700">
-                        
+                        class="absolute inset-0 bg-gradient-to-br from-brand-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                    </div>
+                    <div class="relative p-10 flex flex-col h-full z-10">
+                        <div
+                            class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-brand-400 mb-8 shadow-inner">
+                            <i data-lucide="calendar-check" class="w-7 h-7"></i>
+                        </div>
+                        <h4 class="text-2xl font-black text-white mb-3 tracking-tight">Daily & Weekly Targets</h4>
+                        <p class="text-base text-zinc-400 leading-relaxed font-medium mb-10">Break down massive syllabi into
+                            executable daily tasks and track your weekly completion rate with brutal honesty.</p>
+                        <div class="mt-auto relative rounded-xl overflow-hidden border border-white/10 shadow-2xl">
+                            <img src="feature-planner.png" alt="Planner Preview"
+                                class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700">
+                        </div>
                     </div>
                 </div>
     
                 <div
-                    class="bg-white dark:bg-[#111] rounded-[2rem] border border-zinc-200/80 dark:border-zinc-800 shadow-sm flex flex-col sm:flex-row overflow-hidden group hover:border-blue-500/30 transition-colors">
-                    <div class="p-8 sm:w-1/2 flex flex-col justify-center">
-                        <div
-                            class="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 mb-6 shrink-0 group-hover:text-blue-500 transition-colors">
-                            <i data-lucide="bar-chart-2" class="w-6 h-6"></i>
-                        </div>
-                        <h4 class="text-xl font-bold text-zinc-900 dark:text-white mb-3">Mock & Error Analytics</h4>
-                        <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400 leading-relaxed">Log your mock
-                            scores, track performance trajectories, and categorize your mistakes to never repeat them.</p>
-                    </div>
+                    class="group relative bg-[#111] rounded-[2.5rem] border border-white/10 overflow-hidden hover:border-blue-500/50 transition-colors duration-500">
                     <div
-                        class="sm:w-1/2 bg-zinc-50 dark:bg-zinc-900/50 relative min-h-[200px] border-l border-zinc-100 dark:border-zinc-800/50">
-                        <img src="feature-analytics.png" alt="Analytics Preview"
-                            class="absolute inset-0 w-full h-full object-contain group-hover:scale-105 transition-transform duration-700">
-                        
+                        class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                    </div>
+                    <div class="relative p-10 flex flex-col h-full z-10">
+                        <div
+                            class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-blue-400 mb-8 shadow-inner">
+                            <i data-lucide="bar-chart-2" class="w-7 h-7"></i>
+                        </div>
+                        <h4 class="text-2xl font-black text-white mb-3 tracking-tight">Mock & Error Analytics</h4>
+                        <p class="text-base text-zinc-400 leading-relaxed font-medium mb-10">Log your mock scores, track
+                            performance trajectories, and categorize your mistakes to guarantee you never repeat them.</p>
+                        <div class="mt-auto relative rounded-xl overflow-hidden border border-white/10 shadow-2xl">
+                            <img src="feature-analytics.png" alt="Analytics Preview"
+                                class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700">
+                        </div>
                     </div>
                 </div>
     
                 <div
-                    class="bg-white dark:bg-[#111] rounded-[2rem] border border-zinc-200/80 dark:border-zinc-800 shadow-sm flex flex-col sm:flex-row overflow-hidden group hover:border-orange-500/30 transition-colors">
-                    <div class="p-8 sm:w-1/2 flex flex-col justify-center">
-                        <div
-                            class="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 mb-6 shrink-0 group-hover:text-orange-500 transition-colors">
-                            <i data-lucide="timer" class="w-6 h-6"></i>
-                        </div>
-                        <h4 class="text-xl font-bold text-zinc-900 dark:text-white mb-3">Focus Timer & Streaks</h4>
-                        <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400 leading-relaxed">Clock your actual
-                            deep work hours, maintain daily study streaks, and listen to built-in focus radio.</p>
-                    </div>
+                    class="group relative bg-[#111] rounded-[2.5rem] border border-white/10 overflow-hidden hover:border-orange-500/50 transition-colors duration-500">
                     <div
-                        class="sm:w-1/2 bg-zinc-50 dark:bg-zinc-900/50 relative min-h-[200px] border-l border-zinc-100 dark:border-zinc-800/50">
-                        <img src="feature-timer.png" alt="Timer Preview"
-                            class="absolute inset-0 w-full h-full object-contain group-hover:scale-105 transition-transform duration-700">
-                       
+                        class="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                    </div>
+                    <div class="relative p-10 flex flex-col h-full z-10">
+                        <div
+                            class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-orange-400 mb-8 shadow-inner">
+                            <i data-lucide="timer" class="w-7 h-7"></i>
+                        </div>
+                        <h4 class="text-2xl font-black text-white mb-3 tracking-tight">Focus Timer & Streaks</h4>
+                        <p class="text-base text-zinc-400 leading-relaxed font-medium mb-10">Clock your actual deep work
+                            hours, maintain daily study streaks, and listen to built-in focus radio to stay locked in.</p>
+                        <div class="mt-auto relative rounded-xl overflow-hidden border border-white/10 shadow-2xl">
+                            <img src="feature-timer.png" alt="Timer Preview"
+                                class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700">
+                        </div>
                     </div>
                 </div>
     
                 <div
-                    class="bg-white dark:bg-[#111] rounded-[2rem] border border-zinc-200/80 dark:border-zinc-800 shadow-sm flex flex-col sm:flex-row overflow-hidden group hover:border-emerald-500/30 transition-colors">
-                    <div class="p-8 sm:w-1/2 flex flex-col justify-center">
-                        <div
-                            class="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 mb-6 shrink-0 group-hover:text-emerald-500 transition-colors">
-                            <i data-lucide="users" class="w-6 h-6"></i>
-                        </div>
-                        <h4 class="text-xl font-bold text-zinc-900 dark:text-white mb-3">Accountability Squad</h4>
-                        <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400 leading-relaxed">Add friends via
-                            invite codes and keep each other in check. Surround yourself with winners.</p>
-                    </div>
+                    class="group relative bg-[#111] rounded-[2.5rem] border border-white/10 overflow-hidden hover:border-emerald-500/50 transition-colors duration-500">
                     <div
-                        class="sm:w-1/2 bg-zinc-50 dark:bg-zinc-900/50 relative min-h-[200px] border-l border-zinc-100 dark:border-zinc-800/50">
-                        <img src="feature-squad.png" alt="Squad Preview"
-                            class="absolute inset-0 w-full h-full object-contain group-hover:scale-105 transition-transform duration-700">
-                    
+                        class="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                    </div>
+                    <div class="relative p-10 flex flex-col h-full z-10">
+                        <div
+                            class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-emerald-400 mb-8 shadow-inner">
+                            <i data-lucide="users" class="w-7 h-7"></i>
+                        </div>
+                        <h4 class="text-2xl font-black text-white mb-3 tracking-tight">Accountability Squad</h4>
+                        <p class="text-base text-zinc-400 leading-relaxed font-medium mb-10">Add friends via invite codes
+                            and keep each other in check. Surround yourself with winners and see who is studying in
+                            real-time.</p>
+                        <div class="mt-auto relative rounded-xl overflow-hidden border border-white/10 shadow-2xl">
+                            <img src="feature-squad.png" alt="Squad Preview"
+                                class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700">
+                        </div>
                     </div>
                 </div>
     
             </div>
     
-            <div class="mt-16 text-center">
+            <div class="mt-24 text-center">
                 <button onclick="signInWithGoogle()"
-                    class="px-8 py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold rounded-xl shadow-lg hover:-translate-y-1 transition-all active:scale-95 inline-flex items-center gap-3">
+                    class="px-10 py-5 bg-white text-black font-black text-lg rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:shadow-[0_0_50px_rgba(255,255,255,0.4)] hover:-translate-y-1 transition-all active:scale-95 inline-flex items-center gap-3">
                     Start crushing your targets
-                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
                 </button>
             </div>
         </section>
     
         <footer
-            class="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center gap-4 relative z-10 border-t border-zinc-200/50 dark:border-zinc-800/50">
-            <div class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 tracking-widest uppercase">
+            class="max-w-7xl mx-auto px-6 py-10 flex flex-col md:flex-row justify-between items-center gap-4 relative z-20 border-t border-white/10">
+            <div class="text-[10px] font-bold text-zinc-600 tracking-widest uppercase">
                 © 2026 SVAL.TECH — ALL RIGHTS RESERVED
             </div>
-            <div class="flex items-center gap-6">
+            <div class="flex items-center gap-8">
                 <a href="docs.html"
-                    class="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors uppercase tracking-widest">Docs</a>
+                    class="text-[10px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-widest">Docs</a>
                 <a href="https://sval.tech/studylocus/privacypolicy.html"
-                    class="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors uppercase tracking-widest">Privacy</a>
+                    class="text-[10px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-widest">Privacy</a>
                 <a href="https://sval.tech/studylocus/termsandconditions.html"
-                    class="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors uppercase tracking-widest">Terms</a>
+                    class="text-[10px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-widest">Terms</a>
             </div>
         </footer>
     </div>
