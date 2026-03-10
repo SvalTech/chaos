@@ -4704,6 +4704,9 @@ window.toggleFullScreenZen = async function () {
     const mobileHeader = document.querySelector('.md\\:hidden.glass');
     const musicWidget = document.getElementById('music-widget');
 
+    const mainArea = document.querySelector('main');
+    const viewContainer = container.parentElement;
+
     isZenMode = !isZenMode;
 
     if (isZenMode) {
@@ -4736,7 +4739,12 @@ window.toggleFullScreenZen = async function () {
         if (sidebar) sidebar.style.display = 'none';
         if (mobileNav) mobileNav.style.display = 'none';
         if (mobileHeader) mobileHeader.style.display = 'none';
-
+        // 💥 Break the CSS trap and strip sidebar margins
+        if (mainArea) mainArea.classList.add('!ml-0', '!pl-0', '!p-0');
+        if (viewContainer) {
+            viewContainer.style.transform = 'none';
+            viewContainer.style.animation = 'none';
+        }
         // BOOST the Music Widget so it floats OVER Zen Mode
         if (musicWidget) {
             musicWidget.classList.add('!z-[250]');
@@ -4769,6 +4777,12 @@ window.toggleFullScreenZen = async function () {
                 } else if (document.webkitExitFullscreen) {
                     await document.webkitExitFullscreen();
                 }
+            }
+
+            if (mainArea) mainArea.classList.remove('!ml-0', '!pl-0', '!p-0');
+            if (viewContainer) {
+                viewContainer.style.transform = '';
+                viewContainer.style.animation = '';
             }
         } catch (err) {
             console.warn("Error exiting fullscreen:", err);
