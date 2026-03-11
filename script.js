@@ -65,7 +65,7 @@ state = {
     viewDate: getLogicalToday(),
     weeklyViewDate: getLogicalToday(),
     timerChartWeekDate: getLogicalToday(),
-    currentView: 'dashboard',
+    currentView: 'calendar',
     settings: { examType: 'JEE Main', session: 'Apr', targetYear: 2026, targetDate: '2026-04-01', customSubjects: [], subjectColors: {}, theme: 'dark', bgUrl: '', showCountdown: true, dailyQuestionTarget: 50, liteMode: true, dayRolloverHour: 0 },
     syllabusData: { status: {}, meta: {} }, syllabusOpenStates: {}
 };
@@ -361,7 +361,6 @@ async function initAuth() {
             }
 
             toggleAppVisibility(true); document.getElementById('login-screen').classList.add('hidden');
-            switchView('dashboard');
         } else {
             toggleAppVisibility(false); document.getElementById('login-screen').classList.remove('hidden');
         }
@@ -374,64 +373,22 @@ function toggleAppVisibility(show) {
     const sidebar = document.getElementById('desktop-sidebar'); const main = document.querySelector('main');
     if (show) { sidebar.style.display = ''; main.style.display = ''; } else { sidebar.style.display = 'none'; main.style.display = 'none'; }
 }
-function updateProfileUI(user) {
-    // We safely check if elements exist before updating them so missing UI doesn't crash the app
-    const nameEl = document.getElementById('user-name-desktop');
-    if (nameEl) nameEl.innerText = user.displayName || "Aspirant";
 
-    const avatarEl = document.getElementById('user-avatar-desktop');
-    if (user.photoURL && avatarEl) {
-        avatarEl.innerHTML = `<img src="${user.photoURL}" class="w-full h-full rounded-full object-cover">`;
-    }
+function updateProfileUI(user) {
+    document.getElementById('user-email-desktop').innerText = user.email; document.getElementById('user-name-desktop').innerText = user.displayName || "Aspirant";
+    if (user.photoURL) document.getElementById('user-avatar-desktop').innerHTML = `<img src="${user.photoURL}" class="w-full h-full rounded-full object-cover">`;
 }
 
 window.signInWithGoogle = async () => { const provider = new GoogleAuthProvider(); await signInWithPopup(auth, provider).catch(console.error); };
-window.handleSignOut = async () => {
-    // Ask for confirmation before signing out
-    const isSure = await window.customConfirm(
-        "Are you sure you want to sign out?",
-        "Sign Out",
-        true, // makes the button red/danger
-        "Sign Out"
-    );
+window.handleSignOut = async () => { await signOut(auth); window.location.reload(); };
 
-    if (isSure) {
-        await signOut(auth);
-        window.location.reload();
-    }
-};
 // --- FIRESTORE LISTENERS ---
 function setupListeners(user) {
     onSnapshot(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'config'), (snap) => {
         if (snap.exists()) {
             state.settings = { ...state.settings, ...snap.data() };
-            if (state.settings.customStations) {
-                musicStations = [...defaultMusicStations, ...state.settings.customStations];
-            }
-
-            if (state.settings.lastPlayedStationId) {
-                const foundIdx = musicStations.findIndex(s => s.id === state.settings.lastPlayedStationId);
-                if (foundIdx !== -1) {
-                    currentStationIdx = foundIdx;
-                    const stNameEl = document.getElementById('station-name');
-                    if (stNameEl) stNameEl.innerText = musicStations[currentStationIdx].name;
-
-                    const delBtn = document.getElementById('btn-delete-station');
-                    if (delBtn) {
-                        if (currentStationIdx >= defaultMusicStations.length) delBtn.classList.remove('hidden');
-                        else delBtn.classList.add('hidden');
-                    }
-
-                    // If the YouTube player is already loaded, cue the restored track
-                    if (typeof musicPlayer !== 'undefined' && musicPlayer && isMusicPlayerReady && !isMusicPlaying) {
-                        musicPlayer.cueVideoById(musicStations[currentStationIdx].id);
-                    }
-                }
-            }
-
             if (state.settings.showCountdown === undefined) state.settings.showCountdown = true;
             applyTheme(state.settings.theme); applyAccentTheme(state.settings.accentTheme || 'default'); applyBackground(state.settings.bgUrl); updateSubjectSelectors(); renderCountdown(); applyLiteMode(state.settings.liteMode); applyMusicSetting(state.settings.showMusic);
-            if (state.currentView === 'dashboard') renderDashboard(); // FIX: Update Dashboard
             if (state.currentView === 'calendar') renderCalendar();
             if (state.currentView === 'syllabus') renderSyllabusView();
             if (state.currentView === 'timer') { updateSubjectSelectors(); updateTimerStats(); renderRecentLogs(); renderTimerChart(); }
@@ -442,7 +399,6 @@ function setupListeners(user) {
 
     onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'tasks'), (snap) => {
         state.tasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        if (state.currentView === 'dashboard') renderDashboard(); // FIX: Update Dashboard
         if (state.currentView === 'calendar') renderCalendar();
         if (state.currentView === 'calendar' && !window.isReordering) renderCalendar();
         if (state.currentView === 'stats-mocks') renderMockStats();
@@ -459,7 +415,6 @@ function setupListeners(user) {
 
     onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'studyLogs'), (snap) => {
         state.studyLogs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        if (state.currentView === 'dashboard') renderDashboard(); // FIX: Update Dashboard
         if (state.currentView === 'timer') { renderRecentLogs(); updateTimerStats(); renderTimerChart(); }
     });
 
@@ -469,7 +424,6 @@ function setupListeners(user) {
             if (!state.syllabusData.status) state.syllabusData.status = {};
             if (!state.syllabusData.meta) state.syllabusData.meta = {};
         } else { state.syllabusData = { status: {}, meta: {} }; }
-        if (state.currentView === 'dashboard') renderDashboard(); // FIX: Update Dashboard
         if (state.currentView === 'syllabus') renderSyllabusView();
     });
 
@@ -733,7 +687,19 @@ async function processSessionLog() {
     const durationMins = Math.floor(timerSeconds / 60);
     let notes = timerMode !== 'flow' ? `${timerMode.charAt(0).toUpperCase() + timerMode.slice(1)} Session` : '';
 
-    // 1. Prepare the Log Data
+    // Task Integration
+    if (linkedTaskId) {
+        const task = state.tasks.find(t => t.id === linkedTaskId);
+        if (task) {
+            notes += notes ? ` - ${task.text}` : task.text;
+
+            const markDone = await customConfirm(`You studied for ${durationMins}m on:\n"${task.text}"\n\nDid you finish it?`, "Session Complete", false, "Mark as Done");
+            if (markDone) {
+                await toggleTask(linkedTaskId, false);
+            }
+        }
+    }
+
     const log = {
         subject: timerSubject,
         durationMinutes: durationMins,
@@ -744,7 +710,6 @@ async function processSessionLog() {
         notes: notes
     };
 
-    // 2. LOG THE TIME FIRST (This ensures your work is saved regardless of the task status)
     try {
         await setDoc(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'studyLogs')), log);
         showToast(`Logged ${durationMins}m of ${timerSubject}`);
@@ -752,26 +717,7 @@ async function processSessionLog() {
         console.error("Failed to log session", e);
     }
 
-    // 3. NOW check for task integration
-    if (linkedTaskId) {
-        const task = state.tasks.find(t => t.id === linkedTaskId);
-        if (task) {
-            // We change the language here to be more intuitive
-            const markDone = await customConfirm(
-                `Time logged! Did you also finish the task: "${task.text}"?`,
-                "Task Status",
-                false,
-                "Yes, Mark Done"
-            );
-
-            if (markDone) {
-                await toggleTask(linkedTaskId, false);
-            }
-            // If they click 'Cancel' now, the time is ALREADY saved above.
-        }
-    }
-
-    // Guarantee the UI resets
+    // Guarantee the UI resets to 00:00:00
     resetTimer();
     syncMySocialStatus(false, "");
 }
@@ -1252,21 +1198,20 @@ window.renderSyllabusView = function () {
             const isExpanded = state.syllabusOpenStates[unitId];
             const chaptersHtml = unitChapters.map(ch => renderChapterContent(ch)).join('');
 
-            // TWEAK: Reduced mb-4 to mb-2.5, rounded-[2rem] to rounded-2xl, and p-5 to p-3.5
             return `
-                        <div class="mb-2.5 bg-white dark:bg-[#18181b] border border-zinc-200/80 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
-                            <div onclick="toggleSyllabusGroup('${unitId}')" class="p-3.5 flex justify-between items-center cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 flex items-center justify-center"><i data-lucide="folder" class="w-4 h-4"></i></div>
+                        <div class="mb-4 bg-white dark:bg-[#18181b] border border-zinc-200/80 dark:border-zinc-800 rounded-[2rem] overflow-hidden shadow-sm">
+                            <div onclick="toggleSyllabusGroup('${unitId}')" class="p-5 flex justify-between items-center cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 flex items-center justify-center"><i data-lucide="folder" class="w-5 h-5"></i></div>
                                     <span class="text-sm font-bold text-zinc-800 dark:text-zinc-200 tracking-tight">${unit.unitName}</span>
                                 </div>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-[11px] font-black ${unitStats.percent === 100 ? 'text-emerald-500' : 'text-zinc-400'} bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-md">${unitStats.percent}%</span>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xs font-black ${unitStats.percent === 100 ? 'text-emerald-500' : 'text-zinc-400'} bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1.5 rounded-lg">${unitStats.percent}%</span>
                                     <i id="group-icon-${unitId}" data-lucide="chevron-down" class="w-4 h-4 text-zinc-400 arrow-icon ${isExpanded ? 'rotate-180' : ''}"></i>
                                 </div>
                             </div>
                             <div id="group-content-${unitId}" class="group-content ${isExpanded ? 'open' : ''}">
-                                <div class="p-2.5 bg-zinc-50/50 dark:bg-[#09090b]/50 border-t border-zinc-100 dark:border-zinc-800">
+                                <div class="p-3 bg-zinc-50/50 dark:bg-[#09090b]/50 border-t border-zinc-100 dark:border-zinc-800">
                                     ${chaptersHtml}
                                 </div>
                             </div>
@@ -1277,22 +1222,20 @@ window.renderSyllabusView = function () {
         if (!hasMatch) return;
 
         const subjStats = calculateSyllabusStats(subject.units.flatMap(u => u.chapters));
-        // TWEAK: Reduced rounded-[2.5rem] to rounded-3xl, mb-8 to mb-5
-        const card = document.createElement('div'); card.className = "glass-card p-0 rounded-3xl overflow-hidden break-inside-avoid mb-5 flex flex-col";
-        // TWEAK: Reduced p-8 to p-5
+        const card = document.createElement('div'); card.className = "glass-card p-0 rounded-[2.5rem] overflow-hidden break-inside-avoid mb-8 flex flex-col";
         card.innerHTML = `
-                    <div class="p-5 pb-3">
-                        <div class="flex justify-between items-end mb-3">
-                            <h2 class="text-xl font-black text-zinc-900 dark:text-white tracking-tighter">${subject.subject}</h2>
-                            <span class="text-lg font-black ${subjStats.percent === 100 ? 'text-emerald-500' : 'text-brand-500'}">${subjStats.percent}%</span>
+                    <div class="p-6 md:p-8 pb-4">
+                        <div class="flex justify-between items-end mb-4">
+                            <h2 class="text-2xl font-black text-zinc-900 dark:text-white tracking-tighter">${subject.subject}</h2>
+                            <span class="text-xl font-black ${subjStats.percent === 100 ? 'text-emerald-500' : 'text-brand-500'}">${subjStats.percent}%</span>
                         </div>
-                        <div class="w-full h-2 rounded-full flex overflow-hidden bg-zinc-100 dark:bg-zinc-800 shadow-inner-dark dark:shadow-inner-light">
+                        <div class="w-full h-2.5 rounded-full flex overflow-hidden bg-zinc-100 dark:bg-zinc-800 shadow-inner-dark dark:shadow-inner-light">
                             <div class="bg-brand-500" style="width: ${(subjStats.mastered / subjStats.total) * 100}%"></div>
                             <div class="bg-emerald-500" style="width: ${(subjStats.completed / subjStats.total) * 100}%"></div>
                             <div class="bg-amber-500" style="width: ${(subjStats.inProgress / subjStats.total) * 100}%"></div>
                         </div>
                     </div>
-                    <div class="p-5 pt-1 space-y-1">${unitsHtml}</div>
+                    <div class="p-6 md:p-8 pt-2 space-y-2">${unitsHtml}</div>
                 `;
         container.appendChild(card);
     });
@@ -1927,10 +1870,8 @@ window.renderCalendar = function () {
 }
 
 window.selectDateForAdd = function (dateStr) {
-    // Unify to always use the modal
-    document.getElementById('task-date-mobile').value = dateStr;
-    openAddTaskModal();
-    setTimeout(() => document.getElementById('task-input-mobile').focus(), 100);
+    if (window.innerWidth >= 768) { document.getElementById('task-date').value = dateStr; document.getElementById('task-input').focus(); }
+    else { document.getElementById('task-date-mobile').value = dateStr; openAddTaskModal(); }
 }
 
 function getStartOfWeek(d) { const date = new Date(d); const day = date.getDay(); const diff = date.getDate() - day + (day === 0 ? -6 : 1); const monday = new Date(date.setDate(diff)); monday.setHours(0, 0, 0, 0); return monday; }
@@ -1981,16 +1922,25 @@ document.getElementById('confirm-delete-btn').onclick = async () => {
     closeConfirmModal(); try { await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, col, id)); } catch (e) { console.error(e); showToast("Error"); }
 };
 window.changeWeek = function (delta) { state.weeklyViewDate.setDate(state.weeklyViewDate.getDate() + (delta * 7)); renderWeeklyView(); }
+
 window.openAddMockFromStats = function () {
-    switchView('calendar');
-    document.getElementById('task-date-mobile').value = getLocalISODate(new Date());
-    openAddTaskModal();
-    setTimeout(() => {
-        const mockRadio = document.querySelector('#subject-selector-mobile input[value="MockTest"]');
+    if (window.innerWidth >= 768) {
+        switchView('calendar');
+        document.getElementById('task-date').value = getLocalISODate(new Date());
+        const mockRadio = document.querySelector('#subject-selector input[value="MockTest"]');
         if (mockRadio) { mockRadio.checked = true; mockRadio.dispatchEvent(new Event('change')); }
-        document.getElementById('task-input-mobile').value = 'Practice Mock Test';
-        document.getElementById('task-input-mobile').focus();
-    }, 50);
+        document.getElementById('task-input').value = 'Practice Mock Test';
+        document.getElementById('task-input').focus();
+    } else {
+        switchView('calendar');
+        document.getElementById('task-date-mobile').value = getLocalISODate(new Date());
+        openAddTaskModal();
+        setTimeout(() => {
+            const mockRadio = document.querySelector('#subject-selector-mobile input[value="MockTest"]');
+            if (mockRadio) { mockRadio.checked = true; mockRadio.dispatchEvent(new Event('change')); }
+            document.getElementById('task-input-mobile').value = 'Practice Mock Test';
+        }, 50);
+    }
 };
 
 window.renderMockStats = function () {
@@ -2010,46 +1960,8 @@ window.renderMockStats = function () {
 
     datasets.push({ label: 'Total', data: marks, borderColor: '#7c3aed', backgroundColor: (context) => { const ctx = context.chart.ctx; const gradient = ctx.createLinearGradient(0, 0, 0, 300); gradient.addColorStop(0, 'rgba(124, 58, 237, 0.5)'); gradient.addColorStop(1, 'rgba(124, 58, 237, 0.0)'); return gradient; }, borderWidth: 4, pointBackgroundColor: '#fff', pointBorderColor: '#7c3aed', fill: true, tension: 0.4, hidden: false });
 
-    const subjectConfig = [
-        { label: 'Physics', data: physicsData, color: '#f43f5e' },
-        { label: 'Chemistry', data: chemData, color: '#f59e0b' },
-        { label: 'Maths', data: mathsData, color: '#3b82f6' },
-        { label: 'Biology', data: bioData, color: '#10b981' }
-    ];
-
-    subjectConfig.forEach(sub => {
-        if (sub.data.some(d => d !== null)) {
-            datasets.push({
-                label: sub.label,
-                data: sub.data,
-                borderColor: sub.color,
-
-                // 1. Add a subtle, dynamic gradient fill based on the subject's hex color
-                backgroundColor: (context) => {
-                    const ctx = context.chart.ctx;
-                    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-                    // Using hex opacity (33 = ~20%, 00 = 0%)
-                    gradient.addColorStop(0, sub.color + '33');
-                    gradient.addColorStop(1, sub.color + '00');
-                    return gradient;
-                },
-
-                borderWidth: 3, // 2. Slightly bolder than before
-                fill: true,     // Enable the fill
-
-                // 3. Make the points pop with a solid core and colored border
-                pointBackgroundColor: state.settings.theme === 'dark' ? '#18181b' : '#ffffff',
-                pointBorderColor: sub.color,
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                pointHoverBorderWidth: 3,
-
-                tension: 0.35,  // 4. Slightly tighter curves
-                hidden: true
-            });
-        }
-    });
+    const subjectConfig = [{ label: 'Physics', data: physicsData, color: '#f43f5e' }, { label: 'Chemistry', data: chemData, color: '#f59e0b' }, { label: 'Maths', data: mathsData, color: '#3b82f6' }, { label: 'Biology', data: bioData, color: '#10b981' }];
+    subjectConfig.forEach(sub => { if (sub.data.some(d => d !== null)) { datasets.push({ label: sub.label, data: sub.data, borderColor: sub.color, backgroundColor: 'transparent', borderWidth: 2, borderDash: [6, 4], pointBackgroundColor: sub.color, pointRadius: 4, tension: 0.4, hidden: true }); } });
 
     const gridColor = state.settings.theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'; const textColor = state.settings.theme === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
 
@@ -2228,105 +2140,36 @@ window.saveMockBreakdown = async function () {
 
 window.switchView = function (view) {
     state.currentView = view;
-
-    // Hide all views and remove animation classes to cleanly restart them
+    // Hide all views instantly
     document.querySelectorAll('.view-section').forEach(el => {
         el.classList.add('hidden');
-        el.classList.remove('animate-view-enter', 'animate-slide-up-fade', 'opacity-0');
+        el.classList.remove('animate-slide-up-fade', 'opacity-0');
     });
 
     let targetId = view;
     let navHighlight = view;
-    // Route inner tracking menus to the main stats icon
     if (view.startsWith('stats')) { targetId = view; navHighlight = 'stats'; }
 
     const container = document.getElementById(`view-container-${targetId}`);
     if (container) {
         container.classList.remove('hidden');
-        // Trigger the ultra-smooth spatial entrance animation
-        container.classList.add('animate-view-enter');
+        // Trigger the entrance animation
+        container.classList.add('animate-slide-up-fade', 'opacity-0');
     }
 
-    // --- DESKTOP NAV GLIDING ANIMATION ---
-    ['dashboard', 'calendar', 'weekly', 'stats', 'syllabus', 'timer', 'squad'].forEach(v => {
+    // Update Nav buttons
+    ['calendar', 'weekly', 'stats', 'syllabus', 'timer', 'squad'].forEach(v => {
         const btn = document.getElementById(`nav-desktop-${v}`);
         if (!btn) return;
-
-        if (v === navHighlight) {
-            btn.classList.add('text-brand-600', 'dark:text-brand-400');
-            btn.classList.remove('text-zinc-500', 'dark:text-zinc-400');
-
-            // Icon micro-interaction (Bounce)
-            const icon = btn.querySelector('i');
-            if (icon) {
-                icon.style.transform = 'scale(0.85)';
-                setTimeout(() => icon.style.transform = 'scale(1.15)', 50);
-                setTimeout(() => icon.style.transform = 'scale(1)', 250);
-                icon.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
-            }
-
-            // Move Desktop Indicator Pill
-            const indicator = document.getElementById('desktop-nav-indicator');
-            if (indicator) {
-                // FIX: Check if the button is inside a dropdown wrapper. 
-                // If it is, use the wrapper's position so it aligns perfectly.
-                const wrapper = btn.closest('.group\\/stats');
-                const topPos = wrapper ? wrapper.offsetTop : btn.offsetTop;
-
-                indicator.style.transform = `translateY(${topPos}px)`;
-                indicator.style.opacity = '1';
-            }
-        } else {
-            btn.classList.remove('text-brand-600', 'dark:text-brand-400');
-            btn.classList.add('text-zinc-500', 'dark:text-zinc-400');
-            const icon = btn.querySelector('i');
-            if (icon) {
-                icon.style.transform = 'scale(1)'; // Reset inactive icons
-                icon.style.transition = 'transform 0.2s ease-out';
-            }
-        }
+        if (v === navHighlight) { btn.classList.add('bg-white', 'dark:bg-zinc-800', 'shadow-sm', 'text-brand-600', 'dark:text-brand-400'); btn.classList.remove('text-zinc-500', 'dark:text-zinc-400', 'hover:bg-zinc-200/50', 'dark:hover:bg-zinc-800/50'); }
+        else { btn.classList.remove('bg-white', 'dark:bg-zinc-800', 'shadow-sm', 'text-brand-600', 'dark:text-brand-400'); btn.classList.add('text-zinc-500', 'dark:text-zinc-400', 'hover:bg-zinc-200/50', 'dark:hover:bg-zinc-800/50'); }
     });
-
-    // --- MOBILE NAV GLIDING ANIMATION ---
-    ['dashboard', 'calendar', 'weekly', 'stats', 'syllabus', 'timer', 'squad'].forEach(v => {
+    ['calendar', 'weekly', 'stats', 'syllabus', 'timer', 'squad'].forEach(v => {
         const btn = document.getElementById(`nav-mobile-${v}`);
-        if (!btn) return;
-
-        if (v === navHighlight) {
-            btn.classList.remove('text-zinc-400', 'dark:text-zinc-500');
-            btn.classList.add('text-brand-600', 'dark:text-brand-400');
-
-            // Icon micro-interaction (Bounce Up)
-            const icon = btn.querySelector('i');
-            if (icon) {
-                icon.style.transform = 'scale(0.85) translateY(4px)';
-                setTimeout(() => icon.style.transform = 'scale(1.2) translateY(-2px)', 50);
-                setTimeout(() => icon.style.transform = 'scale(1) translateY(0)', 250);
-                icon.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
-            }
-
-            // Move Mobile Indicator Background
-            const indicator = document.getElementById('mobile-nav-indicator');
-            if (indicator) {
-                const leftPos = btn.offsetLeft;
-                const width = btn.offsetWidth;
-                indicator.style.width = `${width * 0.75}px`;
-                indicator.style.transform = `translate(${leftPos + width * 0.125}px, -50%)`;
-                indicator.style.opacity = '1';
-            }
-        } else {
-            btn.classList.add('text-zinc-400', 'dark:text-zinc-500');
-            btn.classList.remove('text-brand-600', 'dark:text-brand-400');
-            const icon = btn.querySelector('i');
-            if (icon) {
-                icon.style.transform = 'scale(1) translateY(0)'; // Reset inactive
-                icon.style.transition = 'transform 0.2s ease-out';
-            }
-        }
+        if (btn) { if (v === navHighlight) { btn.classList.remove('text-zinc-400', 'dark:text-zinc-500'); btn.classList.add('text-brand-600', 'dark:text-brand-400'); } else { btn.classList.add('text-zinc-400', 'dark:text-zinc-500'); btn.classList.remove('text-brand-600', 'dark:text-brand-400'); } }
     });
 
     // Render logic
-    if (view === 'dashboard') renderDashboard();
     if (view === 'calendar') renderCalendar();
     if (view === 'weekly') renderWeeklyView();
     if (view === 'stats-mocks') renderMockStats();
@@ -2334,8 +2177,9 @@ window.switchView = function (view) {
     if (view === 'stats-questions') { renderQuestionsView(); renderQuestionsChart(); }
     if (view === 'syllabus') renderSyllabusView();
     if (view === 'squad') renderSquadView();
-    if (view === 'timer') { updateSubjectSelectors(); updateTimerTaskSelector(); updateTimerStats(); renderRecentLogs(); renderTimerChart(); }
+if (view === 'timer') { updateSubjectSelectors(); updateTimerTaskSelector(); updateTimerStats(); renderRecentLogs(); renderTimerChart(); }
 }
+
 
 window.openAddTaskModal = function () { updateSubjectSelectors(); const modal = document.getElementById('add-task-modal'); modal.classList.remove('hidden'); setTimeout(() => { modal.classList.remove('opacity-0'); modal.querySelector('.mobile-sheet').classList.add('open'); }, 10); }
 window.closeAddTaskModal = function () { const modal = document.getElementById('add-task-modal'); modal.querySelector('.mobile-sheet').classList.remove('open'); modal.classList.add('opacity-0'); setTimeout(() => modal.classList.add('hidden'), 400); }
@@ -2344,85 +2188,19 @@ window.renderMockSubjectFields = function (containerId, suffix) {
     const container = document.getElementById(containerId);
     const type = state.settings.examType;
     const subjects = window.getExamSubjects(type, state.settings.customSubjects);
-
-    let html = `
-        <div class="mb-5 flex items-center justify-between bg-fuchsia-500/10 dark:bg-fuchsia-500/5 p-1.5 rounded-2xl border border-fuchsia-200/50 dark:border-fuchsia-800/50 relative overflow-hidden">
-            <div class="absolute inset-0 bg-fuchsia-500/20 dark:bg-fuchsia-500/10 blur-xl rounded-2xl"></div>
-            <div class="relative w-full flex items-center gap-1 z-10">
-                <button type="button" id="mock-toggle-schedule" onclick="toggleMockEntryMode('schedule', '${suffix}')" class="flex-1 py-2 text-xs font-black rounded-xl bg-white dark:bg-[#18181b] text-fuchsia-600 dark:text-fuchsia-400 shadow-md border border-zinc-200/50 dark:border-zinc-700/50 transition-all scale-100 relative z-10">🗓️ Schedule</button>
-                <button type="button" id="mock-toggle-log" onclick="toggleMockEntryMode('log', '${suffix}')" class="flex-1 py-2 text-xs font-bold rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-all scale-95 hover:scale-100 opacity-70 relative z-0">🎯 Log Score</button>
-            </div>
-        </div>
-
-        <div id="mock-score-fields${suffix}" style="display: none;" class="space-y-4 animate-slide-up-fade pb-2">
-            <div class="grid grid-cols-${subjects.length > 3 ? 2 : subjects.length} gap-3">
-    `;
-
-    subjects.forEach(sub => {
-        html += `
-            <div class="relative group">
-                <label class="absolute -top-2.5 left-3 bg-white dark:bg-[#18181b] px-1 text-[9px] font-black text-fuchsia-500 uppercase tracking-widest z-10 shadow-sm rounded-md">${sub.substring(0, 3)}</label>
-                <input type="number" data-subject="${sub}" class="mock-subject-input${suffix} w-full bg-zinc-50 dark:bg-[#27272a]/50 border-2 border-fuchsia-100 dark:border-fuchsia-900/50 rounded-2xl px-3 pt-4 pb-3 text-xl text-center font-black outline-none text-zinc-800 dark:text-white focus:bg-white dark:focus:bg-[#18181b] focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/20 transition-all shadow-inner-light dark:shadow-inner-dark" placeholder="-" oninput="calculateMockTotal('${suffix}')">
-            </div>
-        `;
-    });
-
-    html += `
-            </div>
-            <div class="flex items-center gap-4 p-4 md:p-5 bg-white dark:bg-zinc-900 rounded-3xl border-2 border-fuchsia-100 dark:border-fuchsia-900/50 shadow-sm mt-2">
-                <div class="w-14 h-14 rounded-full bg-fuchsia-100 dark:bg-fuchsia-500/20 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center shrink-0">
-                    <i data-lucide="trophy" class="w-6 h-6"></i>
-                </div>
-                <div class="flex-1">
-                    <div class="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">Total Score</div>
-                    <div class="flex items-baseline gap-1">
-                        <input type="number" id="task-marks${suffix}" placeholder="0" class="w-16 bg-transparent border-none p-0 text-3xl font-black text-fuchsia-600 dark:text-fuchsia-400 focus:ring-0 outline-none" readonly>
-                        <span class="text-xl font-bold text-zinc-300 dark:text-zinc-700">/</span>
-                        <input type="number" id="task-max-marks${suffix}" value="${type === 'NEET' ? 720 : 300}" class="w-14 bg-transparent border-none p-0 text-xl font-bold text-zinc-400 focus:ring-0 outline-none border-b border-dashed border-zinc-300 dark:border-zinc-700 text-center hover:border-fuchsia-500 transition-colors">
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    container.innerHTML = html;
-    lucide.createIcons();
+    let html = `<div class="grid grid-cols-3 gap-2 mb-4">`;
+    subjects.forEach(sub => { html += `<div><label class="block text-[10px] font-bold text-fuchsia-600/70 dark:text-fuchsia-400/70 mb-1.5 uppercase tracking-widest text-center">${sub.substring(0, 3)}</label><input type="number" data-subject="${sub}" class="mock-subject-input${suffix} w-full bg-white dark:bg-zinc-800 border border-fuchsia-200/50 dark:border-fuchsia-900/50 rounded-xl px-2 py-3 text-sm text-center outline-none dark:text-white font-bold focus:ring-2 focus:ring-fuchsia-500 appearance-none shadow-inner-light dark:shadow-inner-dark" placeholder="0" oninput="calculateMockTotal('${suffix}')"></div>`; });
+    html += `</div><div class="flex items-center gap-2 mb-2 text-fuchsia-700 dark:text-fuchsia-300"><i data-lucide="calculator" class="w-4 h-4"></i><span class="text-xs font-bold uppercase tracking-wide">Totals</span></div><div class="grid grid-cols-2 gap-3"><div><label class="block text-[10px] font-bold text-fuchsia-600/70 dark:text-fuchsia-400/70 mb-1 uppercase tracking-widest">Obtained</label><input type="number" id="task-marks${suffix}" placeholder="Auto" class="w-full bg-zinc-100/50 dark:bg-zinc-800/50 border border-transparent rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-black text-fuchsia-600 dark:text-fuchsia-400 text-center cursor-not-allowed" readonly></div><div><label class="block text-[10px] font-bold text-fuchsia-600/70 dark:text-fuchsia-400/70 mb-1 uppercase tracking-widest">Max</label><input type="number" id="task-max-marks${suffix}" value="${type === 'NEET' ? 720 : 300}" class="w-full bg-white dark:bg-zinc-800 border border-fuchsia-200/50 dark:border-fuchsia-900/50 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-black text-zinc-500 focus:ring-2 focus:ring-fuchsia-500 text-center shadow-inner-light dark:shadow-inner-dark"></div></div>`;
+    container.innerHTML = html; lucide.createIcons();
 }
 
 window.calculateMockTotal = function (suffix) { const inputs = document.querySelectorAll(`.mock-subject-input${suffix}`); let total = 0; inputs.forEach(input => { const val = parseInt(input.value); if (!isNaN(val)) total += val; }); document.getElementById(`task-marks${suffix}`).value = total > 0 ? total : ''; }
-window.toggleMockEntryMode = function (mode, suffix) {
-    const schedBtn = document.getElementById('mock-toggle-schedule');
-    const logBtn = document.getElementById('mock-toggle-log');
-    const fields = document.getElementById(`mock-score-fields${suffix}`);
-    const btnText = document.getElementById('btn-add-task-text');
-
-    if (mode === 'schedule') {
-        schedBtn.className = "flex-1 py-2 text-xs font-black rounded-xl bg-white dark:bg-[#18181b] text-fuchsia-600 dark:text-fuchsia-400 shadow-md border border-zinc-200/50 dark:border-zinc-700/50 transition-all scale-100 relative z-10";
-        logBtn.className = "flex-1 py-2 text-xs font-bold rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-all scale-95 hover:scale-100 opacity-70 relative z-0";
-        fields.style.display = 'none';
-        if (btnText) btnText.innerText = "Schedule Mock";
-
-        // Clear inputs so it acts purely as scheduling
-        document.querySelectorAll(`.mock-subject-input${suffix}`).forEach(i => i.value = '');
-        const marksOutput = document.getElementById(`task-marks${suffix}`);
-        if (marksOutput) marksOutput.value = '';
-    } else {
-        logBtn.className = "flex-1 py-2 text-xs font-black rounded-xl bg-white dark:bg-[#18181b] text-fuchsia-600 dark:text-fuchsia-400 shadow-md border border-zinc-200/50 dark:border-zinc-700/50 transition-all scale-100 relative z-10";
-        schedBtn.className = "flex-1 py-2 text-xs font-bold rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-all scale-95 hover:scale-100 opacity-70 relative z-0";
-        fields.style.display = 'block';
-        if (btnText) btnText.innerText = "Save Score";
-
-        setTimeout(() => {
-            const firstInput = document.querySelector(`.mock-subject-input${suffix}`);
-            if (firstInput) firstInput.focus();
-        }, 50);
-    }
-}
 
 function updateSubjectSelectors() {
     const type = state.settings.examType;
     const subjects = window.getExamSubjects(type, state.settings.customSubjects);
-    const fullSubjects = [...subjects, 'MockTest'];
 
+    const fullSubjects = [...subjects, 'MockTest'];
     const renderRadios = (containerId, formSuffix) => {
         const container = document.getElementById(containerId); if (!container) return;
         let html = '';
@@ -2430,11 +2208,14 @@ function updateSubjectSelectors() {
             const isMock = sub === 'MockTest';
             const colorInfo = getSubjectColor(sub);
             const style = isMock ? 'bg-fuchsia-50/50 text-fuchsia-700 border-fuchsia-200/50 dark:bg-fuchsia-900/10 dark:text-fuchsia-300 dark:border-fuchsia-900/50' : 'bg-white text-zinc-600 border-zinc-200 dark:bg-[#18181b] dark:text-zinc-300 dark:border-zinc-800';
-            const colorDot = isMock ? '' : `<span class="w-2.5 h-2.5 rounded-full inline-block shrink-0 shadow-sm" style="background-color: ${colorInfo.hex}"></span>`;
+            const padding = formSuffix === '-mobile' ? 'py-3.5 rounded-2xl' : 'py-2.5 rounded-xl';
 
-            html += `<label class="cursor-pointer"><input type="radio" name="subject" value="${sub}" class="peer sr-only" ${i === 0 ? 'checked' : ''}><div class="flex items-center justify-center gap-1.5 px-2 py-3 rounded-2xl text-xs font-bold border transition-all hover:scale-[1.02] peer-checked:ring-2 peer-checked:ring-offset-2 dark:peer-checked:ring-offset-[#09090b] shadow-sm ${style}" style="--tw-ring-color: ${isMock ? '#d946ef' : colorInfo.hex}">${colorDot} <span class="truncate">${isMock ? '🏆 Mock' : sub}</span></div></label>`;
-        });
-        container.innerHTML = html;
+            // Creates a color dot based on the customized user palette
+            const colorDot = isMock ? '' : `<span class="w-2.5 h-2.5 rounded-full inline-block shrink-0 shadow-sm" style="background-color: ${colorInfo.hex}"></span>`;
+            const labelText = isMock ? '🏆 Mock' : sub;
+
+            html += `<label class="cursor-pointer"><input type="radio" name="subject" value="${sub}" class="peer sr-only" ${i === 0 ? 'checked' : ''}><div class="flex items-center justify-center gap-1.5 px-2 ${padding} text-xs font-bold border transition-all hover:scale-[1.02] peer-checked:ring-2 peer-checked:ring-offset-2 dark:peer-checked:ring-offset-[#09090b] shadow-sm ${style}" style="--tw-ring-color: ${isMock ? '#d946ef' : colorInfo.hex}">${colorDot} <span class="truncate">${labelText}</span></div></label>`;
+        }); container.innerHTML = html;
 
         container.querySelectorAll('input').forEach(radio => {
             radio.addEventListener('change', (e) => {
@@ -2442,42 +2223,23 @@ function updateSubjectSelectors() {
                 const mockContainerId = isMobile ? 'mock-fields-container-mobile' : 'mock-fields-container';
                 const mockFields = document.getElementById(mockContainerId);
 
-                // Smart UI Context updates
-                const titleEl = document.getElementById('modal-title-mobile');
-                const glowEl = document.getElementById('modal-bg-glow');
-                const btnText = document.getElementById('btn-add-task-text');
-                const textInput = document.getElementById(`task-input${formSuffix}`);
-
                 if (e.target.value === 'MockTest') {
                     mockFields.classList.remove('hidden');
                     renderMockSubjectFields(mockContainerId, formSuffix);
-
-                    if (titleEl) titleEl.innerText = "Mock Test";
-                    if (glowEl) glowEl.className = "absolute -top-40 -right-40 w-80 h-80 bg-fuchsia-500/20 rounded-full blur-3xl pointer-events-none transition-colors duration-500";
-                    if (btnText) btnText.innerText = "Schedule Mock";
-                    if (textInput) {
-                        textInput.placeholder = "e.g., QFT 4";
-                        if (textInput.value === '') {
-                            const d = new Date(document.getElementById(`task-date${formSuffix}`).value).getDay();
-                            if (d === 0) textInput.value = "Sunday Full Syllabus";
-                        }
-                    }
                 } else {
                     mockFields.classList.add('hidden');
-                    if (titleEl) titleEl.innerText = "New Task";
-                    if (glowEl) glowEl.className = "absolute -top-40 -right-40 w-80 h-80 bg-brand-500/10 rounded-full blur-3xl pointer-events-none transition-colors duration-500";
-                    if (btnText) btnText.innerText = "Add to Plan";
-                    if (textInput) textInput.placeholder = "What's the goal?";
                 }
 
+                // 💥 TRIGGER ANIMATION HERE 💥
+                // e.target is the hidden radio input. e.target.nextElementSibling is the visible UI capsule.
                 window.spawnFloatingIcons(e.target.nextElementSibling, e.target.value);
             });
         });
+
     };
 
-    renderRadios('subject-selector-mobile', '-mobile');
+    renderRadios('subject-selector-mobile', '-mobile'); renderRadios('subject-selector', '');
 
-    // Timer subject selector logic remains the same below...
     const timerContainer = document.getElementById('timer-subject-selector');
     if (timerContainer) {
         if (!subjects.includes(timerSubject)) timerSubject = subjects[0];
@@ -2492,6 +2254,7 @@ function updateSubjectSelectors() {
 }
 
 document.getElementById('add-task-form-mobile').addEventListener('submit', async (e) => { e.preventDefault(); await handleTaskSubmit('mobile'); });
+document.getElementById('add-task-form').addEventListener('submit', async (e) => { e.preventDefault(); await handleTaskSubmit('desktop'); });
 
 async function handleTaskSubmit(mode) {
     if (!currentUser) return;
@@ -2777,18 +2540,18 @@ window.confirmAddSubject = async () => {
 }
 
 window.closeCustomSubjectModal = () => { document.getElementById('custom-subject-modal').classList.add('opacity-0'); setTimeout(() => document.getElementById('custom-subject-modal').classList.add('hidden'), 300); }
+
 function renderCountdown() {
     const card = document.getElementById('desktop-countdown-card');
     const pill = document.getElementById('mobile-countdown-pill');
 
-    // Safely check if elements exist before trying to hide/show them
     if (!state.settings.showCountdown) {
-        if (card) card.classList.add('hidden');
-        if (pill) pill.classList.add('hidden');
+        card.classList.add('hidden');
+        pill.classList.add('hidden');
         return;
     } else {
-        if (card) card.classList.remove('hidden');
-        if (pill) pill.classList.remove('hidden');
+        card.classList.remove('hidden');
+        pill.classList.remove('hidden');
     }
 
     const targetDateStr = state.settings.targetDate;
@@ -2805,14 +2568,9 @@ function renderCountdown() {
 
     const displayDays = days > 0 ? days : 0;
 
-    // Safely update text
-    const deskDays = document.getElementById('days-left-desktop');
-    const deskDate = document.getElementById('target-date-display-desktop');
-    const mobDays = document.getElementById('days-left-mobile');
-
-    if (deskDays) deskDays.innerText = displayDays;
-    if (deskDate) deskDate.innerText = `Goal: ${targetMidnight.toLocaleDateString('en-GB')}`;
-    if (mobDays) mobDays.innerText = `${displayDays} days`;
+    document.getElementById('days-left-desktop').innerText = displayDays;
+    document.getElementById('target-date-display-desktop').innerText = `Goal: ${targetMidnight.toLocaleDateString('en-GB')}`;
+    document.getElementById('days-left-mobile').innerText = `${displayDays} days`;
 }
 
 function getLocalISODate(d) { const z = d.getTimezoneOffset() * 60000; return new Date(d.getTime() - z).toISOString().split('T')[0]; }
@@ -2965,12 +2723,7 @@ function setupKeyboardShortcuts() {
         switch (e.key) {
             case 'ArrowRight': if (isModalOpen) return; if (state.currentView === 'calendar') { changeMonth(1); showToast('Next Month'); } else if (state.currentView === 'weekly') { changeWeek(1); showToast('Next Week'); } else if (state.currentView === 'timer') { changeTimerChartWeek(1); showToast('Next Week'); } break;
             case 'ArrowLeft': if (isModalOpen) return; if (state.currentView === 'calendar') { changeMonth(-1); showToast('Prev Month'); } else if (state.currentView === 'weekly') { changeWeek(-1); showToast('Prev Week'); } else if (state.currentView === 'timer') { changeTimerChartWeek(-1); showToast('Prev Week'); } break;
-            case 'n': case 'N':
-                if (isModalOpen) return;
-                e.preventDefault();
-                openAddTaskModal();
-                setTimeout(() => document.getElementById('task-input-mobile').focus(), 100);
-                break;
+            case 'n': case 'N': if (isModalOpen) return; e.preventDefault(); if (window.innerWidth < 768) openAddTaskModal(); else document.getElementById('task-input').focus(); break;
             case 't': case 'T': if (isModalOpen) return; goToToday(); showToast('Today'); break;
             case 'Escape': if (!document.getElementById('add-task-modal').classList.contains('hidden')) closeAddTaskModal(); if (!document.getElementById('settings-modal').classList.contains('hidden')) closeSettings(); if (!document.getElementById('day-view-modal').classList.contains('hidden')) closeDayView(); if (!document.getElementById('custom-subject-modal').classList.contains('hidden')) closeCustomSubjectModal(); if (!document.getElementById('manual-log-modal').classList.contains('hidden')) closeManualLogModal(); if (!document.getElementById('edit-mock-modal') && !document.getElementById('edit-mock-modal')?.classList.contains('hidden')) closeEditMockModal(); break;
             case '1': switchView('calendar'); showToast('Planner'); break; case '2': switchView('weekly'); showToast('Targets'); break; case '3': switchView('timer'); showToast('Timer'); break; case '4': switchView('stats-mocks'); showToast('Stats'); break; case '5': switchView('syllabus'); showToast('Syllabus'); break;
@@ -3003,6 +2756,7 @@ function setupTouchGestures() {
 
 
 
+document.getElementById('task-date').value = getLogicalTodayStr();
 document.getElementById('task-date-mobile').value = getLogicalTodayStr();
 
 // --- Mobile Stats Menu ---
@@ -3450,15 +3204,13 @@ let isMusicPlayerReady = false;
 let isMusicPlaying = false;
 let currentStationIdx = 0;
 
-const defaultMusicStations = [
+const musicStations = [
     { name: "Lofi Girl", id: "jfKfPfyJRdk" },
     { name: "Synthwave Boy", id: "4xDzrJKXOOY" },
     { name: "Classical Focus", id: "mIYzp5rcTvU" },
     { name: "Rain Sounds", id: "mPZkdNFkNps" },
     { name: "Electronic (Anjunadeep)", id: "D4MdHQOILdw" }
 ];
-
-let musicStations = [...defaultMusicStations];
 
 // 1. Make functions global so HTML onclick="" can see them
 window.toggleMusicWidget = function () {
@@ -3484,41 +3236,18 @@ window.toggleMusic = function () {
     }
 };
 
-window.changeStation = async function (dir) {
+window.changeStation = function (dir) {
     if (dir === 'next') {
         currentStationIdx = (currentStationIdx + 1) % musicStations.length;
-    } else if (dir === 'prev') {
+    } else {
         currentStationIdx = (currentStationIdx - 1 + musicStations.length) % musicStations.length;
-    } else if (typeof dir === 'number') {
-        currentStationIdx = dir; // Direct jump to specific index
     }
 
-    const currentStation = musicStations[currentStationIdx];
-    document.getElementById('station-name').innerText = currentStation.name;
-
-    // Show delete button ONLY for custom stations (index >= 5)
-    const delBtn = document.getElementById('btn-delete-station');
-    if (delBtn) {
-        if (currentStationIdx >= defaultMusicStations.length) {
-            delBtn.classList.remove('hidden');
-        } else {
-            delBtn.classList.add('hidden');
-        }
-    }
+    // Update UI immediately
+    document.getElementById('station-name').innerText = musicStations[currentStationIdx].name;
 
     if (musicPlayer && isMusicPlayerReady) {
-        musicPlayer.loadVideoById(currentStation.id);
-    }
-
-    // Save selection to Firebase so it persists on reload
-    if (typeof currentUser !== 'undefined' && currentUser) {
-        try {
-            await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), {
-                lastPlayedStationId: currentStation.id
-            });
-        } catch (error) {
-            console.error("Failed to save last station", error);
-        }
+        musicPlayer.loadVideoById(musicStations[currentStationIdx].id);
     }
 };
 
@@ -3526,7 +3255,6 @@ window.changeStation = async function (dir) {
 function initYouTubePlayer() {
     if (document.getElementById('www-widgetapi-script')) return;
     const tag = document.createElement('script');
-    tag.id = 'www-widgetapi-script';
     tag.src = "https://www.youtube.com/iframe_api";
     const firstScriptTag = document.getElementsByTagName('script')[0];
     firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
@@ -3550,128 +3278,15 @@ window.onYouTubeIframeAPIReady = function () {
         }
     });
 };
-window.changeStation = async function (dir) {
-    if (dir === 'next') {
-        currentStationIdx = (currentStationIdx + 1) % musicStations.length;
-    } else if (dir === 'prev') {
-        currentStationIdx = (currentStationIdx - 1 + musicStations.length) % musicStations.length;
-    } else if (typeof dir === 'number') {
-        currentStationIdx = dir; // Direct jump to specific index
-    }
-
-    const currentStation = musicStations[currentStationIdx];
-    document.getElementById('station-name').innerText = currentStation.name;
-
-    // Show delete button ONLY for custom stations (index >= 5)
-    const delBtn = document.getElementById('btn-delete-station');
-    if (delBtn) {
-        if (currentStationIdx >= defaultMusicStations.length) {
-            delBtn.classList.remove('hidden');
-        } else {
-            delBtn.classList.add('hidden');
-        }
-    }
-
-    if (musicPlayer && isMusicPlayerReady) {
-        musicPlayer.loadVideoById(currentStation.id);
-    }
-
-    // Save selection to Firebase so it persists on reload
-    if (typeof currentUser !== 'undefined' && currentUser) {
-        try {
-            await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), {
-                lastPlayedStationId: currentStation.id
-            });
-        } catch (error) {
-            console.error("Failed to save last station", error);
-        }
-    }
-};
 
 function onPlayerReady(event) {
     isMusicPlayerReady = true;
     const statusDot = document.getElementById('youtube-status');
     if (statusDot) {
-        statusDot.classList.remove('bg-rose-500', 'shadow-[0_0_8px_rgba(244,63,94,0.6)]');
-        statusDot.classList.add('bg-emerald-500', 'shadow-[0_0_8px_rgba(16,185,129,0.6)]');
-    }
-
-    const volSlider = document.getElementById('music-volume');
-    if (volSlider) {
-        musicPlayer.setVolume(volSlider.value);
-    }
-
-    // Cue the saved station instead of always defaulting to index 0
-    if (musicStations[currentStationIdx]) {
-        musicPlayer.cueVideoById(musicStations[currentStationIdx].id);
+        statusDot.classList.remove('bg-red-500');
+        statusDot.classList.add('bg-emerald-500');
     }
 }
-// Control Volume
-window.changeVolume = function (val) {
-    if (musicPlayer && isMusicPlayerReady) {
-        musicPlayer.setVolume(val);
-    }
-};
-
-// Parse and Load Custom YouTube Links
-window.loadCustomStation = async function () {
-    const url = document.getElementById('custom-yt-url').value;
-    if (!url) return;
-
-    // Regex to extract the video ID
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    const match = url.match(regExp);
-
-    if (match && match[2].length === 11) {
-        const videoId = match[2];
-        let videoTitle = "Custom Stream"; // Fallback name
-
-        // Show a loading toast so the user knows it's fetching
-        showToast("Fetching video details...");
-
-        // Fetch the title using YouTube's oEmbed API (No API key required)
-        try {
-            const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
-            if (response.ok) {
-                const data = await response.json();
-                if (data && data.title) {
-                    // Shorten the title if it's ridiculously long
-                    videoTitle = data.title.length > 40 ? data.title.substring(0, 40) + "..." : data.title;
-                }
-            }
-        } catch (err) {
-            console.warn("Could not fetch video title, using fallback.", err);
-        }
-
-        const newStation = { name: videoTitle, id: videoId };
-
-        // 1. Add to local array immediately
-        musicStations.push(newStation);
-
-        // 2. Save permanently to Firebase
-        if (typeof currentUser !== 'undefined' && currentUser) {
-            try {
-                await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), {
-                    customStations: arrayUnion(newStation)
-                });
-            } catch (error) {
-                console.error("Failed to save custom station to cloud", error);
-            }
-        }
-
-        // 3. Automatically jump to it (which triggers the save state and UI updates)
-        window.changeStation(musicStations.length - 1);
-
-        // 4. Clean up input field
-        document.getElementById('custom-yt-url').value = '';
-        document.getElementById('custom-station-input').classList.add('hidden');
-        showToast(`Added: ${videoTitle}`);
-
-    } else {
-        showToast("Invalid YouTube URL");
-    }
-};
-
 function onPlayerStateChange(event) {
     // YT.PlayerState.PLAYING is 1
     if (event.data === 1) {
@@ -3714,35 +3329,6 @@ function updatePlayButtonUI(isPlaying) {
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
-window.removeCurrentStation = async function () {
-    // Safety check: Cannot delete default stations
-    if (currentStationIdx < defaultMusicStations.length) return;
-
-    const stationToDelete = musicStations[currentStationIdx];
-
-    const isSure = await customConfirm(`Remove "${stationToDelete.name}" from your stations?`, "Delete Custom Stream", true, "Remove");
-    if (!isSure) return;
-
-    // 1. Remove from Firebase database
-    if (typeof currentUser !== 'undefined' && currentUser) {
-        try {
-            await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), {
-                customStations: arrayRemove(stationToDelete)
-            });
-            showToast("Stream removed");
-        } catch (e) {
-            console.error(e);
-            showToast("Failed to remove stream");
-            return;
-        }
-    }
-
-    // 2. Remove locally
-    musicStations.splice(currentStationIdx, 1);
-
-    // 3. Switch back to the previous station automatically
-    window.changeStation('prev');
-};
 
 // ==========================================
 // MUSIC SETTINGS TOGGLE LOGIC
@@ -3895,7 +3481,6 @@ function setupSquadListeners(user) {
             state.myProfile = docSnap.data();
             // Force a re-render of the friend code check/squad view
             if (state.currentView === 'squad') renderSquadView();
-            if (state.currentView === 'dashboard') renderDashboard(); // FIX: Update Dashboard
         }
     });
 
@@ -3929,14 +3514,12 @@ function setupSquadListeners(user) {
                             state.squad.push(friendData);
                         }
                         if (state.currentView === 'squad') renderSquadView();
-                        if (state.currentView === 'dashboard') renderDashboard(); // FIX: Update Dashboard
                     }
                 });
             }
         });
 
         if (state.currentView === 'squad') renderSquadView();
-        if (state.currentView === 'dashboard') renderDashboard(); // FIX: Update Dashboard
     });
 }
 
@@ -4704,9 +4287,6 @@ window.toggleFullScreenZen = async function () {
     const mobileHeader = document.querySelector('.md\\:hidden.glass');
     const musicWidget = document.getElementById('music-widget');
 
-    const mainArea = document.querySelector('main');
-    const viewContainer = container.parentElement;
-
     isZenMode = !isZenMode;
 
     if (isZenMode) {
@@ -4739,12 +4319,7 @@ window.toggleFullScreenZen = async function () {
         if (sidebar) sidebar.style.display = 'none';
         if (mobileNav) mobileNav.style.display = 'none';
         if (mobileHeader) mobileHeader.style.display = 'none';
-        // 💥 Break the CSS trap and strip sidebar margins
-        if (mainArea) mainArea.classList.add('!ml-0', '!pl-0', '!p-0');
-        if (viewContainer) {
-            viewContainer.style.transform = 'none';
-            viewContainer.style.animation = 'none';
-        }
+
         // BOOST the Music Widget so it floats OVER Zen Mode
         if (musicWidget) {
             musicWidget.classList.add('!z-[250]');
@@ -4777,12 +4352,6 @@ window.toggleFullScreenZen = async function () {
                 } else if (document.webkitExitFullscreen) {
                     await document.webkitExitFullscreen();
                 }
-            }
-
-            if (mainArea) mainArea.classList.remove('!ml-0', '!pl-0', '!p-0');
-            if (viewContainer) {
-                viewContainer.style.transform = '';
-                viewContainer.style.animation = '';
             }
         } catch (err) {
             console.warn("Error exiting fullscreen:", err);
@@ -5241,359 +4810,35 @@ window.resetMockScore = async function () {
         showToast("Error resetting mock");
     }
 }
-// Add these two variables right above your renderDashboard function
-// Add these two variables right above your renderDashboard function if you haven't already
-let isInitialDashboardLoad = true;
-let renderDashDebounce = null;
-let dashCache = {}; // <-- THE MAGIC FIX: Stores exactly what we generated last time
-let cachedGreeting = "";
-let lastGreetingHour = -1;
-window.renderDashboard = function () {
-    const delay = isInitialDashboardLoad ? 50 : 50;
-    if (renderDashDebounce) clearTimeout(renderDashDebounce);
 
-    renderDashDebounce = setTimeout(() => {
-        const todayStr = getLogicalTodayStr();
-        const now = new Date();
-        let needsLucideUpdate = false; // Tracks if we actually changed the DOM
+// ==========================================
+// SIDEBAR COLLAPSE LOGIC
+// ==========================================
+window.toggleSidebar = function () {
+    const sidebar = document.getElementById('desktop-sidebar');
+    const openBtn = document.getElementById('desktop-sidebar-open');
 
-        // --- BULLETPROOF CACHE DIFFING ---
-        // Compares against our JS cache, ignoring how Lucide mutates the live DOM
-        const updateText = (id, text) => {
-            if (dashCache[id] !== text) {
-                dashCache[id] = text;
-                const el = document.getElementById(id);
-                if (el) el.innerText = text;
-            }
-        };
-        const updateHTML = (id, html) => {
-            if (dashCache[id] !== html) {
-                dashCache[id] = html;
-                const el = document.getElementById(id);
-                if (el) {
-                    el.innerHTML = html;
-                    needsLucideUpdate = true; // Flag to rebuild icons ONLY if HTML changed
-                }
-            }
-        };
+    // Toggle the negative margin to slide it out of view
+    sidebar.classList.toggle('md:-ml-[320px]');
 
-        // Dynamic Greeting & Date
-        // Dynamic Greeting & Date
-        const hours = now.getHours();
+    const isCollapsed = sidebar.classList.contains('md:-ml-[320px]');
 
-        // Only generate a new random greeting if it's a new hour or first load
-        if (hours !== lastGreetingHour || !cachedGreeting) {
-            lastGreetingHour = hours;
+    if (isCollapsed) {
+        // Fade in and slide the floating open button
+        openBtn.classList.remove('opacity-0', 'pointer-events-none', '-translate-x-4');
+        openBtn.classList.add('opacity-100', 'translate-x-0');
 
-            if (hours >= 4 && hours < 12) {
-                const morningGreetings = ["Good morning", "Rise and grind", "Win the morning", "Let's get it today"];
-                cachedGreeting = morningGreetings[Math.floor(Math.random() * morningGreetings.length)];
-            }
-            else if (hours >= 12 && hours < 17) {
-                const afternoonGreetings = ["Good afternoon", "Keep the momentum going", "Stay focused", "Halfway there"];
-                cachedGreeting = afternoonGreetings[Math.floor(Math.random() * afternoonGreetings.length)];
-            }
-            else if (hours >= 17 && hours < 22) {
-                const eveningGreetings = ["Good evening", "Finish the day strong", "Evening focus session", "Almost there"];
-                cachedGreeting = eveningGreetings[Math.floor(Math.random() * eveningGreetings.length)];
-            }
-            else {
-                const nightGreetings = ["Burning the midnight oil?", "Late night grind", "Respect the hustle", "Quiet hours, deep focus"];
-                cachedGreeting = nightGreetings[Math.floor(Math.random() * nightGreetings.length)];
-            }
-        }
-
-        updateText('dash-greeting', cachedGreeting);
-        updateText('dash-date', now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }));
-
-        const fullName = currentUser?.displayName || "Aspirant";
-        updateText('dash-user-name', fullName.split(' ')[0]);
-
-        // Focus Time Metric
-        const todayLogs = state.studyLogs.filter(l => l.date === todayStr);
-        const totalMins = todayLogs.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
-        const hrs = Math.floor(totalMins / 60);
-        const mins = totalMins % 60;
-        const focusHtml = hrs > 0
-            ? `${hrs}<span class="text-xl md:text-2xl text-zinc-400 font-bold ml-1 mr-2">h</span>${mins}<span class="text-xl md:text-2xl text-zinc-400 font-bold ml-1">m</span>`
-            : `${mins}<span class="text-xl md:text-2xl text-zinc-400 font-bold ml-1">m</span>`;
-        updateHTML('dash-focus-time', focusHtml);
-
-        // Task Metric & Progress Ring
-        const tasks = state.tasks.filter(t => t.date === todayStr).sort((a, b) => (a.order || 0) - (b.order || 0));
-        const completed = tasks.filter(t => t.completed).length;
-        const total = tasks.length;
-        const progress = total ? Math.round((completed / total) * 100) : 0;
-
-        updateHTML('dash-task-count', `${completed}<span class="text-2xl text-zinc-400 font-black">/${total}</span>`);
-
-        const dashRing = document.getElementById('dash-task-ring');
-        if (dashRing) {
-            const circumference = 251.3;
-            const offset = circumference - (progress / 100) * circumference;
-            setTimeout(() => { dashRing.style.strokeDashoffset = offset; }, 50);
-
-            if (progress === 100 && total > 0) {
-                dashRing.classList.remove('text-emerald-500');
-                dashRing.classList.add('text-brand-500');
-            } else {
-                dashRing.classList.add('text-emerald-500');
-                dashRing.classList.remove('text-brand-500');
-            }
-        }
-
-        // Reality Check Metric
-        const targetDateStr = state.settings.targetDate || '2026-04-01';
-        const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const [ty, tm, td] = targetDateStr.split('-').map(Number);
-        const targetMidnight = new Date(ty, tm - 1, td);
-
-        const diffTime = targetMidnight - todayMidnight;
-        const diff = Math.round(diffTime / (1000 * 60 * 60 * 24));
-
-        updateText('dash-days-left', (diff > 0 ? diff : 0).toString());
-
-        // Mission Control (Actionable Task Tickets)
-        const pendingTasks = tasks.filter(t => !t.completed).slice(0, 4);
-        let missionHtmlStr = '';
-
-        if (tasks.length === 0) {
-            missionHtmlStr = `
-                <div class="flex flex-col items-center justify-center flex-1 py-8 text-center animate-fade-up">
-                    <i data-lucide="clipboard-list" class="w-8 h-8 text-zinc-300 dark:text-zinc-700 mb-3"></i>
-                    <h4 class="text-sm font-black text-zinc-900 dark:text-white tracking-tight mb-1">Clear Schedule</h4>
-                    <p class="text-xs text-zinc-500 font-medium mb-4">Plan your execution for today.</p>
-                </div>`;
-        } else if (pendingTasks.length === 0) {
-            missionHtmlStr = `
-                <div class="flex flex-col items-center justify-center flex-1 py-8 text-center animate-fade-up">
-                    <i data-lucide="medal" class="w-8 h-8 text-emerald-500 drop-shadow-md mb-3"></i>
-                    <h4 class="text-sm font-black text-zinc-900 dark:text-white tracking-tight mb-1">Targets Neutralized</h4>
-                    <p class="text-xs text-zinc-500 font-medium">Rest up, or get ahead for tomorrow.</p>
-                </div>`;
-        } else {
-            pendingTasks.forEach((t, i) => {
-                const colors = getSubjectColor(t.subject);
-                const badgeClass = state.settings.theme === 'dark' ? colors.dark : colors.light;
-                const subtaskCount = t.subtasks ? t.subtasks.length : 0;
-                const subtaskDone = t.subtasks ? t.subtasks.filter(st => st.completed).length : 0;
-
-                let subtaskHtml = '';
-                let subtaskListHtml = ''; // <-- New variable to hold the list
-
-                if (subtaskCount > 0) {
-                    // Keep the small summary badge
-                    subtaskHtml = `<div class="flex items-center gap-1 text-[9px] font-bold text-zinc-400 mt-0.5"><i data-lucide="list-tree" class="w-3 h-3"></i> ${subtaskDone}/${subtaskCount}</div>`;
-
-                    // Build the actual interactive subtask checklist
-                    subtaskListHtml = `<div class="mt-2.5 space-y-1.5 border-l-2 border-zinc-200 dark:border-zinc-700/50 pl-2.5">`;
-                    t.subtasks.forEach(st => {
-                        const stTextClass = st.completed ? 'text-zinc-400 line-through' : 'text-zinc-600 dark:text-zinc-300 font-medium';
-                        subtaskListHtml += `
-                            <div class="flex items-start gap-2 text-[10px] ${stTextClass} group/subtask transition-colors hover:text-zinc-900 dark:hover:text-zinc-100">
-                                <input type="checkbox" class="w-3 h-3 mt-0.5 shrink-0 accent-brand-500 cursor-pointer opacity-70 group-hover/subtask:opacity-100 transition-opacity" ${st.completed ? 'checked' : ''} onclick="toggleSubtask('${t.id}', '${st.id}', ${st.completed})">
-                                <span class="leading-tight truncate flex-1">${st.text}</span>
-                            </div>`;
-                    });
-                    subtaskListHtml += `</div>`;
-                }
-
-                const animStyle = `style="animation: fade-up-cinematic 0.3s ease-out ${i * 0.05}s backwards;"`;
-
-                missionHtmlStr += `
-                    <div class="group relative flex items-start gap-3 p-3 bg-zinc-50/50 dark:bg-zinc-800/30 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all hover:border-brand-400 dark:hover:border-brand-600 hover:bg-white dark:hover:bg-[#18181b]" ${animStyle}>
-                        
-                        <input type="checkbox" class="w-5 h-5 mt-0.5 shrink-0 accent-brand-500 cursor-pointer relative z-10" onclick="toggleTask('${t.id}', false);">
-                    
-                        <div class="flex-1 min-w-0 relative z-10">
-                            <div class="text-sm font-bold text-zinc-900 dark:text-zinc-100 tracking-tight leading-tight">${t.text}</div>
-                            <div class="flex items-center gap-2 mt-1.5">
-                                <span class="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${badgeClass}">${t.subject}</span>
-                                ${subtaskHtml}
-                            </div>
-                            ${subtaskListHtml}
-                        </div>
-                        
-                        <button onclick="switchView('timer'); setTimerSubject('${t.subject}'); setTimeout(()=> {const sel=document.getElementById('timer-task-linker'); if(sel) {sel.value='${t.id}'; linkedTaskId='${t.id}'}},100);" class="w-8 h-8 mt-[-2px] shrink-0 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 text-brand-600 dark:text-brand-400 rounded-lg hover:bg-brand-500 hover:text-white transition-all active:scale-95" title="Focus on this">
-                            <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
-                        </button>
-                    </div>
-                `;
-            });
-        }
-        updateHTML('dash-mission-list', missionHtmlStr);
-
-        // CSS-Only Sparkline Chart
-        const weekData = [];
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date(now); d.setDate(now.getDate() - i);
-            const logs = state.studyLogs.filter(l => l.date === getLocalISODate(d));
-            weekData.push({
-                day: d.toLocaleDateString('en-US', { weekday: 'narrow' }),
-                mins: logs.reduce((a, c) => a + (c.durationMinutes || 0), 0)
-            });
-        }
-
-        const maxMins = Math.max(...weekData.map(d => d.mins), 60);
-        const chartHtmlStr = weekData.map((data, i) => {
-            const heightPercent = (data.mins / maxMins) * 100;
-            const isToday = i === 6;
-            const color = isToday ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]' : 'bg-emerald-400/30 dark:bg-emerald-600/30';
-
-            return `
-            <div class="flex-1 flex flex-col justify-end items-center group relative h-full">
-                <div class="absolute -top-8 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-bold py-1 px-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20 shadow-floating">
-                    ${data.mins}m
-                </div>
-                <div class="w-full bg-emerald-500/10 rounded-t-md absolute bottom-0 h-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <div class="w-full ${color} rounded-t-md relative z-10 transition-all duration-1000 group-hover:bg-emerald-400" style="height: ${heightPercent}%; min-height: 4px;"></div>
-                <span class="text-[9px] font-bold ${isToday ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-400'} mt-2">${data.day}</span>
-            </div>`;
-        }).join('');
-        updateHTML('dash-mini-chart', chartHtmlStr);
-
-        // Squad Live Pulse
-        let squadHtmlStr = '';
-        if (!ENABLE_SQUAD_FEATURE || state.squad.length === 0) {
-            squadHtmlStr = `
-                <div class="flex flex-col items-center justify-center py-6 text-center rounded-2xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200/50 dark:border-zinc-800/50">
-                    <div class="w-10 h-10 bg-zinc-200 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-3">
-                        <i data-lucide="user-plus" class="w-4 h-4 text-zinc-500"></i>
-                    </div>
-                    <p class="text-xs text-zinc-600 dark:text-zinc-400 font-bold mb-3">Grinding Solo</p>
-                    <button onclick="switchView('squad'); setTimeout(()=>openAddFriendModal(), 100);" class="text-[10px] font-black text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-500/10 px-4 py-2 rounded-xl hover:bg-brand-100 dark:hover:bg-brand-500/20 transition-colors uppercase tracking-widest">Build Squad</button>
-                </div>`;
-        } else {
-            const activeMembers = [...state.squad].sort((a, b) => {
-                if (a.isStudying && !b.isStudying) return -1;
-                if (!a.isStudying && b.isStudying) return 1;
-                return new Date(b.lastActive || 0) - new Date(a.lastActive || 0);
-            }).slice(0, 4);
-
-            activeMembers.forEach(member => {
-                const isStudying = member.isStudying;
-                const isExam = member.timerMode === 'exam';
-
-                let ringColor = 'border-transparent';
-                let statusText = '';
-
-                if (isStudying) {
-                    ringColor = isExam ? 'border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.3)]' : 'border-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.3)]';
-                    statusText = `<span class="${isExam ? 'text-purple-600 dark:text-purple-400' : 'text-rose-600 dark:text-rose-400'} flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full ${isExam ? 'bg-purple-500' : 'bg-rose-500'} animate-pulse"></span> ${member.studySubject || 'Focusing'}</span>`;
-                } else {
-                    const diffMins = (new Date() - new Date(member.lastActive || 0)) / 60000;
-                    if (diffMins < 15) statusText = `<span class="text-amber-600 dark:text-amber-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Idle</span>`;
-                    else if (diffMins < 60) statusText = `<span class="text-zinc-500">Seen ${Math.round(diffMins)}m ago</span>`;
-                    else statusText = `<span class="text-zinc-500">Offline</span>`;
-                }
-
-                const avatarImg = member.avatar
-                    ? `<img src="${member.avatar}" class="w-9 h-9 rounded-full object-cover border-2 ${ringColor}">`
-                    : `<div class="w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 flex items-center justify-center font-black text-sm border-2 ${ringColor}">${member.name.charAt(0)}</div>`;
-
-                squadHtmlStr += `
-                    <div class="flex items-center gap-3 p-2.5 hover:bg-zinc-50 dark:hover:bg-[#27272a]/50 rounded-[1rem] transition-colors cursor-pointer border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700/50" onclick="switchView('squad')">
-                        ${avatarImg}
-                        <div class="flex-1 min-w-0">
-                            <div class="text-sm font-bold text-zinc-900 dark:text-white truncate tracking-tight">${member.name}</div>
-                            <div class="text-[10px] font-bold uppercase tracking-widest truncate mt-0.5">${statusText}</div>
-                        </div>
-                    </div>
-                `;
-            });
-
-            const sidebarSquadLive = document.getElementById('sidebar-squad-live');
-            if (sidebarSquadLive && state.squad) {
-                const studyingFriends = state.squad.filter(m => m.isStudying).slice(0, 3);
-                let sbHtml = '';
-                if (studyingFriends.length > 0) {
-                    sbHtml = studyingFriends.map(member => {
-                        const isExam = member.timerMode === 'exam';
-                        const ringColor = isExam ? 'border-purple-500' : 'border-rose-500';
-                        if (member.avatar) {
-                            return `<img src="${member.avatar}" class="w-6 h-6 rounded-full object-cover border-2 ${ringColor} shadow-sm relative hover:z-20 hover:-translate-y-1 transition-transform" title="${member.name} is focusing">`;
-                        } else {
-                            return `<div class="w-6 h-6 rounded-full bg-zinc-800 text-white flex items-center justify-center text-[9px] font-black border-2 ${ringColor} shadow-sm relative hover:z-20 hover:-translate-y-1 transition-transform" title="${member.name} is focusing">${member.name.charAt(0)}</div>`;
-                        }
-                    }).join('');
-
-                    if (state.squad.filter(m => m.isStudying).length > 3) {
-                        sbHtml += `<div class="w-6 h-6 rounded-full bg-zinc-100 dark:bg-zinc-800 border-2 border-white dark:border-[#18181b] flex items-center justify-center text-[9px] font-bold text-zinc-500 z-0">+${state.squad.filter(m => m.isStudying).length - 3}</div>`;
-                    }
-                }
-                updateHTML('sidebar-squad-live', sbHtml);
-            }
-        }
-        updateHTML('dash-squad-pulse', squadHtmlStr);
-
-        // ONLY TRIGGER LUCIDE IF THE HTML ACTUALLY CHANGED 
-        if (needsLucideUpdate && typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-
-        isInitialDashboardLoad = false;
-
-    }, delay);
-};
-// --- SIDEBAR GLITCH FIX ---
-function initSidebarObserver() {
-    const trackingWrapper = document.querySelector('.group\\/stats');
-    const indicator = document.getElementById('desktop-nav-indicator');
-
-    if (trackingWrapper && indicator) {
-        // This observer watches the tracking menu. Whenever it expands/collapses, 
-        // it recalculates the exact position of the currently active tab.
-        const observer = new ResizeObserver(() => {
-            let activeView = state.currentView;
-            // Route inner stats views to the main stats button
-            if (activeView && activeView.startsWith('stats')) activeView = 'stats';
-
-            const activeBtn = document.getElementById(`nav-desktop-${activeView}`);
-            if (activeBtn) {
-                const wrapper = activeBtn.closest('.group\\/stats');
-                const topPos = wrapper ? wrapper.offsetTop : activeBtn.offsetTop;
-
-                // Force the indicator to ride the layout shift perfectly
-                indicator.style.transform = `translateY(${topPos}px)`;
-            }
-        });
-
-        observer.observe(trackingWrapper);
+        // Optional: Trigger a chart resize since the main container just got wider
+        setTimeout(() => {
+            if (mockChartInstance) mockChartInstance.resize();
+            if (timerChartInstance) timerChartInstance.resize();
+            if (questionsChartInstance) questionsChartInstance.resize();
+        }, 300);
+    } else {
+        // Hide the floating button
+        openBtn.classList.add('opacity-0', 'pointer-events-none', '-translate-x-4');
+        openBtn.classList.remove('opacity-100', 'translate-x-0');
     }
 }
-
-// Initialize the fix right after auth loads
-setTimeout(initSidebarObserver, 500);
-
-function initTouchSidebar() {
-    const sidebar = document.getElementById('desktop-sidebar');
-    if (!sidebar) return;
-
-    // 1. Expand immediately when tapping anywhere inside the sidebar
-    sidebar.addEventListener('touchstart', (e) => {
-        if (!sidebar.classList.contains('touch-expanded')) {
-            sidebar.classList.add('touch-expanded');
-        }
-    }, { passive: true });
-
-    // 2. Collapse smoothly when tapping anywhere outside the sidebar
-    document.addEventListener('touchstart', (e) => {
-        // If the sidebar is open and the touch target is NOT inside the sidebar
-        if (sidebar.classList.contains('touch-expanded') && !sidebar.contains(e.target)) {
-            sidebar.classList.remove('touch-expanded');
-        }
-    }, { passive: true });
-    
-    // Optional: Auto-collapse the sidebar after clicking a navigation link on a tablet
-    const navButtons = sidebar.querySelectorAll('button');
-    navButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            sidebar.classList.remove('touch-expanded');
-        });
-    });
-}
-
-// Initialize the fix alongside your other startup functions
-setTimeout(initTouchSidebar, 500);
 
 initAuth(); lucide.createIcons();
