@@ -4,7 +4,7 @@ import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager
 
 console.log("What you looking here at for? 🥀")
 
-const firebaseConfig = { apiKey: "AIzaSyAO9ya8gHtVbMfxcnAAJrz6FdYWvIRqgBY", authDomain: "auth.sval.tech", projectId: "studydashboard-2a3eb", storageBucket: "studydashboard-2a3eb.firebasestorage.app", messagingSenderId: "79210973277", appId: "1:79210973277:web:cc0a5fa86729fd6d3f65b4" };
+const firebaseConfig = { apiKey: "AIzaSyAD2NBd8w86uMkuF5Kt6VG4qjb0LPDClj0", authDomain: "auth.sval.tech", projectId: "studydashboard-2a3eb", storageBucket: "studydashboard-2a3eb.firebasestorage.app", messagingSenderId: "79210973277", appId: "1:79210973277:web:cc0a5fa86729fd6d3f65b4" };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
