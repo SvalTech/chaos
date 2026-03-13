@@ -26,8 +26,8 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
-  <script type="module" crossorigin src="./assets/main-CN9o9MOC.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/main-DeLBHanu.css">
+  <script type="module" crossorigin src="./assets/main-Djh7mXWb.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/main-DTBhtm7e.css">
 <script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TCK0S6VC58"></script>
 <script>
@@ -374,13 +374,9 @@
             </div>
 
             <nav class="flex flex-col gap-1.5 p-1.5 bg-zinc-100/80 dark:bg-zinc-900/80 rounded-2xl mb-6">
-                <button onclick="switchView('dashboard')" id="nav-desktop-dashboard"
-                    class="w-full py-2.5 mb-1.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 bg-white dark:bg-zinc-800 shadow-sm text-brand-600 dark:text-brand-400">
-                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
-                </button>
                 <div class="flex w-full gap-1.5">
                     <button onclick="switchView('calendar')" id="nav-desktop-calendar"
-                        class="flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50"><i
+                        class="flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 bg-white dark:bg-zinc-800 shadow-sm text-brand-600 dark:text-brand-400"><i
                             data-lucide="calendar" class="w-4 h-4"></i> Planner</button>
                     <button onclick="switchView('weekly')" id="nav-desktop-weekly"
                         class="flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50"><i
@@ -480,91 +476,6 @@
     <main id="main-content-area"
         class="flex-1 flex flex-col h-full overflow-hidden relative bg-transparent touch-pan-x z-10">
 
-    <div id="view-container-dashboard" class="view-section flex-1 flex flex-col h-full overflow-hidden">
-        <div class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar no-scrollbar scroll-smooth">
-            <div class="max-w-6xl mx-auto pb-32 space-y-6 md:space-y-8 mt-2">
-    
-                <div
-                    class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-zinc-200/50 dark:border-zinc-800/50 pb-6">
-                    <div>
-                        <h2 id="dash-greeting"
-                            class="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tighter">Ready to
-                            grind?</h2>
-                        <p id="dash-date" class="text-sm text-zinc-500 font-medium mt-1">...</p>
-                    </div>
-                    <button onclick="selectDateForAdd(getLogicalTodayStr())"
-                        class="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-5 py-2.5 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform flex items-center gap-2">
-                        <i data-lucide="plus" class="w-4 h-4 text-brand-500"></i> New Task
-                    </button>
-                </div>
-    
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    
-                    <div class="lg:col-span-2 space-y-6">
-                        <div class="glass-card p-6 md:p-8 rounded-[2.5rem]">
-                            <div class="flex justify-between items-center mb-6">
-                                <h3
-                                    class="text-xl font-black text-zinc-900 dark:text-white tracking-tight flex items-center gap-2">
-                                    <i data-lucide="calendar-check" class="w-5 h-5 text-brand-500"></i> Today's Focus
-                                </h3>
-                                <button onclick="switchView('calendar')"
-                                    class="text-xs font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 rounded-lg">View
-                                    Planner</button>
-                            </div>
-    
-                            <div id="dash-tasks-list" class="space-y-3">
-                            </div>
-                        </div>
-                    </div>
-    
-                    <div class="space-y-6">
-    
-                        <div class="glass-card p-6 rounded-[2.5rem]">
-                            <h3 class="text-base font-black text-zinc-900 dark:text-white tracking-tight mb-4">Quick Links
-                            </h3>
-                            <div class="grid grid-cols-2 gap-3">
-                                <button onclick="switchView('timer')"
-                                    class="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-zinc-50 dark:bg-[#18181b] border border-zinc-200/50 dark:border-zinc-800 hover:border-brand-500/50 transition-colors text-zinc-600 dark:text-zinc-300 hover:text-brand-500">
-                                    <i data-lucide="timer" class="w-6 h-6"></i>
-                                    <span class="text-xs font-bold">Flow Timer</span>
-                                </button>
-                                <button onclick="switchView('stats-mocks')"
-                                    class="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-zinc-50 dark:bg-[#18181b] border border-zinc-200/50 dark:border-zinc-800 hover:border-fuchsia-500/50 transition-colors text-zinc-600 dark:text-zinc-300 hover:text-fuchsia-500">
-                                    <i data-lucide="bar-chart-2" class="w-6 h-6"></i>
-                                    <span class="text-xs font-bold">Analytics</span>
-                                </button>
-                                <button onclick="switchView('syllabus')"
-                                    class="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-zinc-50 dark:bg-[#18181b] border border-zinc-200/50 dark:border-zinc-800 hover:border-emerald-500/50 transition-colors text-zinc-600 dark:text-zinc-300 hover:text-emerald-500">
-                                    <i data-lucide="book-open-check" class="w-6 h-6"></i>
-                                    <span class="text-xs font-bold">Syllabus</span>
-                                </button>
-                                <button onclick="switchView('stats-errors')"
-                                    class="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-zinc-50 dark:bg-[#18181b] border border-zinc-200/50 dark:border-zinc-800 hover:border-rose-500/50 transition-colors text-zinc-600 dark:text-zinc-300 hover:text-rose-500">
-                                    <i data-lucide="alert-triangle" class="w-6 h-6"></i>
-                                    <span class="text-xs font-bold">Error Log</span>
-                                </button>
-                            </div>
-                        </div>
-    
-                        <div class="glass-card p-6 rounded-[2.5rem] border-t-2 border-brand-500">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3
-                                    class="text-base font-black text-zinc-900 dark:text-white tracking-tight flex items-center gap-2">
-                                    <i data-lucide="radio" class="w-4 h-4 text-brand-500"></i> Squad Live
-                                </h3>
-                                <button onclick="switchView('squad')"
-                                    class="text-[10px] font-bold uppercase tracking-widest text-brand-500">View All</button>
-                            </div>
-                            <div id="dash-squad-list" class="space-y-3">
-                            </div>
-                        </div>
-    
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
         <button id="desktop-sidebar-open" onclick="toggleSidebar()"
             class="hidden md:flex absolute top-6 left-6 z-50 p-2.5 bg-white/80 dark:bg-[#18181b]/80 backdrop-blur-md text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl shadow-sm transition-all duration-300 opacity-0 pointer-events-none -translate-x-4"
             title="Expand Sidebar">
@@ -607,10 +518,8 @@
             </div>
         </div>
 
-        
-
         <!-- VIEW: Calendar -->
-        <div id="view-container-calendar" class="view-section hidden flex-1 flex flex-col h-full overflow-hidden">
+        <div id="view-container-calendar" class="view-section flex-1 flex flex-col h-full overflow-hidden">
             <!-- Planner scroll area -->
             <div class="flex-1 overflow-y-auto custom-scrollbar no-scrollbar relative scroll-smooth"
                 id="calendar-scroll-area">
@@ -828,7 +737,8 @@
                                             Streak</div>
                                         <div class="text-3xl font-black text-zinc-900 dark:text-white leading-none">
                                             <span id="streak-count">0</span> <span
-                                                class="text-sm font-bold text-zinc-400">Days</span></div>
+                                                class="text-sm font-bold text-zinc-400">Days</span>
+                                        </div>
                                     </div>
                                 </div>
                                 <div
@@ -1276,81 +1186,45 @@
         class="fixed bottom-24 md:bottom-8 right-4 md:right-8 z-[50] flex flex-col items-end gap-3 transition-all duration-300 pointer-events-none">
 
         <!-- The Player Card (Hidden by default) -->
-        <div id="music-widget"
-            class="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-[150] flex flex-col items-end gap-3 transition-all duration-300 pointer-events-none">
-        
-            <div id="music-player-card"
-                class="glass-card p-0 rounded-3xl w-80 border border-zinc-200/80 dark:border-zinc-800/80 shadow-2xl translate-x-[120%] transition-transform duration-500 origin-bottom-right pointer-events-auto overflow-hidden flex flex-col max-h-[500px] select-none">
-        
-                <div
-                    class="p-5 border-b border-zinc-100 dark:border-zinc-800/50 bg-white/50 dark:bg-[#18181b]/50 backdrop-blur-md relative z-10">
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="radio" class="w-4 h-4 text-brand-500" draggable="false"></i>
-                            <span class="text-xs font-bold text-zinc-500 uppercase tracking-widest">Focus Radio</span>
+        <div id="music-player-card"
+            class="glass-card p-4 rounded-[2rem] w-64 translate-x-[120%] transition-transform duration-300 shadow-2xl origin-bottom-right pointer-events-auto">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="flex gap-0.5 items-end h-4" id="visualizer">
+                        <div class="w-1 bg-brand-500 rounded-full h-2 animate-bounce-slight"
+                            style="animation-delay: 0ms">
                         </div>
-                        
-                    </div>
-        
-                    <div class="flex items-center gap-4 mb-3">
-                        <button id="btn-music-play" onclick="toggleMusic()"
-                            class="w-12 h-12 rounded-2xl bg-brand-600 text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all shrink-0">
-                            <i data-lucide="play" class="w-5 h-5 fill-current ml-1" draggable="false"></i>
-                        </button>
-                        <div class="flex-1 min-w-0">
-                            <div id="station-name"
-                                class="font-black text-zinc-900 dark:text-white truncate text-lg tracking-tight">Loading...
-                            </div>
-                            <div class="flex items-center gap-2 mt-1">
-                                <div id="youtube-status" class="w-2 h-2 rounded-full bg-amber-500 shadow-sm"></div>
-                                <span id="track-status" class="text-xs font-bold text-zinc-400">Connecting...</span>
-                            </div>
-                        </div>
-                        <div id="music-visualizer" class="flex items-end gap-[2px] h-4 opacity-50 eq-paused">
-                            <div class="eq-bar"></div>
-                            <div class="eq-bar"></div>
-                            <div class="eq-bar"></div>
-                            <div class="eq-bar"></div>
+                        <div class="w-1 bg-fuchsia-500 rounded-full h-4 animate-bounce-slight"
+                            style="animation-delay: 100ms"></div>
+                        <div class="w-1 bg-brand-500 rounded-full h-3 animate-bounce-slight"
+                            style="animation-delay: 200ms">
                         </div>
                     </div>
-        
-                    <div class="flex items-center gap-2.5 px-1">
-                        <i data-lucide="volume-1" class="w-3.5 h-3.5 text-zinc-400 shrink-0" draggable="false"></i>
-                        <input type="range" id="music-volume-slider" min="0" max="100" value="50"
-                            oninput="setMusicVolume(this.value)"
-                            class="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer outline-none transition-all"
-                            style="accent-color: #7c3aed;" draggable="false">
-                        <i data-lucide="volume-2" class="w-3.5 h-3.5 text-zinc-400 shrink-0" draggable="false"></i>
-                    </div>
+                    <span class="text-xs font-bold text-zinc-500 uppercase tracking-widest">Focus Radio</span>
                 </div>
-        
-                <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1 bg-zinc-50/50 dark:bg-[#09090b]/50"
-                    id="station-list-container">
-                </div>
-        
-                <div class="p-3 border-t border-zinc-100 dark:border-zinc-800/50 bg-white dark:bg-[#18181b]">
-                    <form id="custom-stream-form" class="flex gap-2" onsubmit="event.preventDefault(); addCustomStream();">
-                        <input type="text" id="custom-stream-url" placeholder="Paste YouTube URL..."
-                            class="flex-1 bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-brand-500 dark:text-white font-medium">
-                        <button type="submit"
-                            class="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 w-8 h-8 rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shrink-0">
-                            <i data-lucide="plus" class="w-4 h-4" draggable="false"></i>
-                        </button>
-                    </form>
-                </div>
-        
-                <div id="yt-player-container" class="absolute w-0 h-0 opacity-0 pointer-events-none"></div>
+                <div id="youtube-status" class="w-2 h-2 rounded-full bg-red-500"></div>
             </div>
-        
-            <button id="music-toggle-btn" onclick="window.toggleMusicWidget()"
-                class="relative w-14 h-14 bg-white dark:bg-[#18181b] rounded-full shadow-floating dark:shadow-floating-dark border border-zinc-200/50 dark:border-zinc-800 flex items-center justify-center text-zinc-800 dark:text-white hover:scale-110 active:scale-95 transition-all group overflow-hidden pointer-events-auto">
-                <span
-                    class="absolute inset-0 rounded-full bg-brand-500/10 dark:bg-brand-500/20 scale-0 group-hover:scale-100 transition-transform duration-300"></span>
-                <div id="music-active-ring"
-                    class="absolute inset-0 rounded-full border-[3px] border-transparent border-t-brand-500 border-l-brand-500/30 animate-spin opacity-0 transition-opacity duration-500 pointer-events-none">
-                </div>
-                <i id="music-btn-icon" data-lucide="music" class="w-6 h-6 relative z-10 transition-colors duration-300"></i>
-            </button>
+
+            <div class="mb-4 text-center">
+                <h4 id="station-name" class="text-sm font-black text-zinc-900 dark:text-white truncate">Lofi Girl</h4>
+                <p id="track-status" class="text-[10px] text-zinc-400 font-mono">Paused</p>
+            </div>
+
+            <div class="flex justify-between items-center bg-zinc-100 dark:bg-zinc-800/50 rounded-2xl p-2 mb-3">
+                <button onclick="changeStation('prev')"
+                    class="p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"><i
+                        data-lucide="skip-back" class="w-4 h-4"></i></button>
+                <button onclick="toggleMusic()" id="btn-music-play"
+                    class="w-10 h-10 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl flex items-center justify-center shadow-lg active:scale-95 transition-transform">
+                    <i data-lucide="play" class="w-4 h-4 fill-current"></i>
+                </button>
+                <button onclick="changeStation('next')"
+                    class="p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"><i
+                        data-lucide="skip-forward" class="w-4 h-4"></i></button>
+            </div>
+
+            <!-- Hidden YouTube Iframe Container -->
+            <div id="yt-player-container" class="hidden w-0 h-0 overflow-hidden"></div>
         </div>
 
         <!-- Toggle Button -->
@@ -1994,7 +1868,7 @@
                 </button>
             </div>
             <button onclick="switchView('calendar')" id="nav-mobile-calendar"
-                class="flex flex-col items-center justify-center w-full h-full text-zinc-400 dark:text-zinc-500 transition-colors">
+                class="flex flex-col items-center justify-center w-full h-full text-brand-600 dark:text-brand-400 transition-colors">
                 <i data-lucide="calendar" class="w-6 h-6"></i>
             </button>
             <button onclick="switchView('weekly')" id="nav-mobile-weekly"
