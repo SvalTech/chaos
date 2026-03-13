@@ -26,8 +26,8 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
-  <script type="module" crossorigin src="./assets/main-BoU6TTMt.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/main-DTBhtm7e.css">
+  <script type="module" crossorigin src="./assets/main-DjrE6dvz.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/main-Cpdcv1Mp.css">
 <script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TCK0S6VC58"></script>
 <script>
@@ -40,6 +40,16 @@
 
 <body
     class="h-screen flex flex-col md:flex-row overflow-hidden text-zinc-800 bg-zinc-50 dark:bg-[#09090b] dark:text-zinc-100 transition-colors duration-500 selection:bg-brand-500 selection:text-white">
+
+    <div class="fixed top-0 left-0 w-full z-[9999] bg-rose-600 text-white px-4 py-2.5 flex items-center justify-center gap-2.5 shadow-lg border-b border-rose-700/50 animate-slide-down">
+    <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0"></i>
+    <p class="text-xs md:text-sm font-bold tracking-wide text-center">
+        Notice: We are currently mitigating a malicious attack. Service may be unreliable today.
+    </p>
+    <button onclick="this.parentElement.remove()" class="absolute right-4 p-1 hover:bg-rose-700 rounded-full transition-colors">
+        <i data-lucide="x" class="w-4 h-4"></i>
+    </button>
+</div>
 
     <div id="app-background"></div>
 
