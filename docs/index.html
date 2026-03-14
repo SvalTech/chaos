@@ -26,8 +26,8 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
-  <script type="module" crossorigin src="./assets/main-BoU6TTMt.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/main-DTBhtm7e.css">
+  <script type="module" crossorigin src="./assets/main-Cs5zlLNr.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/main-BRW7IsS_.css">
 <script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TCK0S6VC58"></script>
 <script>
@@ -1184,69 +1184,78 @@
 
     <!-- Focus Radio Widget -->
     <div id="music-widget"
-        class="fixed bottom-24 md:bottom-8 right-4 md:right-8 z-[50] flex flex-col items-end gap-3 transition-all duration-300 pointer-events-none">
-
-        <!-- The Player Card (Hidden by default) -->
+        class="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-[150] flex flex-col items-end gap-3 transition-all duration-300 pointer-events-none">
+    
         <div id="music-player-card"
-            class="glass-card p-4 rounded-[2rem] w-64 translate-x-[120%] transition-transform duration-300 shadow-2xl origin-bottom-right pointer-events-auto">
-            <div class="flex justify-between items-center mb-4">
-                <div class="flex items-center gap-2">
-                    <div class="flex gap-0.5 items-end h-4" id="visualizer">
-                        <div class="w-1 bg-brand-500 rounded-full h-2 animate-bounce-slight"
-                            style="animation-delay: 0ms">
+            class="glass-card p-0 rounded-3xl w-80 border border-zinc-200/80 dark:border-zinc-800/80 shadow-2xl translate-x-[120%] transition-transform duration-500 origin-bottom-right pointer-events-auto overflow-hidden flex flex-col max-h-[500px] select-none">
+    
+            <div
+                class="p-5 border-b border-zinc-100 dark:border-zinc-800/50 bg-white/50 dark:bg-[#18181b]/50 backdrop-blur-md relative z-10">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="radio" class="w-4 h-4 text-brand-500" draggable="false"></i>
+                        <span class="text-xs font-bold text-zinc-500 uppercase tracking-widest">Focus Radio</span>
+                    </div>
+                    
+                </div>
+    
+                <div class="flex items-center gap-4 mb-3">
+                    <button id="btn-music-play" onclick="toggleMusic()"
+                        class="w-12 h-12 rounded-2xl bg-brand-600 text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all shrink-0">
+                        <i data-lucide="play" class="w-5 h-5 fill-current ml-1" draggable="false"></i>
+                    </button>
+                    <div class="flex-1 min-w-0">
+                        <div id="station-name"
+                            class="font-black text-zinc-900 dark:text-white truncate text-lg tracking-tight">Loading...
                         </div>
-                        <div class="w-1 bg-fuchsia-500 rounded-full h-4 animate-bounce-slight"
-                            style="animation-delay: 100ms"></div>
-                        <div class="w-1 bg-brand-500 rounded-full h-3 animate-bounce-slight"
-                            style="animation-delay: 200ms">
+                        <div class="flex items-center gap-2 mt-1">
+                            <div id="youtube-status" class="w-2 h-2 rounded-full bg-amber-500 shadow-sm"></div>
+                            <span id="track-status" class="text-xs font-bold text-zinc-400">Connecting...</span>
                         </div>
                     </div>
-                    <span class="text-xs font-bold text-zinc-500 uppercase tracking-widest">Focus Radio</span>
+                    <div id="music-visualizer" class="flex items-end gap-[2px] h-4 opacity-50 eq-paused">
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                    </div>
                 </div>
-                <div id="youtube-status" class="w-2 h-2 rounded-full bg-red-500"></div>
+    
+                <div class="flex items-center gap-2.5 px-1">
+                    <i data-lucide="volume-1" class="w-3.5 h-3.5 text-zinc-400 shrink-0" draggable="false"></i>
+                    <input type="range" id="music-volume-slider" min="0" max="100" value="50"
+                        oninput="setMusicVolume(this.value)"
+                        class="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer outline-none transition-all"
+                        style="accent-color: #7c3aed;" draggable="false">
+                    <i data-lucide="volume-2" class="w-3.5 h-3.5 text-zinc-400 shrink-0" draggable="false"></i>
+                </div>
             </div>
-
-            <div class="mb-4 text-center">
-                <h4 id="station-name" class="text-sm font-black text-zinc-900 dark:text-white truncate">Lofi Girl</h4>
-                <p id="track-status" class="text-[10px] text-zinc-400 font-mono">Paused</p>
+    
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1 bg-zinc-50/50 dark:bg-[#09090b]/50"
+                id="station-list-container">
             </div>
-
-            <div class="flex justify-between items-center bg-zinc-100 dark:bg-zinc-800/50 rounded-2xl p-2 mb-3">
-                <button onclick="changeStation('prev')"
-                    class="p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"><i
-                        data-lucide="skip-back" class="w-4 h-4"></i></button>
-                <button onclick="toggleMusic()" id="btn-music-play"
-                    class="w-10 h-10 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl flex items-center justify-center shadow-lg active:scale-95 transition-transform">
-                    <i data-lucide="play" class="w-4 h-4 fill-current"></i>
-                </button>
-                <button onclick="changeStation('next')"
-                    class="p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"><i
-                        data-lucide="skip-forward" class="w-4 h-4"></i></button>
+    
+            <div class="p-3 border-t border-zinc-100 dark:border-zinc-800/50 bg-white dark:bg-[#18181b]">
+                <form id="custom-stream-form" class="flex gap-2" onsubmit="event.preventDefault(); addCustomStream();">
+                    <input type="text" id="custom-stream-url" placeholder="Paste YouTube URL..."
+                        class="flex-1 bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-brand-500 dark:text-white font-medium">
+                    <button type="submit"
+                        class="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 w-8 h-8 rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shrink-0">
+                        <i data-lucide="plus" class="w-4 h-4" draggable="false"></i>
+                    </button>
+                </form>
             </div>
-
-            <!-- Hidden YouTube Iframe Container -->
-            <div id="yt-player-container" class="hidden w-0 h-0 overflow-hidden"></div>
+    
+            <div id="yt-player-container" class="absolute w-0 h-0 opacity-0 pointer-events-none"></div>
         </div>
-
-        <!-- Toggle Button -->
-        <button id="music-toggle-btn" onclick="toggleMusicWidget()"
+    
+        <button id="music-toggle-btn" onclick="window.toggleMusicWidget()"
             class="relative w-14 h-14 bg-white dark:bg-[#18181b] rounded-full shadow-floating dark:shadow-floating-dark border border-zinc-200/50 dark:border-zinc-800 flex items-center justify-center text-zinc-800 dark:text-white hover:scale-110 active:scale-95 transition-all group overflow-hidden pointer-events-auto">
-
-            <!-- Default Hover Background -->
             <span
                 class="absolute inset-0 rounded-full bg-brand-500/10 dark:bg-brand-500/20 scale-0 group-hover:scale-100 transition-transform duration-300"></span>
-
-            <!-- ACTIVE PLAYING VISUALS (Hidden by default) -->
-            <!-- 1. Spinning Ring -->
             <div id="music-active-ring"
                 class="absolute inset-0 rounded-full border-[3px] border-transparent border-t-brand-500 border-l-brand-500/30 animate-spin opacity-0 transition-opacity duration-500 pointer-events-none">
             </div>
-            <!-- 2. Subtle Background Glow -->
-            <div id="music-active-glow"
-                class="absolute inset-0 rounded-full bg-brand-500/10 dark:bg-brand-500/20 opacity-0 transition-opacity duration-500 pointer-events-none animate-pulse">
-            </div>
-
-            <!-- The Icon itself -->
             <i id="music-btn-icon" data-lucide="music" class="w-6 h-6 relative z-10 transition-colors duration-300"></i>
         </button>
     </div>

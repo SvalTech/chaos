@@ -370,8 +370,27 @@ async function initAuth() {
 }
 
 function toggleAppVisibility(show) {
-    const sidebar = document.getElementById('desktop-sidebar'); const main = document.querySelector('main');
-    if (show) { sidebar.style.display = ''; main.style.display = ''; } else { sidebar.style.display = 'none'; main.style.display = 'none'; }
+    const sidebar = document.getElementById('desktop-sidebar');
+    const main = document.querySelector('main');
+    const musicWidget = document.getElementById('music-widget');
+
+    if (show) {
+        if (sidebar) sidebar.style.display = '';
+        if (main) main.style.display = '';
+        if (musicWidget) musicWidget.style.display = ''; // Let user settings handle visibility
+    } else {
+        if (sidebar) sidebar.style.display = 'none';
+        if (main) main.style.display = 'none';
+
+        // Hide the music widget on the login screen
+        if (musicWidget) {
+            musicWidget.style.display = 'none';
+            // Force pause the music if they sign out while listening
+            if (typeof musicPlayer !== 'undefined' && musicPlayer && typeof musicPlayer.pauseVideo === 'function') {
+                musicPlayer.pauseVideo();
+            }
+        }
+    }
 }
 
 function updateProfileUI(user) {
@@ -764,6 +783,9 @@ window.toggleTimer = function () {
         }
     }
     lucide.createIcons();
+
+    // 🚨 FIX: Force a UI sync instantly so the PiP window catches the play/pause state!
+    updateTimerDisplay();
 }
 
 function updateTimerDisplay() {
@@ -832,6 +854,7 @@ function updateTimerDisplay() {
     }
 
     // --- PICTURE-IN-PICTURE SYNC ---
+    // --- PICTURE-IN-PICTURE SYNC ---
     if (typeof isPipActive !== 'undefined' && isPipActive) {
         if (pipWindow && pipWindow.document) {
 
@@ -847,16 +870,20 @@ function updateTimerDisplay() {
                 pipRing.style.strokeDashoffset = circumference - (percent * circumference);
             }
 
-            // CSS-ONLY BUTTON SYNC - Guaranteed to work
-            const playIcon = pipWindow.document.getElementById('pip-icon-play');
-            const pauseIcon = pipWindow.document.getElementById('pip-icon-pause');
-            if (playIcon && pauseIcon) {
+            // CSS-ONLY BUTTON SYNC - Fixed by targeting static wrappers
+            const playWrapper = pipWindow.document.getElementById('pip-play-wrapper');
+            const pauseWrapper = pipWindow.document.getElementById('pip-pause-wrapper');
+            if (playWrapper && pauseWrapper) {
                 if (isTimerRunning) {
-                    playIcon.classList.replace('block', 'hidden');
-                    pauseIcon.classList.replace('hidden', 'block');
+                    playWrapper.classList.add('hidden');
+                    playWrapper.classList.remove('block');
+                    pauseWrapper.classList.add('block');
+                    pauseWrapper.classList.remove('hidden');
                 } else {
-                    playIcon.classList.replace('hidden', 'block');
-                    pauseIcon.classList.replace('block', 'hidden');
+                    playWrapper.classList.add('block');
+                    playWrapper.classList.remove('hidden');
+                    pauseWrapper.classList.add('hidden');
+                    pauseWrapper.classList.remove('block');
                 }
             }
 
@@ -873,6 +900,18 @@ function updateTimerDisplay() {
             if (pipActiveRing && timerMode === 'flow') {
                 if (isTimerRunning) pipActiveRing.classList.remove('pip-paused');
                 else pipActiveRing.classList.add('pip-paused');
+            }
+
+            // Toggle Background Glow
+            const pipGlow = pipWindow.document.getElementById('pip-bg-glow');
+            if (pipGlow) {
+                if (isTimerRunning) {
+                    pipGlow.classList.remove('opacity-0');
+                    pipGlow.classList.add('opacity-100', 'animate-pulse');
+                } else {
+                    pipGlow.classList.add('opacity-0');
+                    pipGlow.classList.remove('opacity-100', 'animate-pulse');
+                }
             }
 
             const pipSubject = pipWindow.document.getElementById('pip-subject');
@@ -3197,85 +3236,131 @@ window.renderQuestionsChart = function () {
     });
 }
 // ==========================================
-// FOCUS RADIO INTEGRATION (Fixed for Modules)
+// UPGRADED FOCUS RADIO (Custom Streams + Saving)
 // ==========================================
-let musicPlayer = null; // Renamed to avoid conflicts
+let musicPlayer = null;
 let isMusicPlayerReady = false;
 let isMusicPlaying = false;
-let currentStationIdx = 0;
+let currentStationId = null;
 
-const musicStations = [
-    { name: "Lofi Girl", id: "jfKfPfyJRdk" },
-    { name: "Synthwave Boy", id: "4xDzrJKXOOY" },
-    { name: "Classical Focus", id: "mIYzp5rcTvU" },
-    { name: "Rain Sounds", id: "mPZkdNFkNps" },
-    { name: "Electronic (Anjunadeep)", id: "D4MdHQOILdw" }
+// The default built-in stations
+const defaultStations = [
+    { id: "jfKfPfyJRdk", name: "Lofi Girl", isDefault: true },
+    { id: "4xDzrJKXOOY", name: "Synthwave Boy", isDefault: true },
+    { id: "mIYzp5rcTvU", name: "Classical Focus", isDefault: true },
 ];
 
-// 1. Make functions global so HTML onclick="" can see them
-window.toggleMusicWidget = function () {
-    const card = document.getElementById('music-player-card');
-    const isHidden = card.classList.contains('translate-x-[120%]');
+function getAllStations() {
+    // Added bulletproof checks so it never crashes if state isn't ready
+    const custom = (typeof state !== 'undefined' && state.settings && state.settings.customStations)
+        ? state.settings.customStations
+        : [];
+    return [...defaultStations, ...custom];
+}
 
-    if (isHidden) {
-        card.classList.remove('translate-x-[120%]');
-        // Initialize YouTube API only on first open to save data
-        if (!musicPlayer) initYouTubePlayer();
-    } else {
-        card.classList.add('translate-x-[120%]');
-    }
+function extractYouTubeId(url) {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+}
+
+window.toggleMusicWidget = function () {
+    const cards = document.querySelectorAll('#music-player-card');
+    if (cards.length === 0) return;
+
+    cards.forEach(card => {
+        const isHidden = card.classList.contains('translate-x-[120%]');
+        if (isHidden) {
+            card.classList.remove('translate-x-[120%]');
+            // Fallback just in case they opened it within 1 second of loading the app
+            if (!window.YT) initYouTubePlayer();
+            if (typeof renderStationList === 'function') renderStationList();
+        } else {
+            card.classList.add('translate-x-[120%]');
+        }
+    });
 };
 
 window.toggleMusic = function () {
-    if (!isMusicPlayerReady || !musicPlayer) return;
+    if (!isMusicPlayerReady || !musicPlayer) {
+        showToast("Connecting to stream, please wait...");
+        return;
+    }
+
+    const playBtn = document.getElementById('btn-music-play');
+    const ts = document.getElementById('track-status');
 
     if (isMusicPlaying) {
         musicPlayer.pauseVideo();
+        if (playBtn) playBtn.innerHTML = `<i data-lucide="play" class="w-5 h-5 fill-current ml-1"></i>`;
+        if (ts) ts.innerText = "Paused";
+        isMusicPlaying = false;
     } else {
         musicPlayer.playVideo();
+        if (playBtn) playBtn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>`;
+        if (ts) ts.innerText = "Buffering...";
     }
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 };
 
-window.changeStation = function (dir) {
-    if (dir === 'next') {
-        currentStationIdx = (currentStationIdx + 1) % musicStations.length;
-    } else {
-        currentStationIdx = (currentStationIdx - 1 + musicStations.length) % musicStations.length;
+window.playSpecificStation = function (videoId, stationName) {
+    currentStationId = videoId;
+    document.getElementById('station-name').innerText = stationName;
+    localStorage.setItem('chaosprep_last_station', videoId);
+
+    renderStationList(); // Instantly update UI
+
+    if (!isMusicPlayerReady || !musicPlayer) {
+        document.getElementById('track-status').innerText = "Buffering...";
+        return;
     }
-
-    // Update UI immediately
-    document.getElementById('station-name').innerText = musicStations[currentStationIdx].name;
-
-    if (musicPlayer && isMusicPlayerReady) {
-        musicPlayer.loadVideoById(musicStations[currentStationIdx].id);
-    }
-};
-
-// 2. YouTube API Setup
-function initYouTubePlayer() {
-    if (document.getElementById('www-widgetapi-script')) return;
-    const tag = document.createElement('script');
-    tag.src = "https://www.youtube.com/iframe_api";
-    const firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    musicPlayer.loadVideoById(videoId);
 }
 
-// Global callback required by YouTube API
+function initYouTubePlayer() {
+    // Bulletproof check to ensure YouTube engine is strictly loaded ONLY once
+    if (document.getElementById('yt-api-script') || window.YT) return;
+
+    const savedId = localStorage.getItem('chaosprep_last_station');
+    const allStats = getAllStations();
+    const startingStation = allStats.find(s => s.id === savedId) || allStats[0];
+
+    currentStationId = startingStation.id;
+
+    const stationNameEl = document.getElementById('station-name');
+    if (stationNameEl) stationNameEl.innerText = startingStation.name;
+
+    const tag = document.createElement('script');
+    tag.id = 'yt-api-script';
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    if (firstScriptTag && firstScriptTag.parentNode) {
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    } else {
+        document.head.appendChild(tag);
+    }
+}
+
+// Pre-load the radio silently in the background 1 second after app load!
+setTimeout(() => {
+    if (state?.settings?.showMusic !== false) {
+        initYouTubePlayer();
+    }
+}, 1000);
+
 window.onYouTubeIframeAPIReady = function () {
     musicPlayer = new YT.Player('yt-player-container', {
-        height: '0',
-        width: '0',
-        videoId: musicStations[0].id,
+        height: '0', width: '0',
+        videoId: currentStationId,
         playerVars: {
             'playsinline': 1,
             'controls': 0,
             'disablekb': 1,
-            'fs': 0
+            'fs': 0,
+            'origin': window.location.origin, // <--- Fixes the postMessage console spam
+            'widget_referrer': window.location.href
         },
-        events: {
-            'onReady': onPlayerReady,
-            'onStateChange': onPlayerStateChange
-        }
+        events: { 'onReady': onPlayerReady, 'onStateChange': onPlayerStateChange }
     });
 };
 
@@ -3283,99 +3368,164 @@ function onPlayerReady(event) {
     isMusicPlayerReady = true;
     const statusDot = document.getElementById('youtube-status');
     if (statusDot) {
-        statusDot.classList.remove('bg-red-500');
+        statusDot.classList.remove('bg-amber-500', 'bg-red-500');
         statusDot.classList.add('bg-emerald-500');
     }
-}
-function onPlayerStateChange(event) {
-    // YT.PlayerState.PLAYING is 1
-    if (event.data === 1) {
-        isMusicPlaying = true;
-        updatePlayButtonUI(true);
-        document.getElementById('track-status').innerText = "Streaming Live";
-        document.getElementById('visualizer').classList.remove('opacity-50');
 
-        // TURN ON Collapsed Button Visuals
-        const ring = document.getElementById('music-active-ring');
-        const glow = document.getElementById('music-active-glow');
-        const icon = document.getElementById('music-btn-icon');
-        if (ring) ring.classList.remove('opacity-0');
-        if (glow) glow.classList.remove('opacity-0');
-        if (icon) icon.classList.add('text-brand-600', 'dark:text-brand-400');
+    const trackStatus = document.getElementById('track-status');
+    if (trackStatus) trackStatus.innerText = "Ready to Play";
 
-    } else {
-        isMusicPlaying = false;
-        updatePlayButtonUI(false);
-        document.getElementById('track-status').innerText = "Paused";
-        document.getElementById('visualizer').classList.add('opacity-50');
+    // Strictly parse the saved volume to an Integer
+    const savedVol = parseInt(localStorage.getItem('chaosprep_music_volume') || '50', 10);
 
-        // TURN OFF Collapsed Button Visuals
-        const ring = document.getElementById('music-active-ring');
-        const glow = document.getElementById('music-active-glow');
-        const icon = document.getElementById('music-btn-icon');
-        if (ring) ring.classList.add('opacity-0');
-        if (glow) glow.classList.add('opacity-0');
-        if (icon) icon.classList.remove('text-brand-600', 'dark:text-brand-400');
+    if (typeof musicPlayer.setVolume === 'function') {
+        musicPlayer.unMute();
+        musicPlayer.setVolume(savedVol);
     }
+
+    const slider = document.getElementById('music-volume-slider');
+    if (slider) slider.value = savedVol;
 }
 
-function updatePlayButtonUI(isPlaying) {
-    const btn = document.getElementById('btn-music-play');
-    if (isPlaying) {
-        btn.innerHTML = `<i data-lucide="pause" class="w-4 h-4 fill-current"></i>`;
-    } else {
-        btn.innerHTML = `<i data-lucide="play" class="w-4 h-4 fill-current"></i>`;
+function onPlayerStateChange(event) {
+    const playBtn = document.getElementById('btn-music-play');
+    const visualizer = document.getElementById('music-visualizer');
+    const ts = document.getElementById('track-status');
+
+    if (event.data === 1) { // PLAYING
+        isMusicPlaying = true;
+        if (playBtn) playBtn.innerHTML = `<i data-lucide="pause" class="w-5 h-5 fill-current"></i>`;
+        if (ts) ts.innerText = "Streaming Live";
+
+        if (visualizer) {
+            visualizer.classList.remove('eq-paused', 'opacity-50');
+            visualizer.classList.add('opacity-100');
+        }
+    } else if (event.data === 3) { // BUFFERING
+        isMusicPlaying = false;
+        if (playBtn) playBtn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>`;
+        if (ts) ts.innerText = "Buffering...";
+
+        if (visualizer) {
+            visualizer.classList.add('eq-paused', 'opacity-50');
+            visualizer.classList.remove('opacity-100');
+        }
+    } else { // PAUSED, ENDED, UNSTARTED
+        isMusicPlaying = false;
+        if (event.data === 2 || event.data === 0) {
+            if (playBtn) playBtn.innerHTML = `<i data-lucide="play" class="w-5 h-5 fill-current ml-1"></i>`;
+            if (ts) ts.innerText = "Paused";
+        }
+
+        if (visualizer) {
+            visualizer.classList.add('eq-paused', 'opacity-50');
+            visualizer.classList.remove('opacity-100');
+        }
     }
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
+window.renderStationList = function () {
+    const container = document.getElementById('station-list-container');
+    if (!container) return;
 
-// ==========================================
-// MUSIC SETTINGS TOGGLE LOGIC
-// ==========================================
+    container.innerHTML = '';
+    const allStations = getAllStations();
 
-// 1. Logic to show/hide the widget based on setting
-window.applyMusicSetting = function (show) {
-    const widget = document.getElementById('music-widget');
-    if (!widget) return;
+    allStations.forEach(station => {
+        const isActive = station.id === currentStationId;
+        const activeClass = isActive
+            ? 'bg-brand-50 border-brand-200 text-brand-700 dark:bg-brand-500/10 dark:border-brand-500/30 dark:text-brand-400 shadow-sm'
+            : 'bg-white border-transparent text-zinc-600 hover:bg-zinc-100 dark:bg-[#18181b] dark:text-zinc-300 dark:hover:bg-zinc-800';
 
-    if (show) {
-        widget.classList.remove('hidden');
-        // Small delay to allow transition if needed, though hidden removes it from layout
-        setTimeout(() => widget.style.opacity = '1', 10);
-    } else {
-        widget.classList.add('hidden');
-        widget.style.opacity = '0';
-        // If music is playing, pause it when disabling the widget
-        if (window.musicPlayer && typeof window.musicPlayer.pauseVideo === 'function') {
-            window.musicPlayer.pauseVideo();
+        const iconClass = isActive ? 'text-brand-500' : 'text-zinc-400';
+
+        const el = document.createElement('div');
+        el.className = `flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer group ${activeClass}`;
+
+        let leftHTML = `
+            <div class="flex items-center gap-3 flex-1 min-w-0" onclick="playSpecificStation('${station.id}', '${station.name.replace(/'/g, "\\'")}')">
+                <i data-lucide="${isActive ? 'radio-receiver' : 'disc'}" class="w-4 h-4 shrink-0 ${iconClass}"></i>
+                <span class="text-sm font-bold truncate">${station.name}</span>
+            </div>
+        `;
+
+        let rightHTML = '';
+        if (!station.isDefault) {
+            rightHTML = `
+                <button onclick="deleteCustomStream('${station.id}')" class="opacity-0 group-hover:opacity-100 p-1.5 text-zinc-400 hover:text-rose-500 transition-all rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+            `;
+        } else if (isActive) {
+            rightHTML = `<i data-lucide="volume-2" class="w-4 h-4 text-brand-500 mr-1 animate-pulse"></i>`;
         }
+
+        el.innerHTML = leftHTML + rightHTML;
+        container.appendChild(el);
+    });
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+window.setMusicVolume = function (val) {
+    const volumeNum = parseInt(val, 10);
+    if (musicPlayer && isMusicPlayerReady && typeof musicPlayer.setVolume === 'function') {
+        musicPlayer.unMute();
+        musicPlayer.setVolume(volumeNum);
+    }
+    localStorage.setItem('chaosprep_music_volume', volumeNum);
+}
+
+window.addCustomStream = async function () {
+    if (!currentUser) { showToast("Must be logged in to save streams"); return; }
+
+    const input = document.getElementById('custom-stream-url');
+    const url = input.value.trim();
+    if (!url) return;
+
+    const videoId = extractYouTubeId(url);
+    if (!videoId) { showToast("Invalid YouTube URL"); return; }
+
+    const customName = await window.customPrompt("Give this stream a name:", "My Custom Focus", "Add Stream");
+    if (!customName || customName.trim() === "") return;
+
+    if (!state.settings.customStations) state.settings.customStations = [];
+    if (state.settings.customStations.some(s => s.id === videoId)) {
+        showToast("Stream already exists!");
+        return;
+    }
+
+    state.settings.customStations.push({ id: videoId, name: customName.trim(), isDefault: false });
+
+    try {
+        await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), {
+            customStations: state.settings.customStations
+        });
+        input.value = '';
+        renderStationList();
+        playSpecificStation(videoId, customName.trim());
+        showToast("Stream Added!");
+    } catch (e) {
+        console.error(e);
+        showToast("Error saving stream");
     }
 }
 
-// 2. Logic for clicking the toggle in Settings
-window.toggleMusicSetting = function () {
-    // Initialize if undefined
-    if (tempSettings.showMusic === undefined) tempSettings.showMusic = true;
+window.deleteCustomStream = async function (videoId) {
+    if (!currentUser) return;
+    state.settings.customStations = state.settings.customStations.filter(s => s.id !== videoId);
 
-    tempSettings.showMusic = !tempSettings.showMusic;
-    updateMusicToggleUI(tempSettings.showMusic);
-    markSettingsDirty(); // Enable the "Save" button
-}
-
-// 3. Update the visual toggle switch
-window.updateMusicToggleUI = function (isShow) {
-    const knob = document.getElementById('music-knob');
-    const toggle = document.getElementById('music-toggle');
-    if (!knob || !toggle) return;
-
-    if (isShow) {
-        knob.style.transform = 'translateX(20px)';
-        toggle.className = "relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300";
-    } else {
-        knob.style.transform = 'translateX(0)';
-        toggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300";
-    }
+    try {
+        await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), {
+            customStations: state.settings.customStations
+        });
+        renderStationList();
+        if (currentStationId === videoId) {
+            playSpecificStation(defaultStations[0].id, defaultStations[0].name);
+        }
+        showToast("Stream Removed");
+    } catch (e) { console.error(e); }
 }
 
 // ==========================================
@@ -3799,6 +3949,20 @@ window.renderSquadView = function () {
         // 4. PROFILE QUOTE
         const quoteHtml = friend.profileQuote ? `<p class="text-xs text-zinc-500 dark:text-zinc-400 italic mb-3 leading-snug">"${escapeHtml(friend.profileQuote)}"</p>` : '';
 
+        // 4.5 FOCUSED TODAY BADGE
+        let focusedTimeHtml = '';
+        if (friend.focusedToday && friend.focusedToday > 0) {
+            const hrs = Math.floor(friend.focusedToday / 60);
+            const mins = friend.focusedToday % 60;
+            const timeStr = hrs > 0 ? (mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`) : `${mins}m`;
+
+            focusedTimeHtml = `
+                <div class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 bg-white dark:bg-[#18181b] px-2.5 py-1.5 rounded-lg border border-zinc-200/80 dark:border-zinc-800 shadow-sm" title="Total Focus Time Today">
+                    <i data-lucide="timer" class="w-3 h-3 text-brand-500"></i> ${timeStr}
+                </div>
+            `;
+        }
+
         // 5. TASK LIST GENERATION
         let tasksHtml = '';
         if (friend.shareTasks && totalTasks > 0) {
@@ -3853,7 +4017,7 @@ window.renderSquadView = function () {
 
         // --- VIP / ROLE CONFIGURATION ---
         const VIP_USERS = {
-            "KLh2R14NZCZinFvgCm6DtzghkBf2": { role: "Creator", icon: "zap" },
+            "KLh2R14NZCZinFvgCm6DtzghkBf2": { role: "", icon: "zap" },
             // "TEMPLATE": { role: "Beta Tester", icon: "beaker" }
         };
 
@@ -3899,9 +4063,13 @@ window.renderSquadView = function () {
                             ${displayName} ${devBadge}
                         </h3>
                         ${quoteHtml}
-                        <div class="flex items-center text-[10px] font-bold uppercase tracking-widest bg-zinc-50 dark:bg-zinc-800/50 px-2.5 py-1.5 rounded-lg w-max border border-zinc-100 dark:border-zinc-700/50 mb-4">
-                            ${statusIcon} ${statusText}
+                        <div class="flex flex-wrap items-center gap-2 mb-4">
+                            <div class="flex items-center text-[10px] font-bold uppercase tracking-widest bg-zinc-50 dark:bg-zinc-800/50 px-2.5 py-1.5 rounded-lg border border-zinc-100 dark:border-zinc-700/50">
+                                ${statusIcon} ${statusText}
+                            </div>
+                            ${focusedTimeHtml}
                         </div>
+                        
                     </div>
                     <div class="shrink-0 mt-[-4px]">
                         ${actionBtnsHtml}
@@ -3962,12 +4130,23 @@ window.syncMySocialStatus = async (isStudying, subject) => {
         if (task) taskContext = task.text;
     }
 
+    // NEW: Calculate Total Focused Minutes Today (Logged + Actively Running)
+    const todayStr = getLogicalTodayStr();
+    const todayLogs = state.studyLogs.filter(l => l.date === todayStr);
+    let totalMins = todayLogs.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
+
+    // Add live ticking seconds if they are currently studying
+    if (isStudying && typeof timerSeconds !== 'undefined') {
+        totalMins += Math.floor(timerSeconds / 60);
+    }
+
     try {
         await updateDoc(doc(db, 'artifacts', appId, 'socialProfiles', currentUser.uid), {
             isStudying: isStudying,
             studySubject: isStudying ? subject : null,
             studyContext: isStudying ? taskContext : null,
             timerMode: isStudying ? timerMode : null,
+            focusedToday: totalMins, // <-- Sending to database
             lastActive: new Date().toISOString()
         });
     } catch (e) { console.warn("Could not sync status", e); }
@@ -4403,10 +4582,10 @@ window.togglePiP = async function () {
         }
 
         try {
-            // Force 2:1 Landscape Ratio
+            // Force 2:1 Landscape Ratio for a sleek mini-dashboard look
             pipWindow = await documentPictureInPicture.requestWindow({
-                width: 500,
-                height: 250,
+                width: 480,
+                height: 240,
             });
 
             pipWindow.document.documentElement.className = document.documentElement.className;
@@ -4441,13 +4620,14 @@ window.togglePiP = async function () {
                 </style>
             `;
 
-            // Strict flex-row to force horizontal landscape layout
             pipWindow.document.body.className = `${bgClass} ${textClass} font-sans select-none antialiased h-screen w-screen overflow-hidden flex items-center justify-center transition-colors duration-300`;
 
             pipWindow.document.body.innerHTML = `
-                <div class="flex flex-row items-center justify-between w-full px-8 py-4 gap-8">
+                <div class="flex flex-row items-center justify-between w-full h-full px-8 py-4 gap-8 bg-gradient-to-br from-transparent to-black/5 dark:to-white/5">
                     
                     <div class="relative flex items-center justify-center w-[160px] h-[160px] shrink-0">
+                        <div id="pip-bg-glow" class="absolute inset-0 bg-[#7c3aed]/20 rounded-full blur-xl pointer-events-none ${isTimerRunning ? 'opacity-100 animate-pulse' : 'opacity-0'} transition-opacity duration-700"></div>
+
                         <svg class="absolute inset-0 w-full h-full transform -rotate-90 pointer-events-none" viewBox="0 0 100 100">
                             <circle cx="50" cy="50" r="45" stroke="currentColor" stroke-width="6" fill="none" class="text-zinc-200 dark:text-zinc-800" />
                             <circle id="pip-progress-ring" cx="50" cy="50" r="45" stroke="currentColor" stroke-width="6" fill="none" class="text-[#7c3aed] transition-all duration-1000 ease-linear ${timerMode === 'flow' ? 'hidden' : ''}" stroke-linecap="round" />
@@ -4455,27 +4635,31 @@ window.togglePiP = async function () {
                         
                         <div id="pip-active-ring" class="absolute inset-0 rounded-full border-[6px] border-[#7c3aed] border-t-transparent border-l-transparent opacity-0 transition-opacity duration-300 pointer-events-none ${timerMode === 'flow' ? 'opacity-100 animate-pip-spin' : ''} ${!isTimerRunning ? 'pip-paused' : ''}"></div>
                         
-                        <div id="pip-timer-display" class="text-4xl font-black tabular-nums tracking-tighter relative z-10 leading-none">
+                        <div id="pip-timer-display" class="text-4xl font-black tabular-nums tracking-tighter relative z-10 leading-none drop-shadow-sm">
                             ${document.getElementById('timer-display').innerText}
                         </div>
                     </div>
 
                     <div class="flex flex-col items-start justify-center flex-1 min-w-0">
-                        <div class="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 px-3 py-1 bg-zinc-200/50 dark:bg-zinc-800/50 rounded-md" id="pip-mode-label">
+                        <div class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 px-3 py-1 bg-zinc-200/60 dark:bg-zinc-800/60 rounded-lg shadow-inner-light dark:shadow-inner-dark" id="pip-mode-label">
                             ${timerMode === 'flow' ? 'Flow State' : 'Exam Simulator'}
                         </div>
                         
-                        <div class="text-2xl font-black text-[#7c3aed] mb-6 truncate w-full" id="pip-subject">
+                        <div class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#7c3aed] to-fuchsia-500 mb-6 truncate w-full drop-shadow-sm pb-1" id="pip-subject">
                             ${timerSubject || 'Focus Session'}
                         </div>
                         
-                        <div class="flex items-center gap-4">
-                            <button id="pip-toggle-btn" class="w-16 h-16 rounded-2xl bg-[#7c3aed] text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all">
-                                <i data-lucide="play" id="pip-icon-play" class="w-8 h-8 fill-current pointer-events-none ${isTimerRunning ? 'hidden' : 'block'}"></i>
-                                <i data-lucide="pause" id="pip-icon-pause" class="w-8 h-8 fill-current pointer-events-none ${isTimerRunning ? 'block' : 'hidden'}"></i>
+                        <div class="flex items-center gap-3">
+                            <button id="pip-toggle-btn" class="w-16 h-16 rounded-[1.25rem] bg-gradient-to-b from-[#8b5cf6] to-[#7c3aed] text-white flex items-center justify-center shadow-lg shadow-[#7c3aed]/30 hover:scale-105 active:scale-95 transition-all border border-white/10">
+                                <span id="pip-play-wrapper" class="${isTimerRunning ? 'hidden' : 'block'}">
+                                    <i data-lucide="play" class="w-8 h-8 fill-current ml-1 pointer-events-none"></i>
+                                </span>
+                                <span id="pip-pause-wrapper" class="${isTimerRunning ? 'block' : 'hidden'}">
+                                    <i data-lucide="pause" class="w-8 h-8 fill-current pointer-events-none"></i>
+                                </span>
                             </button>
                             
-                            <button id="pip-stop-btn" class="${isTimerRunning ? '' : 'opacity-50 pointer-events-none'} w-14 h-14 rounded-2xl bg-zinc-200 dark:bg-[#18181b] border border-zinc-300 dark:border-zinc-800 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-500/20 flex items-center justify-center shadow-sm hover:scale-105 active:scale-95 transition-all">
+                            <button id="pip-stop-btn" class="${isTimerRunning ? '' : 'opacity-50 pointer-events-none'} w-14 h-14 rounded-[1.25rem] bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-800 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 flex items-center justify-center shadow-sm hover:scale-105 active:scale-95 transition-all">
                                 <i data-lucide="square" class="w-6 h-6 fill-current pointer-events-none"></i>
                             </button>
                         </div>
