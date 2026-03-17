@@ -40,6 +40,10 @@ let questionsChartInstance = null;
 // 1. Declare state as an empty object FIRST to prevent the ReferenceError
 let state = {};
 
+let currentMonthTasks = [];
+let lifetimeMockTasks = [];
+let activeMonthUnsub = null;
+
 // --- LOGICAL DAY SYSTEM ---
 function getLogicalToday() {
     const d = new Date();
@@ -401,6 +405,62 @@ function updateProfileUI(user) {
 window.signInWithGoogle = async () => { const provider = new GoogleAuthProvider(); await signInWithPopup(auth, provider).catch(console.error); };
 window.handleSignOut = async () => { await signOut(auth); window.location.reload(); };
 
+// --- DYNAMIC TASK LISTENER ENGINE ---
+window.listenToTasksForMonth = function (dateObj) {
+    if (!currentUser) return;
+
+    // 1. Instantly stop listening to the old month
+    if (activeMonthUnsub) {
+        activeMonthUnsub();
+    }
+
+    // 2. Calculate the boundaries (pad by 6 days for calendar overlap)
+    const year = dateObj.getFullYear();
+    const month = dateObj.getMonth();
+
+    const startDate = new Date(year, month, 1);
+    startDate.setDate(startDate.getDate() - 6);
+    const startStr = getLocalISODate(startDate);
+
+    const endDate = new Date(year, month + 1, 0);
+    endDate.setDate(endDate.getDate() + 6);
+    const endStr = getLocalISODate(endDate);
+
+    // 3. Command Firebase to only send tasks within this timeframe
+    const monthQuery = query(
+        collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks'),
+        where('date', '>=', startStr),
+        where('date', '<=', endStr)
+    );
+
+    // 4. Attach new listener
+    activeMonthUnsub = onSnapshot(monthQuery, (snap) => {
+        currentMonthTasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        window.mergeAndRenderTasks();
+    });
+}
+
+window.mergeAndRenderTasks = function () {
+    // Combine current month's tasks with lifetime mock tests
+    const combined = [...currentMonthTasks];
+
+    lifetimeMockTasks.forEach(mock => {
+        if (!combined.some(t => t.id === mock.id)) {
+            combined.push(mock);
+        }
+    });
+
+    // Inject into app state
+    state.tasks = combined;
+
+    // Trigger UI updates
+    if (state.currentView === 'calendar') renderCalendar();
+    if (state.currentView === 'calendar' && !window.isReordering) renderCalendar();
+    if (state.currentView === 'stats-mocks') renderMockStats();
+    if (currentDayViewDate && !document.getElementById('day-view-modal').classList.contains('hidden')) openDayView(currentDayViewDate);
+    if (state.settings && state.settings.shareTasks !== false && typeof syncMySocialTasks === 'function') syncMySocialTasks();
+}
+
 // --- FIRESTORE LISTENERS ---
 function setupListeners(user) {
     onSnapshot(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'config'), (snap) => {
@@ -416,15 +476,14 @@ function setupListeners(user) {
         } else setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'config'), state.settings);
     });
 
-    onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'tasks'), (snap) => {
-        state.tasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        if (state.currentView === 'calendar') renderCalendar();
-        if (state.currentView === 'calendar' && !window.isReordering) renderCalendar();
-        if (state.currentView === 'stats-mocks') renderMockStats();
-        if (currentDayViewDate && !document.getElementById('day-view-modal').classList.contains('hidden')) openDayView(currentDayViewDate);
+    // 🚨 1. Start Dynamic Month Listener
+    window.listenToTasksForMonth(state.viewDate);
 
-        // NEW SYNC HOOK: Update public profile when tasks change
-        if (state.settings.shareTasks !== false) syncMySocialTasks();
+    // 🚨 2. Start Lightweight Lifetime Listener JUST for Mock Tests (Keeps analytics intact)
+    const mocksQ = query(collection(db, 'artifacts', appId, 'users', user.uid, 'tasks'), where('subject', '==', 'MockTest'));
+    onSnapshot(mocksQ, (snap) => {
+        lifetimeMockTasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        window.mergeAndRenderTasks();
     });
 
     onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'weeklyTargets'), (snap) => {
@@ -647,6 +706,7 @@ window.setTimerMode = function (mode) {
     }
 
     updateTimerDisplay();
+    window.saveTimerState();
 }
 window.stopTimer = async function () {
     // 1. Instantly pause the timer so it doesn't tick behind the modals
@@ -656,6 +716,7 @@ window.stopTimer = async function () {
         releaseWakeLock();
         timerAccumulatedMs += Date.now() - timerStartMs;
         isTimerRunning = false;
+        window.saveTimerState();
 
         // Visually pause the UI
         document.getElementById('btn-timer-toggle').innerHTML = `<i data-lucide="play" class="w-6 h-6 md:w-7 md:h-7 fill-current"></i>`;
@@ -786,6 +847,7 @@ window.toggleTimer = function () {
 
     // 🚨 FIX: Force a UI sync instantly so the PiP window catches the play/pause state!
     updateTimerDisplay();
+    window.saveTimerState();
 }
 
 function updateTimerDisplay() {
@@ -950,6 +1012,7 @@ function resetTimer() {
         spinRing.classList.remove('opacity-100', 'animate-spin-slow');
         spinRing.classList.add('opacity-0');
     }
+    window.saveTimerState();
     lucide.createIcons();
 }
 
@@ -969,6 +1032,8 @@ window.setTimerSubject = function (sub) {
     if (typeof isTimerRunning !== 'undefined' && isTimerRunning) {
         syncMySocialStatus(true, timerSubject);
     }
+
+    window.saveTimerState();
 }
 
 window.updateTimerStats = function () {
@@ -1117,12 +1182,59 @@ window.openManualLogModal = () => {
 window.closeManualLogModal = () => { document.getElementById('manual-log-modal').classList.add('opacity-0'); setTimeout(() => document.getElementById('manual-log-modal').classList.add('hidden'), 300); }
 
 window.saveManualLog = async () => {
-    const subject = document.getElementById('manual-log-subject').value; const duration = parseInt(document.getElementById('manual-log-duration').value); const notes = document.getElementById('manual-log-notes').value;
-    if (!duration || duration <= 0) { showToast("Invalid duration"); return; }
+    const subject = document.getElementById('manual-log-subject').value;
+    const durationInput = document.getElementById('manual-log-duration').value;
+    const duration = parseInt(durationInput);
+    const notes = document.getElementById('manual-log-notes').value;
+    const todayStr = getLogicalTodayStr();
+
+    // 🛑 Defense 1: Invalid, Zero, or Physically Impossible Input
+    if (!duration || duration <= 0) {
+        showToast("Enter a valid duration in minutes.");
+        return;
+    }
+    if (duration > 1440) {
+        showToast("Error: There are only 1440 minutes in a day!");
+        return;
+    }
+
+    // 🛑 Defense 2: Cumulative Daily Limit
+    const todayLogs = state.studyLogs.filter(l => l.date === todayStr);
+    const existingMinsToday = todayLogs.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
+
+    if (existingMinsToday + duration > 1440) {
+        const minsLeft = 1440 - existingMinsToday;
+        showToast(`Limit reached! You can only log ${minsLeft} more minutes today.`);
+        return;
+    }
+
+    // 🛑 Defense 3: The "Fat Finger" Warning (e.g., typing 600 instead of 60)
+    // If they log more than 10 hours in one go, ask for confirmation.
+    if (duration > 600) {
+        const hours = (duration / 60).toFixed(1);
+        const isSure = await customConfirm(`You are about to log ${hours} hours in a single session. Are you sure this is correct?`, "Massive Log Detected", true, "Yes, Log It");
+        if (!isSure) return;
+    }
+
     try {
-        await setDoc(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'studyLogs')), { subject, durationMinutes: duration, notes, date: getLogicalTodayStr(), timestamp: new Date().toISOString(), type: 'manual' });
-        showToast("Log Added"); closeManualLogModal(); document.getElementById('manual-log-duration').value = ''; document.getElementById('manual-log-notes').value = '';
-    } catch (e) { console.error(e); }
+        // Safe to write to database
+        await setDoc(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'studyLogs')), {
+            subject,
+            durationMinutes: duration,
+            notes,
+            date: todayStr,
+            timestamp: new Date().toISOString(),
+            type: 'manual'
+        });
+
+        showToast("Log Added Successfully");
+        closeManualLogModal();
+        document.getElementById('manual-log-duration').value = '';
+        document.getElementById('manual-log-notes').value = '';
+    } catch (e) {
+        console.error("Failed to save manual log", e);
+        showToast("Error saving log.");
+    }
 }
 
 // --- SYLLABUS LOGIC ---
@@ -2297,17 +2409,34 @@ document.getElementById('add-task-form').addEventListener('submit', async (e) =>
 
 async function handleTaskSubmit(mode) {
     if (!currentUser) return;
-    const suffix = mode === 'mobile' ? '-mobile' : ''; const btn = document.getElementById(`btn-add-task${suffix}`); const originalContent = btn.innerHTML;
-    btn.innerHTML = `<div class="btn-spinner border-zinc-400 border-t-white dark:border-zinc-600 dark:border-t-zinc-900"></div>`; btn.disabled = true;
+    const suffix = mode === 'mobile' ? '-mobile' : '';
+    const btn = document.getElementById(`btn-add-task${suffix}`);
+    const originalContent = btn.innerHTML;
+    btn.innerHTML = `<div class="btn-spinner border-zinc-400 border-t-white dark:border-zinc-600 dark:border-t-zinc-900"></div>`;
+    btn.disabled = true;
 
-    const date = document.getElementById(`task-date${suffix}`).value; const text = document.getElementById(`task-input${suffix}`).value; const selectorId = mode === 'mobile' ? 'subject-selector-mobile' : 'subject-selector'; const subject = document.querySelector(`#${selectorId} input[name="subject"]:checked`)?.value;
+    const date = document.getElementById(`task-date${suffix}`).value;
+    const rawText = document.getElementById(`task-input${suffix}`).value;
+    const selectorId = mode === 'mobile' ? 'subject-selector-mobile' : 'subject-selector';
+    const subject = document.querySelector(`#${selectorId} input[name="subject"]:checked`)?.value;
 
-    if (!date || !text || !subject) { showToast("Missing details!"); btn.innerHTML = originalContent; btn.disabled = false; lucide.createIcons(); return; }
+    // 🛑 THE FIX: Strip whitespace and enforce a strict minimum length
+    const cleanText = rawText.trim();
 
-    // Apply ordering logically for new items pushing them to bottom of day card implicitly
+    if (!date || cleanText.length < 2 || !subject) {
+        showToast(cleanText.length < 2 ? "Task name too short!" : "Missing details!");
+        btn.innerHTML = originalContent;
+        btn.disabled = false;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        return;
+    }
+
     const tasksOnDate = state.tasks.filter(t => t.date === date);
     const maxOrder = tasksOnDate.length > 0 ? Math.max(...tasksOnDate.map(t => t.order || 0)) : -1;
-    const newTask = { text, date, subject, completed: false, order: maxOrder + 1, createdAt: new Date().toISOString() };
+
+    // 🚨 Use the 'cleanText' variable here to save the sanitized version
+    const newTask = { text: cleanText, date, subject, completed: false, order: maxOrder + 1, createdAt: new Date().toISOString() };
+
     if (subject === 'MockTest') {
         const marksId = `task-marks${suffix}`; const maxMarksId = `task-max-marks${suffix}`; const marks = document.getElementById(marksId).value;
         const subjectInputs = document.querySelectorAll(`.mock-subject-input${suffix}`); let subjectMarks = {};
@@ -2327,23 +2456,40 @@ async function handleTaskSubmit(mode) {
             if (state.currentView === 'calendar') renderCalendar();
         }
 
-        // NEW SYNC HOOK
-        if (state.settings.shareTasks !== false) syncMySocialTasks();
+        if (state.settings && state.settings.shareTasks !== false && typeof syncMySocialTasks === 'function') syncMySocialTasks();
 
     } catch (e) {
         console.error(e);
     }
-    btn.innerHTML = originalContent; btn.disabled = false; lucide.createIcons();
+    btn.innerHTML = originalContent; btn.disabled = false;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 
-    // Refocus the input field if we are on desktop
     if (mode === 'desktop') {
         setTimeout(() => document.getElementById('task-input').focus(), 50);
     }
 }
 
-window.changeMonth = function (d) { state.viewDate.setMonth(state.viewDate.getMonth() + d); renderCalendar(); }
-window.goToToday = function () { state.viewDate = getLogicalToday(); renderCalendar(); setTimeout(() => { const card = document.getElementById('today-card'); if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }
+window.changeMonth = function (d) {
+    state.viewDate.setMonth(state.viewDate.getMonth() + d);
 
+    // 🚨 Tell Firebase to fetch the new month
+    window.listenToTasksForMonth(state.viewDate);
+
+    renderCalendar();
+}
+
+window.goToToday = function () {
+    state.viewDate = getLogicalToday();
+
+    // 🚨 Snap Firebase listener back to current month
+    window.listenToTasksForMonth(state.viewDate);
+
+    renderCalendar();
+    setTimeout(() => {
+        const card = document.getElementById('today-card');
+        if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+}
 window.openDayView = function (dateStr) {
     currentDayViewDate = dateStr; const modal = document.getElementById('day-view-modal'); const list = document.getElementById('day-view-tasks'); const dateObj = new Date(dateStr);
     document.getElementById('day-view-date').innerText = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
@@ -5024,5 +5170,100 @@ window.toggleSidebar = function () {
         openBtn.classList.remove('opacity-100', 'translate-x-0');
     }
 }
+
+// ==========================================
+// TIMER CRASH RECOVERY SYSTEM
+// ==========================================
+window.saveTimerState = function () {
+    // Calculate the exact total time right now, even if it's currently running
+    let currentTotalMs = timerAccumulatedMs;
+    if (isTimerRunning && timerStartMs) {
+        currentTotalMs += (Date.now() - timerStartMs);
+    }
+
+    const stateToSave = {
+        timerAccumulatedMs: currentTotalMs, // Save everything as a static number
+        timerMode,
+        timerSubject,
+        linkedTaskId
+    };
+    localStorage.setItem('chaosprep_timer_state', JSON.stringify(stateToSave));
+};
+
+setInterval(window.saveTimerState, 5000);
+
+window.restoreTimerState = function () {
+    const saved = localStorage.getItem('chaosprep_timer_state');
+    if (!saved) return;
+
+    try {
+        const parsed = JSON.parse(saved);
+
+        // 1. Restore Memory (Always Paused)
+        timerMode = parsed.timerMode || 'flow';
+        timerSubject = parsed.timerSubject || 'Physics';
+        linkedTaskId = parsed.linkedTaskId || null;
+        timerAccumulatedMs = parsed.timerAccumulatedMs || 0;
+        targetDurationSecs = (timerMode === 'exam') ? 3 * 60 * 60 : 0;
+
+        // Force the system to stay paused on load
+        isTimerRunning = false;
+        timerStartMs = 0;
+
+        // 2. Restore UI: Mode Buttons & Rings
+        const svgRing = document.getElementById('timer-progress-svg');
+        const label = document.getElementById('timer-mode-label');
+
+        ['flow', 'exam'].forEach(m => {
+            const btn = document.getElementById(`btn-mode-${m}`);
+            if (btn) {
+                btn.className = (m === timerMode)
+                    ? "px-4 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl text-[11px] md:text-xs font-bold bg-white dark:bg-[#27272a] text-zinc-900 dark:text-white shadow-sm transition-all"
+                    : "px-4 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl text-[11px] md:text-xs font-bold text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-all bg-transparent";
+            }
+        });
+
+        if (timerMode === 'flow') {
+            if (svgRing) svgRing.classList.add('hidden');
+            if (label) label.innerText = "Flow State";
+        } else if (timerMode === 'exam') {
+            if (svgRing) {
+                svgRing.classList.remove('hidden');
+                const ring = document.getElementById('timer-progress-ring');
+                if (ring) {
+                    ring.classList.remove('text-rose-500', 'text-emerald-500', 'text-blue-500');
+                    ring.classList.add('text-brand-500');
+                }
+            }
+            if (label) label.innerText = "Exam Simulator";
+        }
+
+        // 3. Restore UI: Subject
+        setTimerSubject(timerSubject);
+
+        // 4. Update the Play/Stop buttons if there is saved time
+        if (timerAccumulatedMs > 0) {
+            document.getElementById('btn-timer-stop').disabled = false;
+            document.getElementById('btn-timer-toggle').innerHTML = `<i data-lucide="play" class="w-6 h-6 md:w-7 md:h-7 fill-current"></i>`;
+
+            setTimeout(() => showToast("Previous session time loaded. Ready to resume!"), 1500);
+        }
+
+        updateTimerDisplay();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    } catch (e) {
+        console.error("Failed to restore timer state", e);
+    }
+};
+
+window.addEventListener('beforeunload', () => {
+    window.saveTimerState();
+});
+
+window.restoreTimerState();
+
+const _musicWidget = document.getElementById('music-widget');
+if (_musicWidget) _musicWidget.style.display = 'none';
 
 initAuth(); lucide.createIcons();
