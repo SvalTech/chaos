@@ -564,8 +564,10 @@ let timerMode = 'flow';
 let targetDurationSecs = 0;
 let linkedTaskId = null;
 
-// --- ANTI-THROTTLING ENGINE ---
 
+
+// --- ANTI-THROTTLING ENGINE ---
+``
 // 1. Inline Web Worker for unthrottled background ticking
 const timerWorkerBlob = new Blob([`
     let interval = null;
@@ -669,18 +671,17 @@ window.setTimerMode = function (mode) {
     timerAccumulatedMs = 0;
     timerSeconds = 0;
 
-    const svgRing = document.getElementById('timer-progress-svg');
-    const spinRing = document.getElementById('timer-active-ring');
+    const svgRing = document.getElementById('timer-progress-ring');
+    const flowPath = document.getElementById('timer-active-path');
     const label = document.getElementById('timer-mode-label');
 
-    // Update UI Buttons
     ['flow', 'exam'].forEach(m => {
         const btn = document.getElementById(`btn-mode-${m}`);
         if (btn) {
             if (m === mode) {
-                btn.className = "px-4 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl text-[11px] md:text-xs font-bold bg-white dark:bg-[#27272a] text-zinc-900 dark:text-white shadow-sm transition-all";
+                btn.className = "px-5 py-2 md:px-6 md:py-2.5 rounded-lg md:rounded-xl text-[11px] md:text-xs font-bold bg-white dark:bg-[#27272a] text-zinc-900 dark:text-white shadow-sm transition-all";
             } else {
-                btn.className = "px-4 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl text-[11px] md:text-xs font-bold text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-all bg-transparent";
+                btn.className = "px-5 py-2 md:px-6 md:py-2.5 rounded-lg md:rounded-xl text-[11px] md:text-xs font-bold text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-all bg-transparent";
             }
         }
     });
@@ -688,28 +689,92 @@ window.setTimerMode = function (mode) {
     if (mode === 'flow') {
         targetDurationSecs = 0;
         if (svgRing) svgRing.classList.add('hidden');
-        if (spinRing) spinRing.classList.remove('hidden');
+        if (flowPath) {
+            flowPath.classList.remove('hidden');
+            flowPath.style.animationPlayState = 'paused'; // Ensure it starts paused
+        }
         if (label) label.innerText = "Flow State";
     } else if (mode === 'exam') {
         targetDurationSecs = 3 * 60 * 60; // 3 hours
         if (svgRing) {
             svgRing.classList.remove('hidden');
-            const ring = document.getElementById('timer-progress-ring');
-            if (ring) {
-                // Ensure ring is purple (clears out old state bugs)
-                ring.classList.remove('text-rose-500', 'text-emerald-500', 'text-blue-500');
-                ring.classList.add('text-brand-500');
-            }
+            const perimeter = svgRing.getTotalLength ? svgRing.getTotalLength() : 880;
+            svgRing.style.strokeDasharray = `${perimeter} ${perimeter}`;
+            svgRing.style.strokeDashoffset = perimeter; // Initialize empty
         }
-        if (spinRing) spinRing.classList.add('hidden');
+        if (flowPath) {
+            flowPath.classList.add('hidden');
+            flowPath.style.animationPlayState = 'paused';
+        }
         if (label) label.innerText = "Exam Simulator";
     }
 
     updateTimerDisplay();
     window.saveTimerState();
 }
+window.toggleTimer = function () {
+    const selector = document.getElementById('timer-task-linker');
+    if (selector) linkedTaskId = selector.value || null;
+
+    if (isTimerRunning) {
+        timerWorker.postMessage('stop');
+        releaseWakeLock();
+        timerAccumulatedMs += Date.now() - timerStartMs;
+        isTimerRunning = false;
+        syncMySocialStatus(false, "");
+
+        document.getElementById('btn-timer-toggle').innerHTML = `<i data-lucide="play" class="w-6 h-6 md:w-7 md:h-7 fill-current"></i>`;
+        document.getElementById('btn-timer-stop').disabled = false;
+
+        // FIX: Pause Flow Path Animation
+        const flowPath = document.getElementById('timer-active-path');
+        if (flowPath) flowPath.style.animationPlayState = 'paused';
+
+    } else {
+        if (timerMode !== 'flow' && Math.floor(timerAccumulatedMs / 1000) >= targetDurationSecs) {
+            resetTimer();
+        }
+
+        timerStartMs = Date.now();
+        isTimerRunning = true;
+        syncMySocialStatus(true, timerSubject);
+
+        timerWorker.postMessage('start');
+        requestWakeLock();
+
+        document.getElementById('btn-timer-toggle').innerHTML = `<i data-lucide="pause" class="w-6 h-6 md:w-7 md:h-7 fill-current"></i>`;
+        document.getElementById('btn-timer-stop').disabled = false;
+
+        // FIX: Play Flow Path Animation
+        const flowPath = document.getElementById('timer-active-path');
+        if (flowPath && timerMode === 'flow') {
+            flowPath.style.animationPlayState = 'running';
+        }
+    }
+
+    const miniToggle = document.getElementById('btn-mini-timer-toggle');
+    const miniDot = document.getElementById('mini-timer-dot');
+    if (miniToggle) {
+        miniToggle.innerHTML = isTimerRunning
+            ? `<i data-lucide="pause" class="w-4 h-4 fill-current"></i>`
+            : `<i data-lucide="play" class="w-4 h-4 fill-current ml-0.5"></i>`;
+    }
+    if (miniDot) {
+        if (isTimerRunning) {
+            miniDot.classList.add('animate-pulse', 'bg-brand-500');
+            miniDot.classList.remove('bg-zinc-400');
+        } else {
+            miniDot.classList.remove('animate-pulse', 'bg-brand-500');
+            miniDot.classList.add('bg-zinc-400');
+        }
+    }
+    updateMiniTimerVisibility();
+    lucide.createIcons();
+    updateTimerDisplay();
+    window.saveTimerState();
+}
+
 window.stopTimer = async function () {
-    // 1. Instantly pause the timer so it doesn't tick behind the modals
     let wasRunning = isTimerRunning;
     if (isTimerRunning) {
         timerWorker.postMessage('stop');
@@ -718,39 +783,76 @@ window.stopTimer = async function () {
         isTimerRunning = false;
         window.saveTimerState();
 
-        // Visually pause the UI
         document.getElementById('btn-timer-toggle').innerHTML = `<i data-lucide="play" class="w-6 h-6 md:w-7 md:h-7 fill-current"></i>`;
-        const spinRing = document.getElementById('timer-active-ring');
-        if (spinRing) {
-            spinRing.classList.remove('opacity-100', 'animate-spin-slow');
-            spinRing.classList.add('opacity-0');
-        }
+
+        // FIX: Pause Flow Path Animation
+        const flowPath = document.getElementById('timer-active-path');
+        if (flowPath) flowPath.style.animationPlayState = 'paused';
+
         lucide.createIcons();
     }
 
-    // 2. Short session friction
     if (timerSeconds < 60) {
         const isSure = await customConfirm("You've logged less than a minute. Do you want to discard this session?", "Discard Session?", true, "Discard");
         if (!isSure) {
-            if (wasRunning) window.toggleTimer(); // Auto-resume if cancelled
+            if (wasRunning) window.toggleTimer();
             return;
         }
         resetTimer();
         return;
     }
 
-    // 3. Exam mode friction
     if (timerMode === 'exam') {
         const isSure = await customConfirm("You are simulating an exam. Are you sure you want to walk out early?", "Leave Exam Hall?", true, "Exit Early");
         if (!isSure) {
-            if (wasRunning) window.toggleTimer(); // Auto-resume if cancelled
+            if (wasRunning) window.toggleTimer();
             return;
         }
     }
 
-    // 4. Proceed to log
     await processSessionLog();
 }
+
+function resetTimer() {
+    timerWorker.postMessage('stop');
+    releaseWakeLock();
+    clearInterval(timerInterval);
+    isTimerRunning = false;
+    timerStartMs = 0;
+    timerAccumulatedMs = 0;
+    timerSeconds = 0;
+
+    window.syncMySocialStatus(false, "");
+
+    updateTimerDisplay();
+
+    const ring = document.getElementById('timer-progress-ring');
+    if (ring) {
+        const perimeter = ring.getTotalLength ? ring.getTotalLength() : 880;
+        ring.style.strokeDashoffset = perimeter; // Ensure it clears out entirely
+    }
+
+    document.getElementById('btn-timer-toggle').innerHTML = `<i data-lucide="play" class="w-6 h-6 md:w-7 md:h-7 fill-current"></i>`;
+    document.getElementById('btn-timer-stop').disabled = true;
+
+    // FIX: Pause and Reset Flow Path Animation
+    const flowPath = document.getElementById('timer-active-path');
+    if (flowPath) {
+        // Force reflow to visually reset the SVG travel path to the start
+        flowPath.style.animation = 'none';
+        flowPath.offsetHeight;
+        flowPath.style.animation = null;
+        // 🚨 CRITICAL FIX: Ensure it is explicitly paused AFTER resetting the animation
+        flowPath.style.animationPlayState = 'paused';
+    }
+
+    window.saveTimerState();
+    const miniToggle = document.getElementById('btn-mini-timer-toggle');
+    if (miniToggle) miniToggle.innerHTML = `<i data-lucide="play" class="w-4 h-4 fill-current ml-0.5"></i>`;
+    updateMiniTimerVisibility();
+    lucide.createIcons();
+}
+
 function completeCountdownSession() {
     timerWorker.postMessage('stop');
     releaseWakeLock();
@@ -801,54 +903,7 @@ async function processSessionLog() {
     resetTimer();
     syncMySocialStatus(false, "");
 }
-window.toggleTimer = function () {
-    const selector = document.getElementById('timer-task-linker');
-    if (selector) linkedTaskId = selector.value || null;
 
-    if (isTimerRunning) {
-        // FIX: Properly stop the Web Worker so it doesn't leak ticks
-        timerWorker.postMessage('stop');
-        releaseWakeLock();
-        timerAccumulatedMs += Date.now() - timerStartMs;
-        isTimerRunning = false;
-        syncMySocialStatus(false, "");
-
-        document.getElementById('btn-timer-toggle').innerHTML = `<i data-lucide="play" class="w-6 h-6 md:w-7 md:h-7 fill-current"></i>`;
-        document.getElementById('btn-timer-stop').disabled = false;
-
-        const spinRing = document.getElementById('timer-active-ring');
-        if (spinRing) {
-            spinRing.classList.remove('opacity-100', 'animate-spin-slow');
-            spinRing.classList.add('opacity-0');
-        }
-    } else {
-        if (timerMode !== 'flow' && Math.floor(timerAccumulatedMs / 1000) >= targetDurationSecs) {
-            resetTimer();
-        }
-
-        timerStartMs = Date.now();
-        isTimerRunning = true;
-        syncMySocialStatus(true, timerSubject);
-
-        // Use Worker & Wake Lock instead of setInterval
-        timerWorker.postMessage('start');
-        requestWakeLock();
-
-        document.getElementById('btn-timer-toggle').innerHTML = `<i data-lucide="pause" class="w-6 h-6 md:w-7 md:h-7 fill-current"></i>`;
-        document.getElementById('btn-timer-stop').disabled = false;
-
-        const spinRing = document.getElementById('timer-active-ring');
-        if (spinRing && timerMode === 'flow') {
-            spinRing.classList.remove('opacity-0');
-            spinRing.classList.add('opacity-100', 'animate-spin-slow');
-        }
-    }
-    lucide.createIcons();
-
-    // 🚨 FIX: Force a UI sync instantly so the PiP window catches the play/pause state!
-    updateTimerDisplay();
-    window.saveTimerState();
-}
 
 function updateTimerDisplay() {
     let totalMs = timerAccumulatedMs;
@@ -864,18 +919,15 @@ function updateTimerDisplay() {
         displaySecs = targetDurationSecs - elapsedSecs;
         timerSeconds = elapsedSecs;
 
-        // Dynamic Exact Circumference Fix
+        // FIX: Use totalMs instead of timerAccumulatedMs so it updates continuously!
         const ring = document.getElementById('timer-progress-ring');
-        if (ring) {
-            const radius = ring.r.baseVal.value;
-            const circumference = radius * 2 * Math.PI;
+        if (ring && targetDurationSecs > 0) {
+            const percent = Math.min(totalMs / (targetDurationSecs * 1000), 1);
+            const perimeter = ring.getTotalLength ? ring.getTotalLength() : 880;
+            const offset = perimeter - (percent * perimeter);
 
-            if (!ring.style.strokeDasharray) {
-                ring.style.strokeDasharray = `${circumference} ${circumference}`;
-            }
-
-            const percent = Math.max(0, displaySecs / targetDurationSecs);
-            ring.style.strokeDashoffset = circumference - (percent * circumference);
+            ring.style.strokeDasharray = `${perimeter} ${perimeter}`;
+            ring.style.strokeDashoffset = offset;
         }
 
         if (displaySecs <= 0) {
@@ -895,14 +947,17 @@ function updateTimerDisplay() {
         displayEl.innerText = `${h}:${m}:${s}`;
     }
 
-    // --- REAL-TIME 'FOCUSED TODAY' UPDATE ---
-    // Makes the UI seamlessly increment your daily total while the timer is actively running
+    const miniDisplay = document.getElementById('mini-timer-display');
+    if (miniDisplay) {
+        miniDisplay.innerText = `${h}:${m}:${s}`;
+    }
+
+    // Real-time "Focused Today" Update
     if (isTimerRunning) {
         const todayStr = getLogicalTodayStr();
         const todayLogs = state.studyLogs.filter(l => l.date === todayStr);
         let totalMins = todayLogs.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
 
-        // Add the live, un-logged minutes to the total
         totalMins += Math.floor(timerSeconds / 60);
 
         let displayTime = `${totalMins}m`;
@@ -915,11 +970,9 @@ function updateTimerDisplay() {
         if (todayTotalEl) todayTotalEl.innerText = displayTime;
     }
 
-    // --- PICTURE-IN-PICTURE SYNC ---
-    // --- PICTURE-IN-PICTURE SYNC ---
+    // Picture-in-Picture Sync
     if (typeof isPipActive !== 'undefined' && isPipActive) {
         if (pipWindow && pipWindow.document) {
-
             const pipDisplay = pipWindow.document.getElementById('pip-timer-display');
             if (pipDisplay) pipDisplay.innerText = `${h}:${m}:${s}`;
 
@@ -932,30 +985,22 @@ function updateTimerDisplay() {
                 pipRing.style.strokeDashoffset = circumference - (percent * circumference);
             }
 
-            // CSS-ONLY BUTTON SYNC - Fixed by targeting static wrappers
             const playWrapper = pipWindow.document.getElementById('pip-play-wrapper');
             const pauseWrapper = pipWindow.document.getElementById('pip-pause-wrapper');
             if (playWrapper && pauseWrapper) {
                 if (isTimerRunning) {
-                    playWrapper.classList.add('hidden');
-                    playWrapper.classList.remove('block');
-                    pauseWrapper.classList.add('block');
-                    pauseWrapper.classList.remove('hidden');
+                    playWrapper.classList.add('hidden'); playWrapper.classList.remove('block');
+                    pauseWrapper.classList.add('block'); pauseWrapper.classList.remove('hidden');
                 } else {
-                    playWrapper.classList.add('block');
-                    playWrapper.classList.remove('hidden');
-                    pauseWrapper.classList.add('hidden');
-                    pauseWrapper.classList.remove('block');
+                    playWrapper.classList.add('block'); playWrapper.classList.remove('hidden');
+                    pauseWrapper.classList.add('hidden'); pauseWrapper.classList.remove('block');
                 }
             }
 
             const pipStop = pipWindow.document.getElementById('pip-stop-btn');
             if (pipStop) {
-                if (isTimerRunning) {
-                    pipStop.classList.remove('opacity-50', 'pointer-events-none');
-                } else {
-                    pipStop.classList.add('opacity-50', 'pointer-events-none');
-                }
+                if (isTimerRunning) pipStop.classList.remove('opacity-50', 'pointer-events-none');
+                else pipStop.classList.add('opacity-50', 'pointer-events-none');
             }
 
             const pipActiveRing = pipWindow.document.getElementById('pip-active-ring');
@@ -964,15 +1009,12 @@ function updateTimerDisplay() {
                 else pipActiveRing.classList.add('pip-paused');
             }
 
-            // Toggle Background Glow
             const pipGlow = pipWindow.document.getElementById('pip-bg-glow');
             if (pipGlow) {
                 if (isTimerRunning) {
-                    pipGlow.classList.remove('opacity-0');
-                    pipGlow.classList.add('opacity-100', 'animate-pulse');
+                    pipGlow.classList.remove('opacity-0'); pipGlow.classList.add('opacity-100', 'animate-pulse');
                 } else {
-                    pipGlow.classList.add('opacity-0');
-                    pipGlow.classList.remove('opacity-100', 'animate-pulse');
+                    pipGlow.classList.add('opacity-0'); pipGlow.classList.remove('opacity-100', 'animate-pulse');
                 }
             }
 
@@ -980,40 +1022,29 @@ function updateTimerDisplay() {
             if (pipSubject && pipSubject.innerText !== (timerSubject || 'Focus Session')) {
                 pipSubject.innerText = timerSubject || 'Focus Session';
             }
-
         } else {
             if (typeof drawPiPCanvas === 'function') drawPiPCanvas();
         }
     }
 }
-function resetTimer() {
-    timerWorker.postMessage('stop'); // NEW
-    releaseWakeLock();               // NEW
-    clearInterval(timerInterval);
-    isTimerRunning = false;
-    timerStartMs = 0;
-    timerAccumulatedMs = 0;
-    timerSeconds = 0;
 
-    // ADD THIS LINE: Explicitly tell the squad database you are no longer studying
-    window.syncMySocialStatus(false, "");
+window.updateMiniTimerVisibility = function () {
+    const miniTimer = document.getElementById('global-mini-timer');
+    if (!miniTimer) return;
 
-    updateTimerDisplay();
+    // Show if we are NOT on the timer view AND there is an active session
+    const hasActiveSession = isTimerRunning || timerAccumulatedMs > 0;
+    const shouldShow = state.currentView !== 'timer' && hasActiveSession;
 
-    const ring = document.getElementById('timer-progress-ring');
-    if (ring) ring.style.strokeDashoffset = 0;
-
-    // Corrected standard icon size
-    document.getElementById('btn-timer-toggle').innerHTML = `<i data-lucide="play" class="w-6 h-6 md:w-7 md:h-7 fill-current"></i>`;
-    document.getElementById('btn-timer-stop').disabled = true;
-
-    const spinRing = document.getElementById('timer-active-ring');
-    if (spinRing) {
-        spinRing.classList.remove('opacity-100', 'animate-spin-slow');
-        spinRing.classList.add('opacity-0');
+    if (shouldShow) {
+        // Expand the bar and show it
+        miniTimer.classList.remove('max-h-0', 'opacity-0', 'pointer-events-none');
+        miniTimer.classList.add('max-h-[80px]', 'opacity-100', 'pointer-events-auto');
+    } else {
+        // Collapse the bar and hide it
+        miniTimer.classList.add('max-h-0', 'opacity-0', 'pointer-events-none');
+        miniTimer.classList.remove('max-h-[80px]', 'opacity-100', 'pointer-events-auto');
     }
-    window.saveTimerState();
-    lucide.createIcons();
 }
 
 window.setTimerSubject = function (sub) {
@@ -1032,7 +1063,8 @@ window.setTimerSubject = function (sub) {
     if (typeof isTimerRunning !== 'undefined' && isTimerRunning) {
         syncMySocialStatus(true, timerSubject);
     }
-
+    const miniSubject = document.getElementById('mini-timer-subject');
+    if (miniSubject) miniSubject.innerText = sub;
     window.saveTimerState();
 }
 
@@ -1809,43 +1841,14 @@ window.saveSettings = async function () {
     tempSettings.bgUrl = document.getElementById('settings-bg-url').value;
     updateTargetDateConfig();
 
-    /// --- BULLETPROOF SQUAD SETTINGS SAVE ---
-    const bannerUrlInput = document.getElementById('settings-banner-url').value.trim();
-    const safeBannerUrl = isValidImageUrl(bannerUrlInput) ? bannerUrlInput : null;
-    const profileQuote = document.getElementById('settings-profile-quote').value.trim();
-
-    // 1. Explicitly force these into tempSettings so they are GUARANTEED to save to your private settings/config
-    tempSettings.bannerTheme = tempSettings.bannerTheme ?? state.settings?.bannerTheme ?? 'default';
-    tempSettings.avatarShape = tempSettings.avatarShape ?? state.settings?.avatarShape ?? 'circle';
-    tempSettings.bannerUrl = safeBannerUrl;
-    tempSettings.profileQuote = profileQuote;
-
-    // 2. Immediately merge into state.settings so UI re-renders (like dark mode toggles) instantly use the new values
+    // Immediately merge into state.settings so UI re-renders instantly use the new values
     state.settings = { ...state.settings, ...tempSettings };
-
-    // 3. Determine if the public squad profile actually needs an update
-    const profileNeedsUpdate = (
-        state.myProfile?.bannerTheme !== state.settings.bannerTheme ||
-        state.myProfile?.bannerUrl !== state.settings.bannerUrl ||
-        state.myProfile?.profileQuote !== state.settings.profileQuote ||
-        state.myProfile?.avatarShape !== state.settings.avatarShape
-    );
-
-    // 4. Push to the public database
-    if (profileNeedsUpdate) {
-        updateDoc(doc(db, 'artifacts', appId, 'socialProfiles', currentUser.uid), {
-            bannerTheme: state.settings.bannerTheme,
-            bannerUrl: state.settings.bannerUrl,
-            profileQuote: state.settings.profileQuote,
-            avatarShape: state.settings.avatarShape
-        }).catch(e => console.error("Failed to sync profile extras", e));
-    }
 
     try {
         await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), { ...state.settings, ...tempSettings });
         resetSettingsDirty();
         closeSettings();
-        showToast("Saved");
+        showToast("Saved Settings");
 
         // If they changed the rollover time, cleanly reload to reset all calendars and targets
         if (rolloverChanged) {
@@ -1854,7 +1857,6 @@ window.saveSettings = async function () {
     }
     catch (e) { console.error(e); }
 }
-
 window.updateTaskScore = async function (id, type, value) {
     if (!currentUser) return;
     const numVal = value === "" ? null : parseInt(value); const updateData = {};
@@ -2078,22 +2080,39 @@ window.openAddMockFromStats = function () {
     if (window.innerWidth >= 768) {
         switchView('calendar');
         document.getElementById('task-date').value = getLocalISODate(new Date());
+
         const mockRadio = document.querySelector('#subject-selector input[value="MockTest"]');
-        if (mockRadio) { mockRadio.checked = true; mockRadio.dispatchEvent(new Event('change')); }
+        if (mockRadio) {
+            mockRadio.checked = true;
+            mockRadio.dispatchEvent(new Event('change'));
+        }
+
         document.getElementById('task-input').value = 'Practice Mock Test';
         document.getElementById('task-input').focus();
+
+        // Deep Link: Force UI into "Log" mode
+        setTimeout(() => {
+            if (typeof switchMockAddMode === 'function') switchMockAddMode('log', '');
+        }, 50);
+
     } else {
         switchView('calendar');
         document.getElementById('task-date-mobile').value = getLocalISODate(new Date());
         openAddTaskModal();
+
         setTimeout(() => {
             const mockRadio = document.querySelector('#subject-selector-mobile input[value="MockTest"]');
-            if (mockRadio) { mockRadio.checked = true; mockRadio.dispatchEvent(new Event('change')); }
+            if (mockRadio) {
+                mockRadio.checked = true;
+                mockRadio.dispatchEvent(new Event('change'));
+            }
             document.getElementById('task-input-mobile').value = 'Practice Mock Test';
+
+            // Deep Link: Force UI into "Log" mode for mobile
+            if (typeof switchMockAddMode === 'function') switchMockAddMode('log', '-mobile');
         }, 50);
     }
 };
-
 window.renderMockStats = function () {
     const mockTasks = state.tasks.filter(t => t.subject === 'MockTest').sort((a, b) => new Date(a.date) - new Date(b.date));
     const scored = mockTasks.filter(t => t.marks !== undefined && t.marks !== null && t.marks !== "");
@@ -2329,6 +2348,8 @@ window.switchView = function (view) {
     if (view === 'syllabus') renderSyllabusView();
     if (view === 'squad') renderSquadView();
     if (view === 'timer') { updateSubjectSelectors(); updateTimerTaskSelector(); updateTimerStats(); renderRecentLogs(); renderTimerChart(); }
+
+    if (typeof updateMiniTimerVisibility === 'function') updateMiniTimerVisibility();
 }
 
 
@@ -2339,10 +2360,56 @@ window.renderMockSubjectFields = function (containerId, suffix) {
     const container = document.getElementById(containerId);
     const type = state.settings.examType;
     const subjects = window.getExamSubjects(type, state.settings.customSubjects);
-    let html = `<div class="grid grid-cols-3 gap-2 mb-4">`;
-    subjects.forEach(sub => { html += `<div><label class="block text-[10px] font-bold text-fuchsia-600/70 dark:text-fuchsia-400/70 mb-1.5 uppercase tracking-widest text-center">${sub.substring(0, 3)}</label><input type="number" data-subject="${sub}" class="mock-subject-input${suffix} w-full bg-white dark:bg-zinc-800 border border-fuchsia-200/50 dark:border-fuchsia-900/50 rounded-xl px-2 py-3 text-sm text-center outline-none dark:text-white font-bold focus:ring-2 focus:ring-fuchsia-500 appearance-none shadow-inner-light dark:shadow-inner-dark" placeholder="0" oninput="calculateMockTotal('${suffix}')"></div>`; });
-    html += `</div><div class="flex items-center gap-2 mb-2 text-fuchsia-700 dark:text-fuchsia-300"><i data-lucide="calculator" class="w-4 h-4"></i><span class="text-xs font-bold uppercase tracking-wide">Totals</span></div><div class="grid grid-cols-2 gap-3"><div><label class="block text-[10px] font-bold text-fuchsia-600/70 dark:text-fuchsia-400/70 mb-1 uppercase tracking-widest">Obtained</label><input type="number" id="task-marks${suffix}" placeholder="Auto" class="w-full bg-zinc-100/50 dark:bg-zinc-800/50 border border-transparent rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-black text-fuchsia-600 dark:text-fuchsia-400 text-center cursor-not-allowed" readonly></div><div><label class="block text-[10px] font-bold text-fuchsia-600/70 dark:text-fuchsia-400/70 mb-1 uppercase tracking-widest">Max</label><input type="number" id="task-max-marks${suffix}" value="${type === 'NEET' ? 720 : 300}" class="w-full bg-white dark:bg-zinc-800 border border-fuchsia-200/50 dark:border-fuchsia-900/50 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-black text-zinc-500 focus:ring-2 focus:ring-fuchsia-500 text-center shadow-inner-light dark:shadow-inner-dark"></div></div>`;
-    container.innerHTML = html; lucide.createIcons();
+
+    let html = `
+        <div class="flex p-1 bg-white/50 dark:bg-zinc-950/50 rounded-xl mb-4 border border-fuchsia-200/50 dark:border-fuchsia-900/30">
+            <button type="button" id="mock-tab-schedule${suffix}" onclick="switchMockAddMode('schedule', '${suffix}')" class="flex-1 py-1.5 text-[11px] font-bold rounded-lg bg-white dark:bg-zinc-800 text-fuchsia-700 dark:text-fuchsia-300 shadow-sm transition-all">Schedule Mock</button>
+            <button type="button" id="mock-tab-log${suffix}" onclick="switchMockAddMode('log', '${suffix}')" class="flex-1 py-1.5 text-[11px] font-bold rounded-lg text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-all bg-transparent">Log Results</button>
+        </div>
+
+        <div id="mock-log-inputs${suffix}" class="hidden animate-slide-up">
+            <div class="grid grid-cols-3 gap-2 mb-4">
+    `;
+
+    subjects.forEach(sub => {
+        html += `<div><label class="block text-[10px] font-bold text-fuchsia-600/70 dark:text-fuchsia-400/70 mb-1.5 uppercase tracking-widest text-center">${sub.substring(0, 3)}</label><input type="number" data-subject="${sub}" class="mock-subject-input${suffix} w-full bg-white dark:bg-zinc-800 border border-fuchsia-200/50 dark:border-fuchsia-900/50 rounded-xl px-2 py-3 text-sm text-center outline-none dark:text-white font-bold focus:ring-2 focus:ring-fuchsia-500 appearance-none shadow-inner-light dark:shadow-inner-dark" placeholder="0" oninput="calculateMockTotal('${suffix}')"></div>`;
+    });
+
+    html += `
+            </div>
+            <div class="flex items-center gap-2 mb-2 text-fuchsia-700 dark:text-fuchsia-300"><i data-lucide="calculator" class="w-4 h-4"></i><span class="text-xs font-bold uppercase tracking-wide">Totals</span></div>
+            <div class="grid grid-cols-2 gap-3">
+                <div><label class="block text-[10px] font-bold text-fuchsia-600/70 dark:text-fuchsia-400/70 mb-1 uppercase tracking-widest">Obtained</label><input type="number" id="task-marks${suffix}" placeholder="Auto" class="w-full bg-zinc-100/50 dark:bg-zinc-800/50 border border-transparent rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-black text-fuchsia-600 dark:text-fuchsia-400 text-center cursor-not-allowed" readonly></div>
+                <div><label class="block text-[10px] font-bold text-fuchsia-600/70 dark:text-fuchsia-400/70 mb-1 uppercase tracking-widest">Max</label><input type="number" id="task-max-marks${suffix}" value="${type === 'NEET' ? 720 : 300}" class="w-full bg-white dark:bg-zinc-800 border border-fuchsia-200/50 dark:border-fuchsia-900/50 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-black text-zinc-500 focus:ring-2 focus:ring-fuchsia-500 text-center shadow-inner-light dark:shadow-inner-dark"></div>
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+    lucide.createIcons();
+
+    // Set default state internally
+    window[`mockMode${suffix}`] = 'schedule';
+}
+
+window.switchMockAddMode = function (mode, suffix) {
+    window[`mockMode${suffix}`] = mode;
+    const tabSchedule = document.getElementById(`mock-tab-schedule${suffix}`);
+    const tabLog = document.getElementById(`mock-tab-log${suffix}`);
+    const logInputs = document.getElementById(`mock-log-inputs${suffix}`);
+    const submitBtn = document.getElementById(`btn-add-task${suffix}`);
+
+    if (mode === 'schedule') {
+        tabSchedule.className = "flex-1 py-1.5 text-[11px] font-bold rounded-lg bg-white dark:bg-zinc-800 text-fuchsia-700 dark:text-fuchsia-300 shadow-sm transition-all";
+        tabLog.className = "flex-1 py-1.5 text-[11px] font-bold rounded-lg text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-all bg-transparent";
+        logInputs.classList.add('hidden');
+        if (submitBtn) submitBtn.querySelector('span').innerText = "Schedule Mock";
+    } else {
+        tabLog.className = "flex-1 py-1.5 text-[11px] font-bold rounded-lg bg-white dark:bg-zinc-800 text-fuchsia-700 dark:text-fuchsia-300 shadow-sm transition-all";
+        tabSchedule.className = "flex-1 py-1.5 text-[11px] font-bold rounded-lg text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-all bg-transparent";
+        logInputs.classList.remove('hidden');
+        if (submitBtn) submitBtn.querySelector('span').innerText = "Save Results";
+    }
 }
 
 window.calculateMockTotal = function (suffix) { const inputs = document.querySelectorAll(`.mock-subject-input${suffix}`); let total = 0; inputs.forEach(input => { const val = parseInt(input.value); if (!isNaN(val)) total += val; }); document.getElementById(`task-marks${suffix}`).value = total > 0 ? total : ''; }
@@ -2379,10 +2446,16 @@ function updateSubjectSelectors() {
                     renderMockSubjectFields(mockContainerId, formSuffix);
                 } else {
                     mockFields.classList.add('hidden');
+
+                    // FIX: Reset the main button text back to default when leaving Mock mode
+                    const submitBtn = document.getElementById(`btn-add-task${formSuffix}`);
+                    if (submitBtn) {
+                        const btnSpan = submitBtn.querySelector('span');
+                        if (btnSpan) btnSpan.innerText = "Add to Plan";
+                    }
                 }
 
                 // 💥 TRIGGER ANIMATION HERE 💥
-                // e.target is the hidden radio input. e.target.nextElementSibling is the visible UI capsule.
                 window.spawnFloatingIcons(e.target.nextElementSibling, e.target.value);
             });
         });
@@ -2438,11 +2511,37 @@ async function handleTaskSubmit(mode) {
     const newTask = { text: cleanText, date, subject, completed: false, order: maxOrder + 1, createdAt: new Date().toISOString() };
 
     if (subject === 'MockTest') {
-        const marksId = `task-marks${suffix}`; const maxMarksId = `task-max-marks${suffix}`; const marks = document.getElementById(marksId).value;
-        const subjectInputs = document.querySelectorAll(`.mock-subject-input${suffix}`); let subjectMarks = {};
-        subjectInputs.forEach(input => { const sub = input.dataset.subject; const val = parseInt(input.value); if (!isNaN(val)) subjectMarks[sub] = val; });
-        if (Object.keys(subjectMarks).length > 0) newTask.subjectMarks = subjectMarks;
-        if (marks) { newTask.marks = marks; newTask.completed = true; } newTask.maxMarks = document.getElementById(maxMarksId).value || 300;
+        const currentMockMode = window[`mockMode${suffix}`] || 'schedule';
+
+        if (currentMockMode === 'log') {
+            const marksId = `task-marks${suffix}`;
+            const maxMarksId = `task-max-marks${suffix}`;
+            const marks = document.getElementById(marksId).value;
+            const subjectInputs = document.querySelectorAll(`.mock-subject-input${suffix}`);
+            let subjectMarks = {};
+
+            subjectInputs.forEach(input => {
+                const sub = input.dataset.subject;
+                const val = parseInt(input.value);
+                if (!isNaN(val)) subjectMarks[sub] = val;
+            });
+
+            if (Object.keys(subjectMarks).length > 0) newTask.subjectMarks = subjectMarks;
+
+            if (!marks || marks === '') {
+                showToast("Please enter marks to log results!");
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+                return; // Stop submission
+            }
+
+            newTask.marks = marks;
+            newTask.completed = true; // Auto-complete it because it's a logged result
+            newTask.maxMarks = document.getElementById(maxMarksId).value || 300;
+        } else {
+            // It's a Schedule! Do not attach marks, and keep it incomplete.
+            newTask.completed = false;
+        }
     }
 
     try {
@@ -2818,20 +2917,6 @@ window.openSettings = () => {
             bgToggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300";
         }
     }
-
-    // --- BULLETPROOF SQUAD SETTINGS LOAD ---
-    setTimeout(() => {
-        // Use ?? (Nullish Coalescing) so empty strings ("") are respected and not overwritten
-        const bTheme = tempSettings.bannerTheme ?? state.settings?.bannerTheme ?? state.myProfile?.bannerTheme ?? 'default';
-        const aShape = tempSettings.avatarShape ?? state.settings?.avatarShape ?? state.myProfile?.avatarShape ?? 'circle';
-        const bUrl = tempSettings.bannerUrl ?? state.settings?.bannerUrl ?? state.myProfile?.bannerUrl ?? '';
-        const pQuote = tempSettings.profileQuote ?? state.settings?.profileQuote ?? state.myProfile?.profileQuote ?? '';
-
-        window.setBannerTheme(bTheme);
-        window.setAvatarShape(aShape);
-        document.getElementById('settings-banner-url').value = bUrl;
-        document.getElementById('settings-profile-quote').value = pQuote;
-    }, 50);
 
     resetSettingsDirty();
     renderSubjectColorSettings();
@@ -3834,31 +3919,7 @@ window.closeAddFriendModal = () => {
     setTimeout(() => modal.classList.add('hidden'), 300);
 };
 
-window.editDisplayName = async () => {
-    if (!currentUser) return;
 
-    const newName = await customPrompt("Enter your new display name for the squad view:", myDisplayName || currentUser.displayName || "Aspirant", "Change Display Name", "e.g. Air1");
-    if (newName !== null && newName.trim() !== "") {
-        const cleanName = newName.trim();
-        try {
-            // Update public profile document
-            await updateDoc(doc(db, 'artifacts', appId, 'socialProfiles', currentUser.uid), {
-                name: cleanName
-            });
-
-            myDisplayName = cleanName;
-
-            // Update local sidebar
-            const nameDesktop = document.getElementById('user-name-desktop');
-            if (nameDesktop) nameDesktop.innerText = cleanName;
-
-            showToast("Display name updated!");
-        } catch (e) {
-            console.error(e);
-            showToast("Failed to update name");
-        }
-    }
-};
 window.submitAddFriend = async () => {
     const code = document.getElementById('friend-code-input').value.trim().toUpperCase();
     if (code.length !== 6) { showToast("Invalid code format"); return; }
@@ -4036,29 +4097,14 @@ window.renderSquadView = function () {
         const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
         // 1. APPLY CUSTOM BANNER (Color or Image)
-        // 1. APPLY CUSTOM BANNER (Color or Image)
         const bTheme = friend.bannerTheme || 'default';
         let bannerBgClass = '';
         let bannerImageHtml = '';
+        let bannerAndAvatarHtml = '';
+        let contentPaddingClass = 'pt-10'; // Default padding when a banner exists
 
         // Check if the user has disabled custom backgrounds in their settings
         const allowCustomBgs = state.settings.showSquadBGs !== false;
-
-        if (allowCustomBgs && friend.bannerUrl && isValidImageUrl(friend.bannerUrl)) {
-            // Apply Custom Image using an img tag so it survives theme toggles
-            bannerImageHtml = `<img src="${escapeHtml(friend.bannerUrl)}" class="absolute inset-0 w-full h-full object-cover rounded-t-[2rem] z-0 pointer-events-none" />`;
-            bannerImageHtml += `<div class="absolute inset-0 bg-black/10 dark:bg-black/20 rounded-t-[2rem] z-0 pointer-events-none"></div>`;
-        } else {
-            // Apply Theme Fallback (Used if GIF is invalid OR if user disabled GIFs in settings)
-            const bannerStyles = {
-                'default': 'bg-gradient-to-br from-zinc-200/50 to-zinc-100/30 dark:from-zinc-800/80 dark:to-zinc-800/30',
-                'lavender': 'bg-gradient-to-br from-purple-400/40 to-brand-500/20 dark:from-purple-600/40 dark:to-brand-900/30',
-                'rose': 'bg-gradient-to-br from-rose-400/40 to-pink-500/20 dark:from-rose-600/40 dark:to-pink-900/30',
-                'emerald': 'bg-gradient-to-br from-emerald-400/40 to-teal-500/20 dark:from-emerald-600/40 dark:to-teal-900/30',
-                'sky': 'bg-gradient-to-br from-sky-400/40 to-blue-500/20 dark:from-sky-600/40 dark:to-blue-900/30'
-            };
-            bannerBgClass = bannerStyles[bTheme] || bannerStyles['default'];
-        }
 
         // 2. APPLY AVATAR RING STATUS & SHAPE
         let avatarRing = 'border-white dark:border-[#18181b]';
@@ -4075,7 +4121,7 @@ window.renderSquadView = function () {
         } else if (isIdle) {
             avatarRing = 'border-amber-400';
             statusIcon = `<span class="w-2 h-2 rounded-full bg-amber-500 mr-1.5"></span>`;
-            statusText = `<span class="text-amber-600 dark:text-amber-400">Idle</span>`; // Changed to Idle
+            statusText = `<span class="text-amber-600 dark:text-amber-400">Idle</span>`;
         } else {
             let timeText = "Offline";
             if (friend.lastActive) {
@@ -4092,10 +4138,52 @@ window.renderSquadView = function () {
             ? `<img src="${friend.avatar}" class="w-full h-full object-cover ${shapeClass}">`
             : `<div class="w-full h-full ${shapeClass} bg-gradient-to-br from-brand-400 to-brand-600 text-white flex items-center justify-center font-black text-2xl shadow-inner">${friend.name.charAt(0)}</div>`;
 
-        // 4. PROFILE QUOTE
+        let premiumBannerFx = '';
+
+
+        // 4. CONSTRUCT BANNER HTML (Or remove it entirely)
+        if (allowCustomBgs) {
+            if (friend.bannerUrl && isValidImageUrl(friend.bannerUrl)) {
+                // Apply Custom Image
+                bannerImageHtml = `<img src="${escapeHtml(friend.bannerUrl)}" class="absolute inset-0 w-full h-full object-cover rounded-t-[2rem] z-0 pointer-events-none" />`;
+                bannerImageHtml += `<div class="absolute inset-0 bg-black/10 dark:bg-black/20 rounded-t-[2rem] z-0 pointer-events-none"></div>`;
+            } else {
+                // Apply Theme Fallback
+                const bannerStyles = {
+                    'default': 'bg-gradient-to-br from-zinc-200/50 to-zinc-100/30 dark:from-zinc-800/80 dark:to-zinc-800/30',
+                    'lavender': 'bg-gradient-to-br from-purple-400/40 to-brand-500/20 dark:from-purple-600/40 dark:to-brand-900/30',
+                    'rose': 'bg-gradient-to-br from-rose-400/40 to-pink-500/20 dark:from-rose-600/40 dark:to-pink-900/30',
+                    'emerald': 'bg-gradient-to-br from-emerald-400/40 to-teal-500/20 dark:from-emerald-600/40 dark:to-teal-900/30',
+                    'sky': 'bg-gradient-to-br from-sky-400/40 to-blue-500/20 dark:from-sky-600/40 dark:to-blue-900/30'
+                };
+                bannerBgClass = bannerStyles[bTheme] || bannerStyles['default'];
+            }
+
+            // Layout WITH Banner
+            bannerAndAvatarHtml = `
+            <div class="h-24 w-full ${bannerBgClass} border-b border-zinc-200 dark:border-zinc-800 relative shrink-0">
+                ${bannerImageHtml}
+                ${premiumBannerFx}
+                <div class="absolute -bottom-8 left-6 w-[72px] h-[72px] ${shapeClass} border-[3px] ${avatarRing} shadow-sm bg-white dark:bg-[#18181b] z-10 transition-all duration-500 flex items-center justify-center">
+                    ${avatarImg}
+                </div>
+            </div>`;
+            contentPaddingClass = 'pt-10'; // Standard padding to clear the overflowing avatar
+        } else {
+            // NO BANNER: Layout WITHOUT Banner
+            bannerAndAvatarHtml = `
+            <div class="px-6 pt-6 shrink-0">
+                <div class="w-[72px] h-[72px] ${shapeClass} border-[3px] ${avatarRing} shadow-sm bg-white dark:bg-[#18181b] z-10 transition-all duration-500 flex items-center justify-center relative">
+                    ${avatarImg}
+                </div>
+            </div>`;
+            contentPaddingClass = 'pt-4'; // Tighter padding since the avatar sits cleanly in the flexbox flow
+        }
+
+        // 5. PROFILE QUOTE
         const quoteHtml = friend.profileQuote ? `<p class="text-xs text-zinc-500 dark:text-zinc-400 italic mb-3 leading-snug">"${escapeHtml(friend.profileQuote)}"</p>` : '';
 
-        // 4.5 FOCUSED TODAY BADGE
+        // 5.5 FOCUSED TODAY BADGE
         let focusedTimeHtml = '';
         if (friend.focusedToday && friend.focusedToday > 0) {
             const hrs = Math.floor(friend.focusedToday / 60);
@@ -4109,61 +4197,41 @@ window.renderSquadView = function () {
             `;
         }
 
-        // 5. TASK LIST GENERATION
-        let tasksHtml = '';
-        if (friend.shareTasks && totalTasks > 0) {
-            tasksHtml = `<div class="space-y-1 mt-1">`;
-            friend.tasks.forEach(t => {
-                const isActiveTask = friend.isStudying && friend.studyContext === t.text;
-                const containerClass = isActiveTask ? 'bg-white dark:bg-[#27272a] border border-zinc-200 dark:border-zinc-700 shadow-sm p-2.5 rounded-xl my-2' : 'py-1.5 px-1';
-                const textClass = t.completed ? 'text-zinc-400 line-through' : (isActiveTask ? 'text-zinc-900 dark:text-white font-black' : 'text-zinc-700 dark:text-zinc-300 font-semibold');
-                const iconClass = t.completed ? 'text-emerald-500' : (isActiveTask ? 'text-brand-500 animate-pulse' : 'text-zinc-300 dark:text-zinc-600');
-                const iconType = t.completed ? 'check-circle-2' : (isActiveTask ? 'loader-2' : 'circle');
+        // 6. CARD ASSEMBLY
 
-                tasksHtml += `
-                <div class="${containerClass} transition-all duration-300">
-                    <div class="flex items-start gap-2.5 text-xs ${textClass}">
-                        <i data-lucide="${iconType}" class="w-4 h-4 mt-0.5 shrink-0 ${iconClass} ${isActiveTask && !t.completed ? 'animate-spin-slow' : ''}"></i>
-                        <span class="leading-relaxed">${t.text}</span>
-                    </div>`;
+        // 👉 RESTORED: Define Display Name, Action Buttons, and Task List
+        const displayName = escapeHtml(friend.name || 'Student');
 
-                if (t.subtasks && t.subtasks.length > 0) {
-                    tasksHtml += `<div class="ml-6 mt-1.5 space-y-1.5 border-l-2 border-zinc-100 dark:border-zinc-800 pl-3">`;
-                    t.subtasks.forEach(st => {
-                        const stTextClass = st.completed ? 'text-zinc-400 line-through' : 'text-zinc-500 dark:text-zinc-400 font-medium';
-                        tasksHtml += `<div class="flex items-start gap-2 text-[10px] ${stTextClass}"><i data-lucide="${st.completed ? 'check' : 'minus'}" class="w-3 h-3 mt-0.5 shrink-0 ${st.completed ? 'text-emerald-500' : 'text-zinc-400'}"></i><span class="leading-tight">${st.text}</span></div>`;
-                    });
-                    tasksHtml += `</div>`;
-                }
-                tasksHtml += `</div>`;
-            });
-            tasksHtml += `</div>`;
-        } else if (friend.shareTasks && totalTasks === 0) {
-            tasksHtml = `<div class="flex flex-col items-center justify-center py-6 text-center"><i data-lucide="coffee" class="w-6 h-6 text-zinc-300 dark:text-zinc-700 mb-2"></i><p class="text-xs text-zinc-400 italic">No targets set today.</p></div>`;
-        } else {
-            tasksHtml = `<div class="flex flex-col items-center justify-center py-6 text-center"><i data-lucide="lock" class="w-6 h-6 text-zinc-300 dark:text-zinc-700 mb-2"></i><p class="text-xs text-zinc-400 italic">Tasks are private.</p></div>`;
+        let actionBtnsHtml = '';
+        if (!friend.isMe) {
+            actionBtnsHtml = `
+                <div class="flex items-center gap-1">
+                    <button onclick="blockFriend('${friend.uid}', '${escapeHtml(friend.name || 'User')}')" title="Block User" class="p-2 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-colors"><i data-lucide="shield-alert" class="w-4 h-4"></i></button>
+                    <button onclick="removeFriend('${friend.uid}', '${escapeHtml(friend.name || 'User')}')" title="Remove Friend" class="p-2 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-colors"><i data-lucide="user-minus" class="w-4 h-4"></i></button>
+                </div>
+            `;
         }
 
-        const displayName = friend.isMe ? `${friend.name} (You)` : friend.name;
-        const safeName = friend.name.replace(/'/g, "\\'");
-
-        // Buttons restyled for the white/dark card background
-        const actionBtnsHtml = friend.isMe ? '' : `
-            <div class="flex items-center gap-1">
-                <button onclick="removeFriend('${friend.uid}', '${safeName}')" title="Remove" class="w-8 h-8 flex items-center justify-center rounded-xl text-zinc-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-900/20 dark:hover:text-rose-500 transition-colors">
-                    <i data-lucide="user-minus" class="w-4 h-4"></i>
-                </button>
-                <button onclick="blockFriend('${friend.uid}', '${safeName}')" title="Block" class="w-8 h-8 flex items-center justify-center rounded-xl text-zinc-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-500 transition-colors">
-                    <i data-lucide="ban" class="w-4 h-4"></i>
-                </button>
-            </div>
-        `;
-
-        // 6. CARD ASSEMBLY
+        let tasksHtml = '';
+        if (friend.shareTasks && friend.tasks && friend.tasks.length > 0) {
+            // Show ALL tasks
+            friend.tasks.forEach(t => {
+                tasksHtml += `
+                    <div class="flex items-start gap-2 mb-2 group/task">
+                        <i data-lucide="${t.completed ? 'check-circle-2' : 'circle'}" class="w-3.5 h-3.5 mt-0.5 shrink-0 ${t.completed ? 'text-emerald-500' : 'text-zinc-300 dark:text-zinc-600'}"></i>
+                        <span class="text-xs font-bold ${t.completed ? 'text-zinc-400 line-through' : 'text-zinc-700 dark:text-zinc-300'} truncate tracking-tight">${escapeHtml(t.text)}</span>
+                    </div>
+                `;
+            });
+        } else if (friend.shareTasks) {
+            tasksHtml = `<div class="text-xs text-zinc-400 dark:text-zinc-500 italic font-medium flex items-center gap-2"><i data-lucide="coffee" class="w-3.5 h-3.5 opacity-50"></i> Free day</div>`;
+        } else {
+            tasksHtml = `<div class="text-xs text-zinc-400 dark:text-zinc-500 italic font-medium flex items-center gap-2"><i data-lucide="lock" class="w-3.5 h-3.5 opacity-50"></i> Tasks Private</div>`;
+        }
 
         // --- VIP / ROLE CONFIGURATION ---
         const VIP_USERS = {
-            "KLh2R14NZCZinFvgCm6DtzghkBf2": { role: "", icon: "zap" },
+            "KLh2R14NZCZinFvgCm6DtzghkBf2": { role: "DEV", icon: "zap" },
             // "TEMPLATE": { role: "Beta Tester", icon: "beaker" }
         };
 
@@ -4172,7 +4240,6 @@ window.renderSquadView = function () {
         let cardClasses = "glass-card p-0 rounded-[2rem] border relative overflow-hidden flex flex-col transition-all duration-500 hover:-translate-y-1 ";
 
         let devBadge = '';
-        let premiumBannerFx = '';
 
         if (vip) {
             cardClasses += " border-brand-500 shadow-[0_0_35px_-10px_rgba(139,92,246,0.4)] hover:shadow-[0_0_50px_-10px_rgba(139,92,246,0.6)] ring-1 ring-brand-500/50 z-10";
@@ -4194,15 +4261,9 @@ window.renderSquadView = function () {
         card.className = cardClasses;
 
         card.innerHTML = `
-            <div class="h-24 w-full ${bannerBgClass} border-b border-zinc-200 dark:border-zinc-800 relative">
-                ${bannerImageHtml}
-                ${premiumBannerFx}
-                <div class="absolute -bottom-8 left-6 w-[72px] h-[72px] ${shapeClass} border-[3px] ${avatarRing} shadow-sm bg-white dark:bg-[#18181b] z-10 transition-all duration-500 flex items-center justify-center">
-                    ${avatarImg}
-                </div>
-            </div>
+            ${bannerAndAvatarHtml}
             
-            <div class="pt-10 px-6 pb-6 flex flex-col flex-1">
+            <div class="${contentPaddingClass} px-6 pb-6 flex flex-col flex-1">
                 <div class="flex justify-between items-start mb-2 gap-2">
                     <div class="min-w-0 flex-1">
                         <h3 class="font-black text-xl text-zinc-900 dark:text-white tracking-tight leading-none mb-2 truncate flex items-center">
@@ -4233,8 +4294,9 @@ window.renderSquadView = function () {
                     </div>
                 </div>` : ''}
 
-                <div class="flex-1 w-full">
-                    ${tasksHtml}
+                    <div class="flex-1 w-full max-h-[160px] overflow-y-auto custom-scrollbar pr-2 pb-2">
+
+                ${tasksHtml}
                 </div>
             </div>
         `;
@@ -4615,104 +4677,69 @@ window.toggleFullScreenZen = async function () {
     isZenMode = !isZenMode;
 
     if (isZenMode) {
-        // --- NATIVE FULLSCREEN & LANDSCAPE LOCK ---
         try {
-            // 1. Request native browser fullscreen (Hides address bars)
-            if (document.documentElement.requestFullscreen) {
-                await document.documentElement.requestFullscreen();
-            } else if (document.documentElement.webkitRequestFullscreen) {
-                await document.documentElement.webkitRequestFullscreen(); // Safari
-            }
-
-            // 2. Force landscape orientation on mobile devices
-            if (screen.orientation && screen.orientation.lock) {
-                await screen.orientation.lock('landscape');
-            }
-        } catch (err) {
-            console.warn("Could not lock orientation (Normal on standard iOS Safari unless installed as PWA):", err);
-        }
+            if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
+            else if (document.documentElement.webkitRequestFullscreen) await document.documentElement.webkitRequestFullscreen();
+            if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape');
+        } catch (err) { console.warn("Could not lock orientation:", err); }
 
         // Force absolute fullscreen positioning
         container.className = 'fixed top-0 left-0 w-full h-full z-[200] rounded-none bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-3xl flex flex-col items-center justify-center transition-all duration-700';
 
-        // Hide internal elements
         if (topControls) { topControls.style.opacity = '0'; setTimeout(() => topControls.style.display = 'none', 300); }
         if (modeSwitcher) { modeSwitcher.style.opacity = '0'; setTimeout(() => modeSwitcher.style.display = 'none', 300); }
         if (glow) { glow.classList.remove('opacity-0'); glow.classList.add('opacity-100'); }
 
-        // Hide external app UI (sidebars/navs)
         if (sidebar) sidebar.style.display = 'none';
         if (mobileNav) mobileNav.style.display = 'none';
         if (mobileHeader) mobileHeader.style.display = 'none';
+        if (musicWidget) musicWidget.classList.add('!z-[250]');
 
-        // BOOST the Music Widget so it floats OVER Zen Mode
-        if (musicWidget) {
-            musicWidget.classList.add('!z-[250]');
-        }
-
-        // Change icon
         if (icon) { icon.setAttribute('data-lucide', 'minimize'); lucide.createIcons(); }
 
-        // Scale up the dial for Zen (Using w-64 so it vertically fits on mobile landscape screens)
         const dial = document.getElementById('timer-dial-wrapper');
         const display = document.getElementById('timer-display');
+
+        // When ENTERING Zen Mode
         if (dial) {
-            dial.classList.remove('w-56', 'h-56', 'md:w-80', 'md:h-80');
-            dial.classList.add('w-64', 'h-64', 'md:w-[400px]', 'md:h-[400px]');
+            dial.classList.remove('w-64', 'h-40', 'md:w-80', 'md:h-48', 'w-56', 'h-56', 'md:w-72', 'md:h-72'); // Clears old classes
+            dial.classList.add('w-80', 'h-48', 'md:w-[500px]', 'md:h-[300px]');
         }
         if (display) {
-            display.classList.remove('text-5xl', 'md:text-[5.5rem]');
+            display.classList.remove('text-5xl', 'md:text-6xl');
             display.classList.add('text-6xl', 'md:text-[7rem]');
         }
-
     } else {
-        // --- UNLOCK ORIENTATION & EXIT FULLSCREEN ---
         try {
-            if (screen.orientation && screen.orientation.unlock) {
-                screen.orientation.unlock();
-            }
+            if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
             if (document.fullscreenElement || document.webkitFullscreenElement) {
-                if (document.exitFullscreen) {
-                    await document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) {
-                    await document.webkitExitFullscreen();
-                }
+                if (document.exitFullscreen) await document.exitFullscreen();
+                else if (document.webkitExitFullscreen) await document.webkitExitFullscreen();
             }
-        } catch (err) {
-            console.warn("Error exiting fullscreen:", err);
-        }
+        } catch (err) { console.warn("Error exiting fullscreen:", err); }
 
         // Restore standard view classes
-        container.className = 'relative glass-card rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-12 flex flex-col items-center justify-center min-h-[500px] md:min-h-[550px] transition-all duration-700 overflow-hidden group border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm';
+        container.className = 'relative bg-white/40 dark:bg-[#18181b]/40 backdrop-blur-xl rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-8 flex flex-col lg:flex-row items-center justify-center lg:justify-around min-h-[400px] transition-all duration-700 overflow-hidden group border border-zinc-200/80 dark:border-zinc-800/80 shadow-lg';
 
-        // Show internal elements softly
         if (topControls) { topControls.style.display = 'flex'; setTimeout(() => topControls.style.opacity = '1', 50); }
         if (modeSwitcher) { modeSwitcher.style.display = 'flex'; setTimeout(() => modeSwitcher.style.opacity = '1', 50); }
         if (glow) { glow.classList.add('opacity-0'); glow.classList.remove('opacity-100'); }
 
-        // Restore external app UI 
         if (sidebar) sidebar.style.display = '';
         if (mobileNav) mobileNav.style.display = '';
         if (mobileHeader) mobileHeader.style.display = '';
+        if (musicWidget) musicWidget.classList.remove('!z-[250]');
 
-        // Restore Music Widget Z-index
-        if (musicWidget) {
-            musicWidget.classList.remove('!z-[250]');
-        }
-
-        // Change icon
         if (icon) { icon.setAttribute('data-lucide', 'maximize'); lucide.createIcons(); }
 
-        // Scale dial down
         const dial = document.getElementById('timer-dial-wrapper');
-        const display = document.getElementById('timer-display');
         if (dial) {
-            dial.classList.remove('w-64', 'h-64', 'md:w-[400px]', 'md:h-[400px]');
-            dial.classList.add('w-56', 'h-56', 'md:w-80', 'md:h-80');
+            dial.classList.remove('w-80', 'h-48', 'md:w-[500px]', 'md:h-[300px]', 'w-64', 'h-64', 'md:w-[400px]', 'md:h-[400px]');
+            dial.classList.add('w-64', 'h-40', 'md:w-80', 'md:h-48');
         }
         if (display) {
             display.classList.remove('text-6xl', 'md:text-[7rem]');
-            display.classList.add('text-5xl', 'md:text-[5.5rem]');
+            display.classList.add('text-5xl', 'md:text-6xl');
         }
     }
 }
@@ -4728,10 +4755,10 @@ window.togglePiP = async function () {
         }
 
         try {
-            // Force 2:1 Landscape Ratio for a sleek mini-dashboard look
+            // 1. MAKE THE WINDOW COMPACT
             pipWindow = await documentPictureInPicture.requestWindow({
-                width: 480,
-                height: 240,
+                width: 360,
+                height: 140,
             });
 
             pipWindow.document.documentElement.className = document.documentElement.className;
@@ -4768,45 +4795,46 @@ window.togglePiP = async function () {
 
             pipWindow.document.body.className = `${bgClass} ${textClass} font-sans select-none antialiased h-screen w-screen overflow-hidden flex items-center justify-center transition-colors duration-300`;
 
+            // 2. COMPACT UI LAYOUT
             pipWindow.document.body.innerHTML = `
-                <div class="flex flex-row items-center justify-between w-full h-full px-8 py-4 gap-8 bg-gradient-to-br from-transparent to-black/5 dark:to-white/5">
+                <div class="flex flex-row items-center justify-between w-full h-full px-5 py-3 gap-5 bg-gradient-to-br from-transparent to-black/5 dark:to-white/5">
                     
-                    <div class="relative flex items-center justify-center w-[160px] h-[160px] shrink-0">
-                        <div id="pip-bg-glow" class="absolute inset-0 bg-[#7c3aed]/20 rounded-full blur-xl pointer-events-none ${isTimerRunning ? 'opacity-100 animate-pulse' : 'opacity-0'} transition-opacity duration-700"></div>
+                    <div class="relative flex items-center justify-center w-[100px] h-[100px] shrink-0">
+                        <div id="pip-bg-glow" class="absolute inset-0 bg-[#7c3aed]/20 rounded-full blur-md pointer-events-none ${isTimerRunning ? 'opacity-100 animate-pulse' : 'opacity-0'} transition-opacity duration-700"></div>
 
                         <svg class="absolute inset-0 w-full h-full transform -rotate-90 pointer-events-none" viewBox="0 0 100 100">
-                            <circle cx="50" cy="50" r="45" stroke="currentColor" stroke-width="6" fill="none" class="text-zinc-200 dark:text-zinc-800" />
-                            <circle id="pip-progress-ring" cx="50" cy="50" r="45" stroke="currentColor" stroke-width="6" fill="none" class="text-[#7c3aed] transition-all duration-1000 ease-linear ${timerMode === 'flow' ? 'hidden' : ''}" stroke-linecap="round" />
+                            <circle cx="50" cy="50" r="46" stroke="currentColor" stroke-width="5" fill="none" class="text-zinc-200 dark:text-zinc-800/60" />
+                            <circle id="pip-progress-ring" cx="50" cy="50" r="46" stroke="currentColor" stroke-width="5" fill="none" class="text-[#7c3aed] transition-all duration-1000 ease-linear ${timerMode === 'flow' ? 'hidden' : ''}" stroke-linecap="round" />
                         </svg>
                         
-                        <div id="pip-active-ring" class="absolute inset-0 rounded-full border-[6px] border-[#7c3aed] border-t-transparent border-l-transparent opacity-0 transition-opacity duration-300 pointer-events-none ${timerMode === 'flow' ? 'opacity-100 animate-pip-spin' : ''} ${!isTimerRunning ? 'pip-paused' : ''}"></div>
+                        <div id="pip-active-ring" class="absolute inset-0 rounded-full border-[5px] border-[#7c3aed] border-t-transparent border-l-transparent opacity-0 transition-opacity duration-300 pointer-events-none ${timerMode === 'flow' ? 'opacity-100 animate-pip-spin' : ''} ${!isTimerRunning ? 'pip-paused' : ''}"></div>
                         
-                        <div id="pip-timer-display" class="text-4xl font-black tabular-nums tracking-tighter relative z-10 leading-none drop-shadow-sm">
+                        <div id="pip-timer-display" class="text-2xl font-black tabular-nums tracking-tighter relative z-10 leading-none drop-shadow-sm">
                             ${document.getElementById('timer-display').innerText}
                         </div>
                     </div>
 
                     <div class="flex flex-col items-start justify-center flex-1 min-w-0">
-                        <div class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 px-3 py-1 bg-zinc-200/60 dark:bg-zinc-800/60 rounded-lg shadow-inner-light dark:shadow-inner-dark" id="pip-mode-label">
+                        <div class="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1 px-2.5 py-0.5 bg-zinc-200/60 dark:bg-zinc-800/60 rounded-md shadow-inner-light dark:shadow-inner-dark" id="pip-mode-label">
                             ${timerMode === 'flow' ? 'Flow State' : 'Exam Simulator'}
                         </div>
                         
-                        <div class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#7c3aed] to-fuchsia-500 mb-6 truncate w-full drop-shadow-sm pb-1" id="pip-subject">
+                        <div class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#7c3aed] to-fuchsia-500 mb-3 truncate w-full drop-shadow-sm pb-0.5" id="pip-subject">
                             ${timerSubject || 'Focus Session'}
                         </div>
                         
-                        <div class="flex items-center gap-3">
-                            <button id="pip-toggle-btn" class="w-16 h-16 rounded-[1.25rem] bg-gradient-to-b from-[#8b5cf6] to-[#7c3aed] text-white flex items-center justify-center shadow-lg shadow-[#7c3aed]/30 hover:scale-105 active:scale-95 transition-all border border-white/10">
+                        <div class="flex items-center gap-2.5">
+                            <button id="pip-toggle-btn" class="w-11 h-11 rounded-2xl bg-gradient-to-b from-[#8b5cf6] to-[#7c3aed] text-white flex items-center justify-center shadow-md shadow-[#7c3aed]/30 hover:scale-105 active:scale-95 transition-all border border-white/10">
                                 <span id="pip-play-wrapper" class="${isTimerRunning ? 'hidden' : 'block'}">
-                                    <i data-lucide="play" class="w-8 h-8 fill-current ml-1 pointer-events-none"></i>
+                                    <i data-lucide="play" class="w-5 h-5 fill-current ml-0.5 pointer-events-none"></i>
                                 </span>
                                 <span id="pip-pause-wrapper" class="${isTimerRunning ? 'block' : 'hidden'}">
-                                    <i data-lucide="pause" class="w-8 h-8 fill-current pointer-events-none"></i>
+                                    <i data-lucide="pause" class="w-5 h-5 fill-current pointer-events-none"></i>
                                 </span>
                             </button>
                             
-                            <button id="pip-stop-btn" class="${isTimerRunning ? '' : 'opacity-50 pointer-events-none'} w-14 h-14 rounded-[1.25rem] bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-800 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 flex items-center justify-center shadow-sm hover:scale-105 active:scale-95 transition-all">
-                                <i data-lucide="square" class="w-6 h-6 fill-current pointer-events-none"></i>
+                            <button id="pip-stop-btn" class="${isTimerRunning ? '' : 'opacity-50 pointer-events-none'} w-10 h-10 rounded-2xl bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-800 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 flex items-center justify-center shadow-sm hover:scale-105 active:scale-95 transition-all">
+                                <i data-lucide="square" class="w-4 h-4 fill-current pointer-events-none"></i>
                             </button>
                         </div>
                     </div>
@@ -5199,54 +5227,48 @@ window.restoreTimerState = function () {
     try {
         const parsed = JSON.parse(saved);
 
-        // 1. Restore Memory (Always Paused)
         timerMode = parsed.timerMode || 'flow';
         timerSubject = parsed.timerSubject || 'Physics';
         linkedTaskId = parsed.linkedTaskId || null;
         timerAccumulatedMs = parsed.timerAccumulatedMs || 0;
         targetDurationSecs = (timerMode === 'exam') ? 3 * 60 * 60 : 0;
 
-        // Force the system to stay paused on load
         isTimerRunning = false;
         timerStartMs = 0;
 
-        // 2. Restore UI: Mode Buttons & Rings
-        const svgRing = document.getElementById('timer-progress-svg');
+        const svgRing = document.getElementById('timer-progress-ring');
+        const flowPath = document.getElementById('timer-active-path'); // Use the new path!
         const label = document.getElementById('timer-mode-label');
 
         ['flow', 'exam'].forEach(m => {
             const btn = document.getElementById(`btn-mode-${m}`);
             if (btn) {
                 btn.className = (m === timerMode)
-                    ? "px-4 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl text-[11px] md:text-xs font-bold bg-white dark:bg-[#27272a] text-zinc-900 dark:text-white shadow-sm transition-all"
-                    : "px-4 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl text-[11px] md:text-xs font-bold text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-all bg-transparent";
+                    ? "px-5 py-2 md:px-6 md:py-2.5 rounded-lg md:rounded-xl text-[11px] md:text-xs font-bold bg-white dark:bg-[#27272a] text-zinc-900 dark:text-white shadow-sm transition-all"
+                    : "px-5 py-2 md:px-6 md:py-2.5 rounded-lg md:rounded-xl text-[11px] md:text-xs font-bold text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-all bg-transparent";
             }
         });
 
         if (timerMode === 'flow') {
+            targetDurationSecs = 0;
             if (svgRing) svgRing.classList.add('hidden');
+            if (flowPath) {
+                flowPath.classList.remove('hidden'); // Show traveling border
+                flowPath.style.animationPlayState = 'paused'; // FIX: Force pause on initial app load
+            }
             if (label) label.innerText = "Flow State";
         } else if (timerMode === 'exam') {
-            if (svgRing) {
-                svgRing.classList.remove('hidden');
-                const ring = document.getElementById('timer-progress-ring');
-                if (ring) {
-                    ring.classList.remove('text-rose-500', 'text-emerald-500', 'text-blue-500');
-                    ring.classList.add('text-brand-500');
-                }
-            }
+            targetDurationSecs = 3 * 60 * 60; // 3 hours
+            if (svgRing) svgRing.classList.remove('hidden');
+            if (flowPath) flowPath.classList.add('hidden'); // Hide traveling border
             if (label) label.innerText = "Exam Simulator";
         }
 
-        // 3. Restore UI: Subject
         setTimerSubject(timerSubject);
 
-        // 4. Update the Play/Stop buttons if there is saved time
         if (timerAccumulatedMs > 0) {
             document.getElementById('btn-timer-stop').disabled = false;
-            document.getElementById('btn-timer-toggle').innerHTML = `<i data-lucide="play" class="w-6 h-6 md:w-7 md:h-7 fill-current"></i>`;
-
-            setTimeout(() => showToast("Previous session time loaded. Ready to resume!"), 1500);
+            document.getElementById('btn-timer-toggle').innerHTML = `<i data-lucide="play" class="w-7 h-7 md:w-8 md:h-8 fill-current group-hover:scale-110 transition-transform"></i>`;
         }
 
         updateTimerDisplay();
@@ -5255,6 +5277,17 @@ window.restoreTimerState = function () {
     } catch (e) {
         console.error("Failed to restore timer state", e);
     }
+
+    // At the end of restoreTimerState
+    const miniToggle = document.getElementById('btn-mini-timer-toggle');
+    if (miniToggle) {
+        miniToggle.innerHTML = isTimerRunning
+            ? `<i data-lucide="pause" class="w-4 h-4 fill-current"></i>`
+            : `<i data-lucide="play" class="w-4 h-4 fill-current ml-0.5"></i>`;
+    }
+    const miniSubject = document.getElementById('mini-timer-subject');
+    if (miniSubject) miniSubject.innerText = timerSubject;
+    if (typeof updateMiniTimerVisibility === 'function') updateMiniTimerVisibility();
 };
 
 window.addEventListener('beforeunload', () => {
@@ -5265,5 +5298,100 @@ window.restoreTimerState();
 
 const _musicWidget = document.getElementById('music-widget');
 if (_musicWidget) _musicWidget.style.display = 'none';
+
+// ==========================================
+// PROFILE / SQUAD APPEARANCE MODAL LOGIC
+// ==========================================
+window.openProfileModal = () => {
+    if (!currentUser) return;
+    
+    // Copy active state so temporary clicks don't override settings if cancelled
+    tempSettings = { ...state.settings };
+
+    // Safely pull variables from either the social profile or private config
+    const bTheme = state.myProfile?.bannerTheme ?? state.settings?.bannerTheme ?? 'default';
+    const aShape = state.myProfile?.avatarShape ?? state.settings?.avatarShape ?? 'circle';
+    const bUrl = state.myProfile?.bannerUrl ?? state.settings?.bannerUrl ?? '';
+    const pQuote = state.myProfile?.profileQuote ?? state.settings?.profileQuote ?? '';
+    const dName = state.myProfile?.name ?? currentUser.displayName ?? "Aspirant";
+
+    // Populate inputs
+    document.getElementById('profile-name-input').value = dName;
+    document.getElementById('profile-quote-input').value = pQuote;
+    document.getElementById('profile-banner-url').value = bUrl;
+    
+    // Visually update the button rings inside the modal
+    window.setBannerTheme(bTheme);
+    window.setAvatarShape(aShape);
+
+    // Open Modal
+    const modal = document.getElementById('profile-modal');
+    modal.classList.remove('hidden');
+    setTimeout(() => { 
+        modal.classList.remove('opacity-0'); 
+        modal.querySelector('div').classList.replace('scale-95', 'scale-100'); 
+    }, 10);
+};
+
+window.closeProfileModal = () => {
+    const modal = document.getElementById('profile-modal');
+    modal.classList.add('opacity-0');
+    modal.querySelector('div').classList.replace('scale-100', 'scale-95');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+};
+
+window.saveProfileSettings = async () => {
+    if (!currentUser) return;
+    
+    const btn = document.getElementById('save-profile-btn');
+    const ogHtml = btn.innerHTML;
+    btn.innerHTML = `<div class="btn-spinner border-zinc-400 border-t-zinc-900 dark:border-t-white"></div>`;
+    btn.disabled = true;
+
+    // Grab values from the new modal inputs
+    const newName = document.getElementById('profile-name-input').value.trim();
+    const newQuote = document.getElementById('profile-quote-input').value.trim();
+    const bannerUrlInput = document.getElementById('profile-banner-url').value.trim();
+    const safeBannerUrl = isValidImageUrl(bannerUrlInput) ? bannerUrlInput : null;
+    
+    const bTheme = tempSettings.bannerTheme ?? state.myProfile?.bannerTheme ?? 'default';
+    const aShape = tempSettings.avatarShape ?? state.myProfile?.avatarShape ?? 'circle';
+
+    const updates = {
+        name: newName || "Aspirant",
+        profileQuote: newQuote,
+        bannerUrl: safeBannerUrl,
+        bannerTheme: bTheme,
+        avatarShape: aShape
+    };
+
+    try {
+        // 1. Publish to public squad system
+        await updateDoc(doc(db, 'artifacts', appId, 'socialProfiles', currentUser.uid), updates);
+        
+        // 2. Persist to private config
+        await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), updates);
+        
+        // 3. Update local states
+        if (state.myProfile) state.myProfile = { ...state.myProfile, ...updates };
+        state.settings = { ...state.settings, ...updates };
+        
+        // 4. Update the UI
+        myDisplayName = updates.name;
+        const desktopNameEl = document.getElementById('user-name-desktop');
+        if (desktopNameEl) desktopNameEl.innerText = updates.name;
+        
+        if (state.currentView === 'squad') renderSquadView();
+        
+        showToast("Profile Updated");
+        closeProfileModal();
+    } catch (e) {
+        console.error(e);
+        showToast("Failed to update profile");
+    }
+    
+    btn.innerHTML = ogHtml;
+    btn.disabled = false;
+};
 
 initAuth(); lucide.createIcons();

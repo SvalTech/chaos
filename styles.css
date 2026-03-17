@@ -791,3 +791,11 @@ html.dark[data-theme="monochrome"] #music-toggle-btn {
 .eq-bar:nth-child(3) { animation-delay: 0.4s; }
 .eq-bar:nth-child(4) { animation-delay: 0.1s; }
 .eq-paused .eq-bar { animation-play-state: paused; height: 4px !important; }
+
+@keyframes dash-chase {
+            to { stroke-dashoffset: -951; }
+        }
+        .animate-flow-border {
+            stroke-dasharray: 237.75 237.75; /* Creates a broken line effect */
+            animation: dash-chase 3s linear infinite;
+        }
