@@ -643,6 +643,7 @@ window.updateTimerTaskSelector = function () {
 
 // Listen for task selection
 // Listen for task selection
+// Listen for task selection
 document.addEventListener('DOMContentLoaded', () => {
     const selector = document.getElementById('timer-task-linker');
     if (selector) {
@@ -655,6 +656,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (selectedTask && selectedTask.subject) {
                     setTimerSubject(selectedTask.subject);
                 }
+            }
+
+            // Force an instant sync to the squad if the timer is currently running
+            if (typeof isTimerRunning !== 'undefined' && isTimerRunning) {
+                syncMySocialStatus(true, timerSubject);
             }
         });
     }
@@ -4116,8 +4122,16 @@ window.renderSquadView = function () {
             const isExam = friend.timerMode === 'exam';
             avatarRing = isExam ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)]' : 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.5)]';
 
-            statusIcon = `<span class="relative flex h-2 w-2 mr-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full ${isExam ? 'bg-purple-400' : 'bg-rose-400'} opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 ${isExam ? 'bg-purple-500' : 'bg-rose-500'}"></span></span>`;
-            statusText = `<span class="${isExam ? 'text-purple-600 dark:text-purple-400' : 'text-rose-600 dark:text-rose-400'}">Focus: ${friend.studySubject || 'Studying'}</span>`;
+            statusIcon = `<span class="relative flex h-2 w-2 mr-1.5 shrink-0"><span class="animate-ping absolute inline-flex h-full w-full rounded-full ${isExam ? 'bg-purple-400' : 'bg-rose-400'} opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 ${isExam ? 'bg-purple-500' : 'bg-rose-500'}"></span></span>`;
+
+            // Build the display text to include the linked task (Context)
+            let focusDisplay = friend.studySubject || 'Studying';
+            // if (friend.studyContext) {
+            //     focusDisplay += ` - ${friend.studyContext}`;
+            // }
+
+            // Added truncate and max-width so long task names don't break your card layout
+            statusText = `<span class="${isExam ? 'text-purple-600 dark:text-purple-400' : 'text-rose-600 dark:text-rose-400'} truncate block max-w-[140px] sm:max-w-[200px]" title="Focus: ${escapeHtml(focusDisplay)}">Focus: ${escapeHtml(focusDisplay)}</span>`;
         } else if (isIdle) {
             avatarRing = 'border-amber-400';
             statusIcon = `<span class="w-2 h-2 rounded-full bg-amber-500 mr-1.5"></span>`;
@@ -4216,12 +4230,51 @@ window.renderSquadView = function () {
         if (friend.shareTasks && friend.tasks && friend.tasks.length > 0) {
             // Show ALL tasks
             friend.tasks.forEach(t => {
-                tasksHtml += `
-                    <div class="flex items-start gap-2 mb-2 group/task">
-                        <i data-lucide="${t.completed ? 'check-circle-2' : 'circle'}" class="w-3.5 h-3.5 mt-0.5 shrink-0 ${t.completed ? 'text-emerald-500' : 'text-zinc-300 dark:text-zinc-600'}"></i>
-                        <span class="text-xs font-bold ${t.completed ? 'text-zinc-400 line-through' : 'text-zinc-700 dark:text-zinc-300'} truncate tracking-tight">${escapeHtml(t.text)}</span>
-                    </div>
-                `;
+                // Check if this specific task is the one currently being studied
+                const isCurrentlyStudyingThis = friend.isStudying && friend.studyContext === t.text;
+
+                // 1. Build Subtasks HTML if they exist
+                let subtasksHtml = '';
+                if (t.subtasks && t.subtasks.length > 0) {
+                    subtasksHtml = `<div class="mt-1 pl-6 space-y-1 w-full">`;
+                    t.subtasks.forEach(st => {
+                        subtasksHtml += `
+                            <div class="flex items-start gap-1.5">
+                                <i data-lucide="${st.completed ? 'check' : 'minus'}" class="w-3 h-3 mt-[1px] shrink-0 ${st.completed ? 'text-emerald-500' : 'text-zinc-300 dark:text-zinc-600'}"></i>
+                                <span class="text-[10.5px] font-semibold ${st.completed ? 'text-zinc-400 line-through' : 'text-zinc-500 dark:text-zinc-400'} truncate tracking-tight">${escapeHtml(st.text)}</span>
+                            </div>
+                        `;
+                    });
+                    subtasksHtml += `</div>`;
+                }
+
+                // 2. Wrap the Main Task + Subtasks in a container
+                tasksHtml += `<div class="mb-3">`;
+
+                if (isCurrentlyStudyingThis && !t.completed) {
+                    // 🌟 Highlighted Active Task styling
+                    tasksHtml += `
+                        <div class="flex items-start gap-2 group/task p-2 -mx-2 rounded-xl bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/20 shadow-sm transition-all">
+                            <div class="relative flex h-3 w-3 mt-0.5 shrink-0 ml-0.5">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-3 w-3 bg-brand-500"></span>
+                            </div>
+                            <span class="text-xs font-bold text-brand-700 dark:text-brand-300 truncate tracking-tight">${escapeHtml(t.text)}</span>
+                        </div>
+                    `;
+                } else {
+                    // Standard Task styling
+                    tasksHtml += `
+                        <div class="flex items-start gap-2 group/task">
+                            <i data-lucide="${t.completed ? 'check-circle-2' : 'circle'}" class="w-3.5 h-3.5 mt-0.5 shrink-0 ${t.completed ? 'text-emerald-500' : 'text-zinc-300 dark:text-zinc-600'}"></i>
+                            <span class="text-xs font-bold ${t.completed ? 'text-zinc-400 line-through' : 'text-zinc-700 dark:text-zinc-300'} truncate tracking-tight">${escapeHtml(t.text)}</span>
+                        </div>
+                    `;
+                }
+
+                // 3. Append the subtasks directly below the main task
+                tasksHtml += subtasksHtml;
+                tasksHtml += `</div>`;
             });
         } else if (friend.shareTasks) {
             tasksHtml = `<div class="text-xs text-zinc-400 dark:text-zinc-500 italic font-medium flex items-center gap-2"><i data-lucide="coffee" class="w-3.5 h-3.5 opacity-50"></i> Free day</div>`;
@@ -4294,7 +4347,7 @@ window.renderSquadView = function () {
                     </div>
                 </div>` : ''}
 
-                    <div class="flex-1 w-full max-h-[160px] overflow-y-auto custom-scrollbar pr-2 pb-2">
+                    <div class="flex-1 w-full ">
 
                 ${tasksHtml}
                 </div>
