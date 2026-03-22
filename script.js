@@ -4224,7 +4224,63 @@ window.closeAddFriendModal = () => {
 
 
 window.submitAddFriend = async () => {
-    const code = document.getElementById('friend-code-input').value.trim().toUpperCase();
+    // 1. Get raw input to preserve the exact casing of your custom role text
+    const rawInput = document.getElementById('friend-code-input').value.trim();
+    const codeUpper = rawInput.toUpperCase();
+
+    // --- SECRET ADMIN COMMAND TO GRANT BADGES ---
+    if (codeUpper.startsWith("VIP-")) {
+        // SECURITY LOCK: Only your specific DEV UID can execute this
+        if (!currentUser || currentUser.uid !== "KLh2R14NZCZinFvgCm6DtzghkBf2") {
+            showToast("Nice try! Only Shaurya can do this.");
+            return;
+        }
+
+        // Parse the input. Format: VIP-A1B2C3-Custom Role Name
+        const parts = rawInput.split("-");
+        const targetCode = parts[1] ? parts[1].toUpperCase() : "";
+
+        // If you typed a 3rd part, use it. Otherwise default to "OG Supporter"
+        const customRole = parts.length > 2 ? parts.slice(2).join("-") : "OG Supporter";
+
+        if (targetCode.length !== 6) {
+            showToast("Invalid format. Use VIP-XXXXXX-Role Name");
+            return;
+        }
+
+        const btn = document.getElementById('btn-submit-friend');
+        btn.disabled = true;
+        btn.innerHTML = `<div class="btn-spinner border-zinc-400 border-t-white"></div>`;
+
+        try {
+            // Find the user by their 6-character code
+            const q = query(collection(db, 'artifacts', appId, 'socialProfiles'), where('code', '==', targetCode));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                // Grant the custom badge in their profile document
+                await updateDoc(doc(db, 'artifacts', appId, 'socialProfiles', querySnapshot.docs[0].id), {
+                    role: customRole,
+                    roleIcon: "crown"
+                });
+                showToast(`Badge '${customRole}' Granted!`);
+                closeAddFriendModal();
+            } else {
+                showToast("User code not found.");
+            }
+        } catch (e) {
+            console.error(e);
+            showToast("Error granting badge.");
+        }
+
+        btn.disabled = false;
+        btn.innerText = "Connect";
+        return;
+    }
+    // --------------------------------------------
+
+    // Regular friend adding flow
+    const code = codeUpper;
     if (code.length !== 6) { showToast("Invalid code format"); return; }
     if (code === myFriendCode) { showToast("You can't add yourself!"); return; }
 
@@ -4250,7 +4306,6 @@ window.submitAddFriend = async () => {
                 btn.disabled = false;
                 btn.innerText = "Connect";
 
-                // Offer to unblock via a custom confirm dialog
                 const wantToUnblock = await customConfirm(
                     `You have blocked ${friendName}. Would you like to unblock them to send a squad request?`,
                     "User Blocked",
@@ -4260,7 +4315,6 @@ window.submitAddFriend = async () => {
 
                 if (wantToUnblock) {
                     await window.unblockUser(friendUid, friendName);
-                    // Recursively call submit again to complete the connection
                     return window.submitAddFriend();
                 }
                 return;
@@ -4273,7 +4327,6 @@ window.submitAddFriend = async () => {
                 btn.disabled = false; btn.innerText = "Connect"; return;
             }
 
-            // Standard connection logic
             await setDoc(doc(db, 'artifacts', appId, 'socialFriends', currentUser.uid, 'list', friendUid), {
                 addedAt: new Date().toISOString()
             });
@@ -4512,7 +4565,7 @@ window.renderSquadView = function () {
 
         // 👉 RESTORED: Define Display Name, Action Buttons, and Task List
         const displayName = escapeHtml(friend.name || 'Student');
-
+        const friendCodeBadge = friend.code ? `<span class="ml-2 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800/80 px-1.5 py-0.5 rounded md border border-zinc-200 dark:border-zinc-700 tracking-widest cursor-text select-all hover:text-brand-500 transition-colors" title="Friend Code" onclick="navigator.clipboard.writeText('${friend.code}'); showToast('Copied Code!');">#${friend.code}</span>` : '';
         let actionBtnsHtml = '';
         if (!friend.isMe) {
             actionBtnsHtml = `
@@ -4585,13 +4638,19 @@ window.renderSquadView = function () {
             // "TEMPLATE": { role: "Beta Tester", icon: "beaker" }
         };
 
+        // Check database first, then fallback to hardcoded list
+        const databaseRole = friend.role;
+        const databaseIcon = friend.roleIcon;
         const vip = VIP_USERS[friend.uid];
+
+        const activeRole = databaseRole || (vip ? vip.role : null);
+        const activeIcon = databaseIcon || (vip ? vip.icon : 'crown');
 
         let cardClasses = "glass-card p-0 rounded-[2rem] border relative overflow-hidden flex flex-col transition-all duration-500 hover:-translate-y-1 ";
 
         let devBadge = '';
 
-        if (vip) {
+        if (activeRole) {
             cardClasses += " border-brand-500 shadow-[0_0_35px_-10px_rgba(139,92,246,0.4)] hover:shadow-[0_0_50px_-10px_rgba(139,92,246,0.6)] ring-1 ring-brand-500/50 z-10";
 
             premiumBannerFx = `<div class="absolute inset-0 bg-gradient-to-r from-brand-500/20 via-fuchsia-500/20 to-brand-500/20 animate-pulse pointer-events-none z-10 mix-blend-overlay"></div>`;
@@ -4600,7 +4659,7 @@ window.renderSquadView = function () {
                 <span class="ml-2 relative group cursor-default shrink-0 inline-flex mt-0.5">
                     <span class="absolute inset-0 bg-gradient-to-r from-brand-500 to-fuchsia-500 rounded-full blur-sm opacity-60 group-hover:opacity-100 transition duration-500"></span>
                     <span class="relative inline-flex items-center gap-1 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border border-zinc-700 dark:border-zinc-200 shadow-sm">
-                        <i data-lucide="${vip.icon}" class="w-3 h-3 text-brand-400 dark:text-brand-600 fill-current"></i> ${vip.role}
+                        <i data-lucide="${activeIcon}" class="w-3 h-3 text-brand-400 dark:text-brand-600 fill-current"></i> ${activeRole}
                     </span>
                 </span>
             `;
