@@ -26,8 +26,8 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
-  <script type="module" crossorigin src="./assets/main-BtfMIHLL.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/main-DmtanBj_.css">
+  <script type="module" crossorigin src="./assets/main-Dfrncf1n.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/main-wCEQ43Zr.css">
 <script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TCK0S6VC58"></script>
 <script>
@@ -842,6 +842,62 @@
                                     <canvas id="timerChart"></canvas>
                                 </div>
                             </div>
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 mt-6 md:mt-8 relative">
+                            
+                                <!-- Custom Floating Tooltip -->
+                                <div id="heatmap-tooltip"
+                                    class="fixed z-[9999] pointer-events-none opacity-0 transition-opacity duration-200 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-floating whitespace-nowrap transform -translate-x-1/2 -translate-y-full"
+                                    style="margin-top: -8px;"></div>
+                            
+                                <!-- Heatmap / GitHub Style Calendar -->
+                                <div class="glass-card p-6 md:p-8 rounded-[2.5rem] lg:col-span-2 flex flex-col overflow-hidden">
+                                    <div class="mb-6 flex justify-between items-center">
+                                        <div>
+                                            <h3 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Study Activity</h3>
+                                            <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Last 6 Months</p>
+                                        </div>
+                                    </div>
+                            
+                                    <div class="flex-1 w-full overflow-x-auto custom-scrollbar pb-4 pt-2">
+                                        <div class="flex flex-col gap-2 relative w-full min-w-max justify-end">
+                                            <!-- Month Labels injected here via JS -->
+                                            <div id="heatmap-months"
+                                                class="flex text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest h-4 w-full relative">
+                                            </div>
+                                            <!-- Heatmap Grid injected here via JS -->
+                                            <div id="heatmap-container" class="flex gap-[6px] justify-start md:justify-end"></div>
+                                        </div>
+                                    </div>
+                            
+                                    <div
+                                        class="flex items-center gap-2 mt-4 text-[10px] font-bold text-zinc-400 justify-end uppercase tracking-widest pt-5 border-t border-zinc-100 dark:border-zinc-800/50">
+                                        <span>Less</span>
+                                        <span
+                                            class="w-[14px] h-[14px] rounded-[4px] bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/50"></span>
+                                        <span
+                                            class="w-[14px] h-[14px] rounded-[4px] bg-brand-200 dark:bg-brand-900/40 border border-brand-300/30 dark:border-brand-800/50"></span>
+                                        <span
+                                            class="w-[14px] h-[14px] rounded-[4px] bg-brand-400 dark:bg-brand-700/60 border border-brand-500/50 dark:border-brand-600/50"></span>
+                                        <span
+                                            class="w-[14px] h-[14px] rounded-[4px] bg-brand-500 dark:bg-brand-500 border border-brand-600 dark:border-brand-400 shadow-[0_0_8px_rgba(139,92,246,0.3)]"></span>
+                                        <span>More</span>
+                                    </div>
+                                </div>
+                            
+                                <!-- Subject Distribution Pie Chart -->
+                                <div class="glass-card p-6 md:p-8 rounded-[2.5rem] flex flex-col">
+                                    <h3 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight mb-4">Subject Breakdown</h3>
+                                    <div class="relative w-full flex-1 min-h-[220px] flex items-center justify-center">
+                                        <!-- Custom empty state -->
+                                        <div id="pie-empty-state"
+                                            class="absolute inset-0 flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 hidden z-10">
+                                            <i data-lucide="pie-chart" class="w-10 h-10 mb-3 opacity-20"></i>
+                                            <span class="text-[10px] font-bold uppercase tracking-widest">No Data Yet</span>
+                                        </div>
+                                        <canvas id="subjectPieChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="lg:col-span-1 flex flex-col">
@@ -1237,7 +1293,7 @@
                 </div>
             </div>
         </div>
-
+        
 
     </main>
 
@@ -1287,6 +1343,11 @@
                         class="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer outline-none transition-all"
                         style="accent-color: #7c3aed;" draggable="false">
                     <i data-lucide="volume-2" class="w-3.5 h-3.5 text-zinc-400 shrink-0" draggable="false"></i>
+                    <button id="btn-music-loop" onclick="toggleMusicLoop()"
+                        class="p-1.5 ml-1 text-brand-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors shrink-0"
+                        title="Toggle Loop">
+                        <i data-lucide="repeat" class="w-4 h-4"></i>
+                    </button>
                 </div>
             </div>
     
@@ -1601,16 +1662,20 @@
                     </div>
 
                     <div id="jee-session-container"
-                        class="hidden bg-brand-50 dark:bg-brand-900/10 p-4 rounded-2xl border border-brand-100 dark:border-brand-900/30 animate-slide-up">
-                        <label
-                            class="block text-[10px] font-bold text-brand-700 dark:text-brand-300 uppercase tracking-widest mb-3">Target
+                        class="hidden bg-brand-50 dark:bg-brand-900/10 p-4 rounded-2xl border border-brand-100 dark:border-brand-900/30 animate-slide-up mt-2">
+                        <label class="block text-[10px] font-bold text-brand-700 dark:text-brand-300 uppercase tracking-widest mb-3">Target
                             Session</label>
-                        <div class="flex gap-2">
+                        <div class="flex gap-2 mb-3">
                             <button onclick="setSession('Jan')" id="btn-session-jan"
                                 class="flex-1 py-2 rounded-xl text-xs font-bold border border-brand-200 dark:border-brand-700 transition-colors bg-white dark:bg-zinc-800">Jan</button>
                             <button onclick="setSession('Apr')" id="btn-session-apr"
                                 class="flex-1 py-2 rounded-xl text-xs font-bold border border-brand-200 dark:border-brand-700 transition-colors bg-white dark:bg-zinc-800">April</button>
                         </div>
+                        <label
+                            class="block text-[10px] font-bold text-brand-700/70 dark:text-brand-300/70 uppercase tracking-widest mb-2">Exact
+                            Shift Date</label>
+                        <input type="date" id="settings-jee-shift-date" onchange="markSettingsDirty(); updateTargetDateConfig()"
+                            class="w-full bg-white dark:bg-zinc-800 border border-brand-200 dark:border-brand-700 rounded-xl px-4 py-2.5 text-sm outline-none dark:text-white font-medium focus:ring-2 focus:ring-brand-500 transition-colors">
                     </div>
 
                     <div id="custom-date-container"

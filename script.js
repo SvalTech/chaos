@@ -28,6 +28,8 @@ let currentDayViewDate = null;
 let isSettingsDirty = false;
 let hasScrolledToToday = false;
 
+let subjectPieChartInstance = null;
+
 let timerInterval = null;
 let timerSeconds = 0;
 let timerStartMs = 0;
@@ -666,6 +668,197 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+window.renderAdvancedAnalytics = function () {
+    // --- Heatmap (Contribution Graph) ---
+    const heatmapContainer = document.getElementById('heatmap-container');
+    const monthContainer = document.getElementById('heatmap-months');
+
+    if (heatmapContainer && monthContainer) {
+        heatmapContainer.innerHTML = '';
+        monthContainer.innerHTML = '';
+
+        const today = getLogicalToday();
+        const weeksToTrack = 26; // Increased to ~6 months to beautifully fill the card width
+        const daysToTrack = weeksToTrack * 7;
+
+        // Find the start date (aligned to Sunday)
+        const startDate = new Date(today);
+        startDate.setDate(today.getDate() - daysToTrack + 1);
+
+        const startDayOfWeek = startDate.getDay();
+        startDate.setDate(startDate.getDate() - startDayOfWeek);
+
+        const cols = [];
+        let currentCol = [];
+        let monthLabelsHtml = '';
+
+        let currentDate = new Date(startDate);
+        const endOfToday = new Date(today);
+        endOfToday.setHours(23, 59, 59, 999);
+
+        let colIndex = 0;
+        let lastMonthPrinted = -1;
+
+        while (currentDate <= endOfToday) {
+            const dateStr = getLocalISODate(currentDate);
+
+            // Add month label (Ensures it only prints once per month without overlapping)
+            if (currentDate.getMonth() !== lastMonthPrinted && currentDate.getDate() <= 14) {
+                const monthName = currentDate.toLocaleDateString('en-US', { month: 'short' });
+                // 14px width + 6px gap = 20px per column
+                monthLabelsHtml += `<span class="absolute whitespace-nowrap" style="left: ${colIndex * 20}px">${monthName}</span>`;
+                lastMonthPrinted = currentDate.getMonth();
+            }
+
+            if (currentDate > today) {
+                // Future days within the current week stay blank
+                currentCol.push(`<div class="w-[14px] h-[14px]"></div>`);
+            } else {
+                const dayLogs = state.studyLogs.filter(l => l.date === dateStr);
+                const totalMins = dayLogs.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
+
+                let intensityClass = 'bg-zinc-100 dark:bg-zinc-800/50 border-zinc-200/50 dark:border-zinc-700/50';
+                if (totalMins > 0 && totalMins < 60) intensityClass = 'bg-brand-200 dark:bg-brand-900/40 border-brand-300/30 dark:border-brand-800/50';
+                else if (totalMins >= 60 && totalMins < 180) intensityClass = 'bg-brand-400 dark:bg-brand-700/60 border-brand-500/50 dark:border-brand-600/50';
+                else if (totalMins >= 180) intensityClass = 'bg-brand-500 dark:bg-brand-500 border-brand-600 dark:border-brand-400 shadow-[0_0_8px_rgba(139,92,246,0.3)]';
+
+                const tooltipText = `${Math.floor(totalMins / 60)}h ${totalMins % 60}m on ${currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+
+                currentCol.push(`<div class="w-[14px] h-[14px] rounded-[4px] border ${intensityClass} cursor-pointer hover:scale-110 hover:ring-2 hover:ring-brand-500/50 hover:z-10 transition-all" data-tooltip="${tooltipText}"></div>`);
+            }
+
+            currentDate.setDate(currentDate.getDate() + 1);
+
+            // If we just finished a Saturday (6), push the column
+            if (currentDate.getDay() === 0) {
+                cols.push(`<div class="flex flex-col gap-[6px] relative">${currentCol.join('')}</div>`);
+                currentCol = [];
+                colIndex++;
+            }
+        }
+
+        // Push final column if incomplete
+        if (currentCol.length > 0) {
+            // Pad the rest of the column with empty blocks to keep alignment
+            while (currentCol.length < 7) {
+                currentCol.push(`<div class="w-[14px] h-[14px]"></div>`);
+            }
+            cols.push(`<div class="flex flex-col gap-[6px] relative">${currentCol.join('')}</div>`);
+        }
+
+        heatmapContainer.innerHTML = cols.join('');
+        monthContainer.innerHTML = monthLabelsHtml;
+
+        // Initialize Custom Tooltip Listeners (only once)
+        if (!heatmapContainer.dataset.tooltipInit) {
+            let tooltip = document.getElementById('heatmap-tooltip');
+
+            // 🚨 THE FIX: Move tooltip to the absolute root of the document (body) 
+            // This prevents parent CSS transforms from messing up the coordinates!
+            if (tooltip && tooltip.parentNode !== document.body) {
+                document.body.appendChild(tooltip);
+            }
+
+            if (tooltip) {
+                heatmapContainer.addEventListener('mouseover', (e) => {
+                    if (e.target.hasAttribute('data-tooltip')) {
+                        tooltip.innerText = e.target.getAttribute('data-tooltip');
+                        const rect = e.target.getBoundingClientRect();
+
+                        // Position exactly centered above the hovered square
+                        tooltip.style.left = `${rect.left + (rect.width / 2)}px`;
+                        tooltip.style.top = `${rect.top}px`;
+                        tooltip.classList.remove('opacity-0');
+                    }
+                });
+
+                heatmapContainer.addEventListener('mouseout', (e) => {
+                    if (e.target.hasAttribute('data-tooltip')) {
+                        tooltip.classList.add('opacity-0');
+                    }
+                });
+
+                // Extra touch: instantly hide tooltip if the user scrolls the heatmap horizontally
+                heatmapContainer.parentElement.addEventListener('scroll', () => {
+                    tooltip.classList.add('opacity-0');
+                });
+            }
+            heatmapContainer.dataset.tooltipInit = "true";
+        }
+    }
+
+    // --- Subject Distribution Pie Chart ---
+    const pieCtx = document.getElementById('subjectPieChart');
+    const emptyState = document.getElementById('pie-empty-state');
+
+    if (pieCtx) {
+        if (subjectPieChartInstance) subjectPieChartInstance.destroy();
+
+        const subjectTotals = {};
+        state.studyLogs.forEach(log => {
+            if (!subjectTotals[log.subject]) subjectTotals[log.subject] = 0;
+            subjectTotals[log.subject] += (log.durationMinutes || 0);
+        });
+
+        const validSubjects = Object.keys(subjectTotals).filter(sub => subjectTotals[sub] > 0);
+
+        if (validSubjects.length === 0) {
+            if (emptyState) emptyState.classList.remove('hidden');
+            pieCtx.style.display = 'none';
+        } else {
+            if (emptyState) emptyState.classList.add('hidden');
+            pieCtx.style.display = 'block';
+
+            const labels = validSubjects;
+            const data = validSubjects.map(sub => (subjectTotals[sub] / 60).toFixed(1));
+            const bgColors = labels.map(sub => getSubjectColor(sub).hex || '#7c3aed');
+            const borderColor = state.settings.theme === 'dark' ? '#18181b' : '#ffffff';
+
+            subjectPieChartInstance = new Chart(pieCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: bgColors,
+                        borderWidth: 4,
+                        borderColor: borderColor,
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '72%', // Sleeker, thinner donut
+                    layout: { padding: { top: 10, bottom: 10 } },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: state.settings.theme === 'dark' ? '#a1a1aa' : '#52525b',
+                                font: { family: 'Inter', size: 11, weight: 'bold' },
+                                usePointStyle: true,
+                                boxWidth: 8,
+                                padding: 16
+                            }
+                        },
+                        tooltip: {
+                            callbacks: { label: function (context) { return ` ${context.parsed} hrs`; } },
+                            backgroundColor: state.settings.theme === 'dark' ? '#18181b' : '#ffffff',
+                            titleColor: state.settings.theme === 'dark' ? '#fff' : '#000',
+                            bodyColor: state.settings.theme === 'dark' ? '#a1a1aa' : '#52525b',
+                            borderColor: state.settings.theme === 'dark' ? '#27272a' : '#e4e4e7',
+                            borderWidth: 1, padding: 12, cornerRadius: 12
+                        }
+                    }
+                }
+            });
+        }
+    }
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+};
+
+
 window.setTimerMode = function (mode) {
     if (isTimerRunning) {
         showToast("Stop the current session to switch modes.");
@@ -1127,6 +1320,8 @@ window.updateTimerStats = function () {
 
     const streakEl = document.getElementById('streak-count');
     if (streakEl) streakEl.innerText = streak;
+
+    window.renderAdvancedAnalytics();
 }
 
 // --- Timer Weekly Bar Chart ---
@@ -1816,7 +2011,18 @@ window.setExamType = function (type) {
     markSettingsDirty();
 }
 
-window.setSession = function (session) { tempSettings.session = session; updateSessionUI(); updateTargetDateConfig(); markSettingsDirty(); }
+window.setSession = function (session) {
+    tempSettings.session = session;
+    updateSessionUI();
+
+    // Auto-fill the default date when switching sessions to guide the user
+    const year = document.getElementById('settings-year').value || tempSettings.targetYear || new Date().getFullYear();
+    const defaultDate = session === 'Jan' ? `${year}-01-22` : `${year}-04-04`;
+    document.getElementById('settings-jee-shift-date').value = defaultDate;
+
+    updateTargetDateConfig();
+    markSettingsDirty();
+}
 
 function updateSessionUI() {
     const janBtn = document.getElementById('btn-session-jan'); const aprBtn = document.getElementById('btn-session-apr');
@@ -1830,12 +2036,27 @@ function updateSessionUI() {
 }
 
 window.updateTargetDateConfig = function () {
-    const year = document.getElementById('settings-year').value; let date = `${year}-01-01`;
-    if (tempSettings.examType === 'JEE Main') date = (tempSettings.session === 'Jan') ? `${year}-01-21` : `${year}-04-01`;
+    const year = document.getElementById('settings-year').value;
+    let date = `${year}-01-01`;
+
+    if (tempSettings.examType === 'JEE Main') {
+        const shiftInput = document.getElementById('settings-jee-shift-date').value;
+        if (shiftInput) {
+            date = shiftInput;
+        } else {
+            // Fallback if they somehow cleared the input
+            date = (tempSettings.session === 'Jan') ? `${year}-01-22` : `${year}-04-04`;
+        }
+    }
     else if (tempSettings.examType === 'NEET') date = `${year}-05-05`;
     else if (tempSettings.examType === 'JEE Advanced') date = `${year}-05-17`;
-    else if (tempSettings.examType === 'Custom') { const m = document.getElementById('settings-custom-date').value; if (m) date = m; }
-    tempSettings.targetDate = date; tempSettings.targetYear = parseInt(year);
+    else if (tempSettings.examType === 'Custom') {
+        const m = document.getElementById('settings-custom-date').value;
+        if (m) date = m;
+    }
+
+    tempSettings.targetDate = date;
+    tempSettings.targetYear = parseInt(year);
 }
 window.saveSettings = async function () {
     if (!currentUser) return;
@@ -2134,11 +2355,56 @@ window.renderMockStats = function () {
     const ctx = document.getElementById('mockChart'); if (mockChartInstance) mockChartInstance.destroy();
     const datasets = [];
 
-    datasets.push({ label: 'Total', data: marks, borderColor: '#7c3aed', backgroundColor: (context) => { const ctx = context.chart.ctx; const gradient = ctx.createLinearGradient(0, 0, 0, 300); gradient.addColorStop(0, 'rgba(124, 58, 237, 0.5)'); gradient.addColorStop(1, 'rgba(124, 58, 237, 0.0)'); return gradient; }, borderWidth: 4, pointBackgroundColor: '#fff', pointBorderColor: '#7c3aed', fill: true, tension: 0.4, hidden: false });
+    // 1. Refined Total Line (Added pointBorderWidth and pointHoverRadius for better interactivity)
+    datasets.push({
+        label: 'Total',
+        data: marks,
+        borderColor: '#7c3aed',
+        backgroundColor: (context) => {
+            const ctx = context.chart.ctx;
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(124, 58, 237, 0.5)');
+            gradient.addColorStop(1, 'rgba(124, 58, 237, 0.0)');
+            return gradient;
+        },
+        borderWidth: 4,
+        pointBackgroundColor: state.settings.theme === 'dark' ? '#18181b' : '#ffffff',
+        pointBorderColor: '#7c3aed',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        fill: true,
+        tension: 0.4,
+        hidden: false
+    });
 
-    const subjectConfig = [{ label: 'Physics', data: physicsData, color: '#f43f5e' }, { label: 'Chemistry', data: chemData, color: '#f59e0b' }, { label: 'Maths', data: mathsData, color: '#3b82f6' }, { label: 'Biology', data: bioData, color: '#10b981' }];
-    subjectConfig.forEach(sub => { if (sub.data.some(d => d !== null)) { datasets.push({ label: sub.label, data: sub.data, borderColor: sub.color, backgroundColor: 'transparent', borderWidth: 2, borderDash: [6, 4], pointBackgroundColor: sub.color, pointRadius: 4, tension: 0.4, hidden: true }); } });
+    const subjectConfig = [
+        { label: 'Physics', data: physicsData, color: '#f43f5e' },
+        { label: 'Chemistry', data: chemData, color: '#f59e0b' },
+        { label: 'Maths', data: mathsData, color: '#3b82f6' },
+        { label: 'Biology', data: bioData, color: '#10b981' }
+    ];
 
+    // 2. Upgraded Subject Lines
+    subjectConfig.forEach(sub => {
+        if (sub.data.some(d => d !== null)) {
+            datasets.push({
+                label: sub.label,
+                data: sub.data,
+                borderColor: sub.color,
+                backgroundColor: sub.color, // Keeps tooltip colors correct
+                borderWidth: 3, // Increased from 2 to 3 for better visibility
+                // borderDash: [6, 4] HAS BEEN REMOVED for clean, solid lines
+                pointBackgroundColor: state.settings.theme === 'dark' ? '#18181b' : '#ffffff', // Hollow center
+                pointBorderColor: sub.color, // Colored ring
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6, // Expands smoothly on hover
+                tension: 0.4,
+                hidden: true
+            });
+        }
+    });
     const gridColor = state.settings.theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'; const textColor = state.settings.theme === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
 
     mockChartInstance = new Chart(ctx, {
@@ -2730,6 +2996,7 @@ window.deleteSubtask = async function (taskId, subtaskId) {
 }
 
 window.addTaskFromDayView = function () { if (currentDayViewDate) { const dateToUse = currentDayViewDate; closeDayView(); setTimeout(() => { selectDateForAdd(dateToUse); }, 400); } }
+// Find this function:
 window.toggleTask = async function (id, status) {
     if (!currentUser) return;
     await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', id), { completed: !status });
@@ -2737,6 +3004,11 @@ window.toggleTask = async function (id, status) {
     if (task && document.getElementById('day-view-modal').classList.contains('hidden') === false) {
         setTimeout(() => openDayView(task.date), 200);
     }
+
+    // 👇 ADD THESE TWO LINES 👇
+    if (state.currentView === 'timer') updateTimerTaskSelector();
+    if (id === linkedTaskId && !status) linkedTaskId = null; // Clear if currently linked
+
     // NEW SYNC HOOK
     if (state.settings.shareTasks !== false) syncMySocialTasks();
 }
@@ -2872,12 +3144,17 @@ window.openSettings = () => {
     document.getElementById('settings-year').value = tempSettings.targetYear || 2026;
     document.getElementById('settings-rollover').value = tempSettings.dayRolloverHour || 0;
 
-    // FIX: Load the custom date into the input field BEFORE setting the exam type
+    // Load the custom date into the input field BEFORE setting the exam type
     if (tempSettings.examType === 'Custom') {
         document.getElementById('custom-date-container').classList.remove('hidden');
         document.getElementById('settings-custom-date').value = tempSettings.targetDate || '';
     } else {
         document.getElementById('custom-date-container').classList.add('hidden');
+    }
+
+    // Load the JEE Shift Date if they already set it
+    if (tempSettings.examType === 'JEE Main') {
+        document.getElementById('settings-jee-shift-date').value = tempSettings.targetDate || '';
     }
 
     // Now it is safe to set the exam type (which reads the input field we just populated)
@@ -3624,6 +3901,19 @@ function onPlayerReady(event) {
     if (slider) slider.value = savedVol;
 }
 
+window.isMusicLooping = true;
+window.toggleMusicLoop = function () {
+    window.isMusicLooping = !window.isMusicLooping;
+    const btn = document.getElementById('btn-music-loop');
+    if (window.isMusicLooping) {
+        btn.classList.add('text-brand-500');
+        btn.classList.remove('text-zinc-400');
+    } else {
+        btn.classList.add('text-zinc-400');
+        btn.classList.remove('text-brand-500');
+    }
+}
+
 function onPlayerStateChange(event) {
     const playBtn = document.getElementById('btn-music-play');
     const visualizer = document.getElementById('music-visualizer');
@@ -3649,6 +3939,13 @@ function onPlayerStateChange(event) {
         }
     } else { // PAUSED, ENDED, UNSTARTED
         isMusicPlaying = false;
+
+        if (event.data === 0 && window.isMusicLooping) { 
+            musicPlayer.seekTo(0);
+            musicPlayer.playVideo();
+            return; // Prevent UI from reverting to paused state
+        }
+
         if (event.data === 2 || event.data === 0) {
             if (playBtn) playBtn.innerHTML = `<i data-lucide="play" class="w-5 h-5 fill-current ml-1"></i>`;
             if (ts) ts.innerText = "Paused";
@@ -5446,5 +5743,49 @@ window.saveProfileSettings = async () => {
     btn.innerHTML = ogHtml;
     btn.disabled = false;
 };
+
+// --- SPACIOUS SCROLLING FOOTER INJECTOR ---
+function injectGlobalFooters() {
+    const globalFooterHTML = `
+    <footer class="shrink-0 w-full bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-xl border-t border-zinc-200/80 dark:border-zinc-800/80 p-3 md:px-8 flex flex-col sm:flex-row justify-between items-center gap-3 z-40">
+            <div class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
+                © 2026 SVAL.TECH — ALL RIGHTS RESERVED
+            </div>
+            <div class="flex items-center gap-6">
+                <a href="https://discord.gg/mKXPpSY6Dz" target="_blank" class="text-[10px] font-bold text-zinc-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors uppercase tracking-widest flex items-center gap-1.5">
+                    <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Discord
+                </a>
+                <a href="https://github.com/svalordev" target="_blank" class="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors uppercase tracking-widest flex items-center gap-1.5">
+                    <i data-lucide="github" class="w-3.5 h-3.5"></i> GitHub
+                </a>
+            </div>
+        </footer>
+    `;
+
+    // Select the scrollable wrapper for every view in the app
+    const scrollableViews = document.querySelectorAll(
+        '#calendar-scroll-area, #view-container-weekly > .overflow-y-auto, #view-container-timer > .overflow-y-auto, #view-container-stats-mocks, #view-container-stats-errors, #view-container-stats-questions, #view-container-syllabus > .overflow-y-auto, #view-container-squad > .overflow-y-auto'
+    );
+
+    // Append the footer to the bottom of each view's scrollable flow
+    scrollableViews.forEach(view => {
+        // Safety check to prevent duplicating footers if this runs twice
+        if (!view.querySelector('footer')) {
+            view.insertAdjacentHTML('beforeend', globalFooterHTML);
+        }
+    });
+
+    // Render the lucide icons for the newly injected footers
+    if (window.lucide) {
+        window.lucide.createIcons();
+    }
+}
+
+// Run the injector when the DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener("DOMContentLoaded", injectGlobalFooters);
+} else {
+    injectGlobalFooters();
+}
 
 initAuth(); lucide.createIcons();
