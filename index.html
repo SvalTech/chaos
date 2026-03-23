@@ -344,7 +344,7 @@
                         title="Documentation">
                         <i data-lucide="book" class="w-[18px] h-[18px]"></i>
                     </a>
-                    <button onclick="openSettings()"
+                    <button onclick="switchView('settings')"
                         class="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/50 rounded-xl transition-colors">
                         <i data-lucide="settings" class="w-[18px] h-[18px]"></i>
                     </button>
@@ -446,7 +446,7 @@
                             class="text-xs font-bold uppercase tracking-wide">Score Details</span>
                     </div>
                 </div>
-                <textarea id="task-input" rows="2" placeholder="What's the objective?"
+                <textarea id="task-input" rows="3" placeholder="What's the objective?"
                     class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 outline-none dark:text-white resize-none transition-all shadow-inner-light dark:shadow-inner-dark font-medium placeholder:text-zinc-400"></textarea>
                 <button id="btn-add-task" type="submit"
                     class="w-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold py-3.5 rounded-xl shadow-floating dark:shadow-white/10 transition-all active:scale-95 flex items-center justify-center gap-2 hover:-translate-y-0.5">
@@ -552,7 +552,7 @@
                     class="w-8 h-8 flex items-center justify-center bg-rose-50 dark:bg-rose-900/20 rounded-full text-rose-500 active:scale-95 transition-transform">
                     <i data-lucide="heart" class="w-4 h-4"></i>
                 </button> -->
-                <button onclick="openSettings()"
+                <button onclick="switchView('settings')"
                     class="w-8 h-8 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded-full text-zinc-600 dark:text-zinc-300 active:scale-95 transition-transform">
                     <i data-lucide="settings" class="w-4 h-4"></i>
                 </button>
@@ -1231,11 +1231,17 @@
                                 <i data-lucide="users" class="w-8 h-8 text-brand-500"></i> Accountability
                             </h2>
                             <div class="flex items-center gap-3 mt-1.5">
-
                                 <a href="docs.html#squads-intro" target="_blank"
                                     class="text-[10px] font-bold uppercase tracking-widest text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/20 px-2 py-1 rounded-md hover:bg-brand-100 dark:hover:bg-brand-900/40 transition-colors flex items-center gap-1">
                                     <i data-lucide="book" class="w-3 h-3"></i> Guide
                                 </a>
+                            
+                                <!-- New "Live Only" Filter Button -->
+                                <button onclick="toggleSquadFocusFilter()" id="squad-focus-filter-btn"
+                                    class="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex items-center gap-1.5 border border-zinc-200 dark:border-zinc-700">
+                                    <span class="w-2 h-2 rounded-full bg-zinc-400 transition-colors" id="squad-focus-filter-dot"></span>
+                                    Live Only
+                                </button>
                             </div>
                         </div>
 
@@ -1293,7 +1299,275 @@
             </div>
         </div>
         
-
+        <div id="view-container-settings"
+            class="view-section hidden flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar no-scrollbar relative">
+            <div class="max-w-6xl mx-auto pb-32 mt-2">
+        
+                <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 px-2 gap-4">
+                    <div>
+                        <h2
+                            class="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tighter flex items-center gap-3">
+                            <i data-lucide="settings" class="w-8 h-8 text-brand-500"></i> Settings
+                        </h2>
+                    </div>
+                    <div id="unsaved-changes-indicator" class="hidden"></div>
+                </div>
+        
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+                    <div class="glass-card p-6 md:p-8 rounded-[2.5rem] lg:col-span-2 flex flex-col gap-6">
+                        <div class="flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-800 pb-4">
+                            <i data-lucide="target" class="w-5 h-5 text-zinc-400"></i>
+                            <h3 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Mission Control</h3>
+                        </div>
+        
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="setExamType('JEE Main')" id="btn-jee"
+                                class="p-3 rounded-xl text-sm font-bold border border-zinc-200 dark:border-zinc-700 transition-colors bg-white dark:bg-[#18181b] shadow-sm hover:shadow-md">JEE
+                                Main</button>
+                            <button onclick="setExamType('NEET')" id="btn-neet"
+                                class="p-3 rounded-xl text-sm font-bold border border-zinc-200 dark:border-zinc-700 transition-colors bg-white dark:bg-[#18181b] shadow-sm hover:shadow-md">NEET</button>
+                            <button onclick="setExamType('JEE Advanced')" id="btn-jeeadv"
+                                class="p-3 rounded-xl text-sm font-bold border border-zinc-200 dark:border-zinc-700 transition-colors bg-white dark:bg-[#18181b] shadow-sm hover:shadow-md">JEE
+                                Adv</button>
+                            <button onclick="setExamType('Custom')" id="btn-custom"
+                                class="p-3 rounded-xl text-sm font-bold border border-zinc-200 dark:border-zinc-700 transition-colors bg-white dark:bg-[#18181b] shadow-sm hover:shadow-md">Custom</button>
+                        </div>
+        
+                        <div id="jee-session-container"
+                            class="hidden bg-brand-50 dark:bg-brand-900/10 p-5 rounded-3xl border border-brand-100 dark:border-brand-900/30 animate-slide-up">
+                            <label
+                                class="block text-[10px] font-bold text-brand-700 dark:text-brand-300 uppercase tracking-widest mb-3">Target
+                                Session</label>
+                            <div class="flex gap-2 mb-4">
+                                <button onclick="setSession('Jan')" id="btn-session-jan"
+                                    class="flex-1 py-2.5 rounded-xl text-xs font-bold border border-brand-200 dark:border-brand-700 transition-colors bg-white dark:bg-zinc-800 shadow-sm">Jan</button>
+                                <button onclick="setSession('Apr')" id="btn-session-apr"
+                                    class="flex-1 py-2.5 rounded-xl text-xs font-bold border border-brand-200 dark:border-brand-700 transition-colors bg-white dark:bg-zinc-800 shadow-sm">April</button>
+                            </div>
+                            <label
+                                class="block text-[10px] font-bold text-brand-700/70 dark:text-brand-300/70 uppercase tracking-widest mb-2">Exact
+                                Shift Date</label>
+                            <input type="date" id="settings-jee-shift-date" onchange="triggerAutoSave()"
+                                class="w-full bg-white dark:bg-zinc-800 border border-brand-200 dark:border-brand-700 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-medium focus:ring-2 focus:ring-brand-500 transition-colors shadow-sm">
+                        </div>
+        
+                        <div id="custom-date-container"
+                            class="hidden bg-zinc-50 dark:bg-zinc-900/50 p-5 rounded-3xl border border-zinc-200/50 dark:border-zinc-800 animate-slide-up">
+                            <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Manual
+                                Target Date</label>
+                            <input type="date" id="settings-custom-date" onchange="triggerAutoSave()"
+                                class="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-medium shadow-sm">
+                        </div>
+        
+                        <select id="settings-year" onchange="triggerAutoSave()"
+                            class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3.5 text-sm outline-none dark:text-white appearance-none font-bold shadow-inner-light dark:shadow-inner-dark cursor-pointer">
+                            <option value="2026">Target Year: 2026</option>
+                            <option value="2027">Target Year: 2027</option>
+                            <option value="2028">Target Year: 2028</option>
+                        </select>
+                    </div>
+        
+                    <div class="glass-card p-6 md:p-8 rounded-[2.5rem] flex flex-col gap-4 border-t-2 border-t-brand-500">
+                        <div class="flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-800 pb-4 mb-2">
+                            <i data-lucide="toggle-right" class="w-5 h-5 text-zinc-400"></i>
+                            <h3 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Features</h3>
+                        </div>
+        
+                        <div
+                            class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
+                            <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200">Dark Mode</span>
+                            <button id="theme-toggle" onclick="toggleTheme()"
+                                class="relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300 shrink-0">
+                                <div id="theme-knob"
+                                    class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm">
+                                </div>
+                            </button>
+                        </div>
+                        <div
+                            class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
+                            <div>
+                                <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200 block">Lite Mode</span>
+                                <span class="text-[10px] text-zinc-500 font-medium">RECOMMENDED | Disables blurs & animations</span>
+                            </div>
+                            <button id="litemode-toggle" onclick="toggleLiteModeSetting()"
+                                class="relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300 shrink-0">
+                                <div id="litemode-knob"
+                                    class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm">
+                                </div>
+                            </button>
+                        </div>
+                        <div
+                            class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
+                            <div>
+                                <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200 block">Share Tasks</span>
+                                <span class="text-[10px] text-zinc-500 font-medium">Squad visibility</span>
+                            </div>
+                            <button id="sharetasks-toggle" onclick="toggleShareTasksSetting()"
+                                class="relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300 shrink-0">
+                                <div id="sharetasks-knob"
+                                    class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm translate-x-[20px]">
+                                </div>
+                            </button>
+                        </div>
+                        <div
+                            class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
+                            <div>
+                                <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200 block">Squad Banners</span>
+                                <span class="text-[10px] text-zinc-500 font-medium">Show custom backgrounds</span>
+                            </div>
+                            <button id="squadbgs-toggle" onclick="toggleSquadBGsSetting()"
+                                class="relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300 shrink-0">
+                                <div id="squadbgs-knob"
+                                    class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm translate-x-[20px]">
+                                </div>
+                            </button>
+                        </div>
+                        <div
+                            class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
+                            <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200">Show Countdown</span>
+                            <button id="countdown-toggle" onclick="toggleCountdownSetting()"
+                                class="relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300 shrink-0">
+                                <div id="countdown-knob"
+                                    class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm">
+                                </div>
+                            </button>
+                        </div>
+                        <div
+                            class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
+                            <div>
+                                <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200 block">Focus Radio</span>
+                                <span class="text-[10px] text-zinc-500 font-medium">Music player widget</span>
+                            </div>
+                            <button id="music-toggle" onclick="toggleMusicSetting()"
+                                class="relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300 shrink-0">
+                                <div id="music-knob"
+                                    class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm">
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+        
+                    <div class="glass-card p-6 md:p-8 rounded-[2.5rem] lg:col-span-2 flex flex-col gap-6">
+                        <div class="flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-800 pb-4">
+                            <i data-lucide="palette" class="w-5 h-5 text-zinc-400"></i>
+                            <h3 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Appearance & Tags</h3>
+                        </div>
+        
+                        <div>
+                            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">App Accent
+                                Theme</label>
+                            <div class="flex gap-4">
+                                <button onclick="setAccentTheme('default')"
+                                    class="w-10 h-10 rounded-full bg-[#8b5cf6] border-[3px] border-transparent hover:scale-110 transition-transform shadow-md"
+                                    id="theme-btn-default"></button>
+                                <button onclick="setAccentTheme('crimson')"
+                                    class="w-10 h-10 rounded-full bg-[#f43f5e] border-[3px] border-transparent hover:scale-110 transition-transform shadow-md"
+                                    id="theme-btn-crimson"></button>
+                                <button onclick="setAccentTheme('monochrome')"
+                                    class="w-10 h-10 rounded-full bg-zinc-500 dark:bg-zinc-400 border-[3px] border-transparent hover:scale-110 transition-transform shadow-md"
+                                    id="theme-btn-monochrome"></button>
+                                <button onclick="setAccentTheme('matcha')"
+                                    class="w-10 h-10 rounded-full bg-[#34a867] border-[3px] border-transparent hover:scale-110 transition-transform shadow-md"
+                                    id="theme-btn-matcha"></button>
+                                <button onclick="setAccentTheme('cobalt')"
+                                    class="w-10 h-10 rounded-full bg-[#3b82f6] border-[3px] border-transparent hover:scale-110 transition-transform shadow-md"
+                                    id="theme-btn-cobalt"></button>
+                            </div>
+                        </div>
+        
+                        <div class="pt-2">
+                            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Subject Tag
+                                Colors</label>
+                            <div id="settings-subject-colors"></div>
+                        </div>
+        
+                        <div class="pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Atmosphere &
+                                Background</label>
+                            <div class="flex gap-2 overflow-x-auto pb-4 scrollbar-hide no-scrollbar snap-x mb-2">
+                                <button onclick="setPresetBg('')"
+                                    class="snap-start shrink-0 px-6 py-3.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-sm font-bold text-zinc-600 dark:text-zinc-300 hover:ring-2 ring-brand-500 transition-all shadow-sm">Minimal</button>
+                                <button
+                                    onclick="setPresetBg('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')"
+                                    class="snap-start shrink-0 px-6 py-3.5 rounded-xl bg-brand-50 dark:bg-brand-900/20 text-sm font-bold text-brand-700 dark:text-brand-300 hover:ring-2 ring-brand-500 transition-all shadow-sm">Abstract</button>
+                                <button
+                                    onclick="setPresetBg('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?q=80&w=2342&auto=format&fit=crop')"
+                                    class="snap-start shrink-0 px-6 py-3.5 rounded-xl bg-zinc-800 text-sm font-bold text-white hover:ring-2 ring-brand-500 transition-all shadow-sm">Space</button>
+                                <button
+                                    onclick="setPresetBg('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2346&auto=format&fit=crop')"
+                                    class="snap-start shrink-0 px-6 py-3.5 rounded-xl bg-sky-100 dark:bg-sky-900/20 text-sm font-bold text-sky-800 dark:text-sky-300 hover:ring-2 ring-brand-500 transition-all shadow-sm">Ocean</button>
+                            </div>
+                            <input type="text" id="settings-bg-url" oninput="triggerAutoSave()"
+                                placeholder="Or paste a custom image URL..."
+                                class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3.5 text-sm outline-none dark:text-white font-medium shadow-inner-light dark:shadow-inner-dark">
+                        </div>
+                    </div>
+        
+                    <div class="glass-card p-6 md:p-8 rounded-[2.5rem] flex flex-col gap-6 border-t-2 border-t-rose-500">
+                        <div class="flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-800 pb-4">
+                            <i data-lucide="database" class="w-5 h-5 text-zinc-400"></i>
+                            <h3 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight">System & Data</h3>
+                        </div>
+        
+                        <div
+                            class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex flex-col gap-3 border border-zinc-100 dark:border-zinc-800 shadow-sm">
+                            <div>
+                                <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200 block">Day Rollover Time</span>
+                                <span class="text-[10px] text-zinc-500 font-medium">When does your day end?</span>
+                            </div>
+                            <select id="settings-rollover" onchange="triggerAutoSave()"
+                                class="w-full bg-white dark:bg-zinc-800 text-zinc-800 dark:text-white text-sm font-bold rounded-xl px-4 py-3 outline-none border border-zinc-200 dark:border-zinc-700 focus:ring-2 focus:ring-brand-500 transition-all cursor-pointer shadow-sm">
+                                <option value="0">Midnight (12 AM)</option>
+                                <option value="1">1:00 AM</option>
+                                <option value="2">2:00 AM</option>
+                                <option value="3">3:00 AM</option>
+                                <option value="4">4:00 AM</option>
+                                <option value="5">5:00 AM</option>
+                                <option value="6">6:00 AM</option>
+                            </select>
+                        </div>
+        
+                        <div class="flex flex-col gap-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <button onclick="exportData()"
+                                    class="py-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-xs font-bold text-zinc-700 dark:text-zinc-300 transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center gap-2 shadow-sm"><i
+                                        data-lucide="download" class="w-4 h-4"></i> Export Data</button>
+                                <button onclick="document.getElementById('import-file').click()"
+                                    class="py-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-xs font-bold text-zinc-700 dark:text-zinc-300 transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center gap-2 shadow-sm"><i
+                                        data-lucide="upload" class="w-4 h-4"></i> Import Data</button>
+                                <input type="file" id="import-file" accept=".json" class="hidden" onchange="importData(event)">
+                            </div>
+                            <button onclick="exportTasksAsICS()"
+                                class="w-full py-3.5 bg-brand-50 dark:bg-brand-900/20 rounded-xl text-sm font-bold text-brand-600 dark:text-brand-400 transition-colors hover:bg-brand-100 dark:hover:bg-brand-900/40 flex items-center justify-center gap-2 border border-brand-200 dark:border-brand-800/50 shadow-sm">
+                                <i data-lucide="calendar" class="w-4 h-4"></i> Export to ICS Calendar
+                            </button>
+                        </div>
+                        
+                        
+                        <div class="mt-auto pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                            <button onclick="handleSignOut()"
+                                class="w-full py-4 text-rose-500 font-bold bg-rose-50 dark:bg-rose-900/10 rounded-2xl flex items-center justify-center gap-2 border border-rose-100 dark:border-rose-900/30 active:scale-95 transition-transform hover:bg-rose-100 dark:hover:bg-rose-900/30 shadow-sm">
+                                <i data-lucide="log-out" class="w-5 h-5"></i> Sign Out Securely
+                            </button>
+                        </div>
+                        <div class="mt-12 pt-8 border-t border-rose-100 dark:border-rose-900/30">
+                            <h3 class="text-lg font-black text-rose-600 dark:text-rose-400 tracking-tight mb-2">Danger Zone</h3>
+                            <p class="text-xs text-zinc-500 mb-6 leading-relaxed">
+                                Resetting your data will permanently delete all tasks, targets, study logs, error logs, and syllabus progress.
+                                This action is irreversible.
+                            </p>
+                            <button onclick="handleResetAllData()"
+                                class="w-full py-4 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-rose-600 hover:text-white transition-all active:scale-95 flex items-center justify-center gap-3">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                Reset All My Data
+                            </button>
+                        </div>
+                    </div>
+        
+                </div>
+            </div>
+        </div>
     </main>
 
     <!-- Focus Radio Widget -->
@@ -1519,326 +1793,7 @@
             </div>
         </div>
     </div>
-
-    <!-- Settings Modal -->
-    <div id="settings-modal"
-        class="fixed inset-0 z-[120] flex items-end md:items-center justify-center modal-backdrop hidden opacity-0 transition-opacity duration-400">
-        <div
-            class="bg-white dark:bg-[#18181b] w-full md:w-[500px] md:rounded-[2.5rem] mobile-sheet md:transform md:scale-95 transition-transform duration-400 border-t md:border border-zinc-200/50 dark:border-zinc-800 h-[90vh] flex flex-col pb-safe">
-            <div class="p-6 md:p-8 pb-4 shrink-0 flex justify-between items-center touch-pan-y"
-                id="settings-drag-handle">
-                <div class="md:hidden absolute top-3 left-1/2 -translate-x-1/2 drag-handle"></div>
-                <h3 class="text-2xl font-black text-zinc-900 dark:text-white tracking-tight mt-2 md:mt-0">Settings</h3>
-                <button onclick="closeSettings()"
-                    class="text-zinc-400 hover:text-zinc-900 dark:hover:text-white p-2 bg-zinc-100 dark:bg-zinc-800 rounded-full transition-colors mt-2 md:mt-0"><i
-                        data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-
-            <div class="px-6 md:px-8 space-y-8 flex-1 overflow-y-auto custom-scrollbar no-scrollbar pb-6">
-                <div class="space-y-3">
-                    <label
-                        class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Preferences</label>
-                    <div
-                        class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800">
-                        <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200">Dark Mode</span>
-                        <button id="theme-toggle" onclick="toggleTheme()"
-                            class="relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300">
-                            <div id="theme-knob"
-                                class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm">
-                            </div>
-                        </button>
-                    </div>
-                    <div
-                        class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800">
-                        <div>
-                            <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200 block">Day Rollover</span>
-                            <span class="text-[10px] text-zinc-500 font-medium">When does your day actually end?</span>
-                        </div>
-                        <select id="settings-rollover" onchange="markSettingsDirty()"
-                            class="bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-white text-xs font-bold rounded-lg px-3 py-1.5 outline-none border border-transparent focus:ring-2 focus:ring-brand-500 transition-all cursor-pointer">
-                            <option value="0">Midnight (12 AM)</option>
-                            <option value="1">1:00 AM</option>
-                            <option value="2">2:00 AM</option>
-                            <option value="3">3:00 AM</option>
-                            <option value="4">4:00 AM</option>
-                            <option value="5">5:00 AM</option>
-                            <option value="6">6:00 AM</option>
-                        </select>
-                    </div>
-
-                    <div
-                        class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800">
-                        <div>
-                            <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200 block">Lite Mode</span>
-                            <span class="text-[10px] text-zinc-500 font-medium">Disables blurs & animations</span>
-                        </div>
-                        <button id="litemode-toggle" onclick="toggleLiteModeSetting()"
-                            class="relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300">
-                            <div id="litemode-knob"
-                                class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm">
-                            </div>
-                        </button>
-                    </div>
-
-                    <div
-                        class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800">
-                        <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200">Show Countdown</span>
-                        <button id="countdown-toggle" onclick="toggleCountdownSetting()"
-                            class="relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300">
-                            <div id="countdown-knob"
-                                class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm">
-                            </div>
-                        </button>
-                    </div>
-
-                    <div
-                        class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800">
-                        <div>
-                            <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200 block">Share Tasks</span>
-                            <span class="text-[10px] text-zinc-500 font-medium">Let your squad see your daily
-                                tasks</span>
-                        </div>
-                        <button id="sharetasks-toggle" onclick="toggleShareTasksSetting()"
-                            class="relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300">
-                            <div id="sharetasks-knob"
-                                class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm translate-x-[20px]">
-                            </div>
-                        </button>
-                    </div>
-
-                    <div
-                        class="flex items-center justify-between p-4 bg-white dark:bg-[#18181b] rounded-2xl border border-zinc-200/50 dark:border-zinc-800 shadow-sm">
-                        <div class="flex items-center gap-3">
-                            <div
-                                class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-                                <i data-lucide="image" class="w-5 h-5"></i>
-                            </div>
-                            <div>
-                                <div class="text-sm font-bold text-zinc-800 dark:text-zinc-100 tracking-tight">Squad
-                                    Custom Backgrounds
-                                </div>
-                                <div class="text-[10px] text-zinc-400 font-medium">Show colored banners & images behind avatars</div>
-                                
-                            </div>
-                        </div>
-                        <button id="squadbgs-toggle" onclick="toggleSquadBGsSetting()"
-                            class="relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300 shadow-inner">
-                            <div id="squadbgs-knob"
-                                class="absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300"
-                                style="transform: translateX(20px);"></div>
-                        </button>
-                    </div>
-
-                    <div
-                        class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800">
-                        <div>
-                            <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200 block">Focus Radio</span>
-                            <span class="text-[10px] text-zinc-500 font-medium">Show music player widget</span>
-                        </div>
-                        <button id="music-toggle" onclick="toggleMusicSetting()"
-                            class="relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300">
-                            <div id="music-knob"
-                                class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm">
-                            </div>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="space-y-4">
-                    <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Exam
-                        Target</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="setExamType('JEE Main')" id="btn-jee"
-                            class="p-3 rounded-xl text-xs font-bold border border-zinc-200 dark:border-zinc-700 transition-colors">JEE
-                            Main</button>
-                        <button onclick="setExamType('NEET')" id="btn-neet"
-                            class="p-3 rounded-xl text-xs font-bold border border-zinc-200 dark:border-zinc-700 transition-colors">NEET</button>
-                        <button onclick="setExamType('JEE Advanced')" id="btn-jeeadv"
-                            class="p-3 rounded-xl text-xs font-bold border border-zinc-200 dark:border-zinc-700 transition-colors">JEE
-                            Adv</button>
-                        <button onclick="setExamType('Custom')" id="btn-custom"
-                            class="p-3 rounded-xl text-xs font-bold border border-zinc-200 dark:border-zinc-700 transition-colors">Custom</button>
-                    </div>
-
-                    <div id="jee-session-container"
-                        class="hidden bg-brand-50 dark:bg-brand-900/10 p-4 rounded-2xl border border-brand-100 dark:border-brand-900/30 animate-slide-up mt-2">
-                        <label class="block text-[10px] font-bold text-brand-700 dark:text-brand-300 uppercase tracking-widest mb-3">Target
-                            Session</label>
-                        <div class="flex gap-2 mb-3">
-                            <button onclick="setSession('Jan')" id="btn-session-jan"
-                                class="flex-1 py-2 rounded-xl text-xs font-bold border border-brand-200 dark:border-brand-700 transition-colors bg-white dark:bg-zinc-800">Jan</button>
-                            <button onclick="setSession('Apr')" id="btn-session-apr"
-                                class="flex-1 py-2 rounded-xl text-xs font-bold border border-brand-200 dark:border-brand-700 transition-colors bg-white dark:bg-zinc-800">April</button>
-                        </div>
-                        <label
-                            class="block text-[10px] font-bold text-brand-700/70 dark:text-brand-300/70 uppercase tracking-widest mb-2">Exact
-                            Shift Date</label>
-                        <input type="date" id="settings-jee-shift-date" onchange="markSettingsDirty(); updateTargetDateConfig()"
-                            class="w-full bg-white dark:bg-zinc-800 border border-brand-200 dark:border-brand-700 rounded-xl px-4 py-2.5 text-sm outline-none dark:text-white font-medium focus:ring-2 focus:ring-brand-500 transition-colors">
-                    </div>
-
-                    <div id="custom-date-container"
-                        class="hidden bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-zinc-200/50 dark:border-zinc-800 animate-slide-up">
-                        <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Manual
-                            Target Date</label>
-                        <input type="date" id="settings-custom-date" onchange="markSettingsDirty()"
-                            class="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-medium">
-                    </div>
-
-                    <select id="settings-year" onchange="updateTargetDateConfig(); markSettingsDirty()"
-                        class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3.5 text-sm outline-none dark:text-white appearance-none font-bold">
-                        <option value="2026">Target Year: 2026</option>
-                        <option value="2027">Target Year: 2027</option>
-                        <option value="2028">Target Year: 2028</option>
-                    </select>
-                </div>
-                <div class="space-y-3">
-                    <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-                        Theme</label>
-                    <div class="flex gap-3">
-                        <button onclick="setAccentTheme('default')"
-                            class="w-8 h-8 rounded-full bg-[#8b5cf6] border-2 border-transparent hover:scale-110 transition-transform shadow-md"
-                            id="theme-btn-default"></button>
-                        <button onclick="setAccentTheme('crimson')"
-                            class="w-8 h-8 rounded-full bg-[#f43f5e] border-2 border-transparent hover:scale-110 transition-transform shadow-md"
-                            id="theme-btn-crimson"></button>
-                        <button onclick="setAccentTheme('monochrome')"
-                            class="w-8 h-8 rounded-full bg-zinc-500 dark:bg-zinc-400 border-2 border-transparent hover:scale-110 transition-transform shadow-md"
-                            id="theme-btn-monochrome"></button>
-                        <button onclick="setAccentTheme('matcha')"
-                            class="w-8 h-8 rounded-full bg-[#34a867] border-2 border-transparent hover:scale-110 transition-transform shadow-md"
-                            id="theme-btn-matcha"></button>
-                        <button onclick="setAccentTheme('cobalt')"
-                            class="w-8 h-8 rounded-full bg-[#3b82f6] border-2 border-transparent hover:scale-110 transition-transform shadow-md"
-                            id="theme-btn-cobalt"></button>
-
-                    </div>
-                </div>
-                <div class="space-y-3">
-                    <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Subject
-                        Colors</label>
-                    <div id="settings-subject-colors" class="space-y-2"></div>
-                </div>
-
-                <div class="space-y-3">
-                    <label
-                        class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Atmosphere</label>
-                    <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide no-scrollbar -mx-2 px-2 snap-x">
-                        <button onclick="setPresetBg('')"
-                            class="snap-start shrink-0 px-5 py-3 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-xs font-bold text-zinc-600 dark:text-zinc-300 border border-transparent hover:border-brand-500 transition-all">Minimal</button>
-                        <button
-                            onclick="setPresetBg('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')"
-                            class="snap-start shrink-0 px-5 py-3 rounded-xl bg-brand-50 dark:bg-brand-900/20 text-xs font-bold text-brand-700 dark:text-brand-300 border border-transparent hover:border-brand-500 transition-all">Abstract</button>
-                        <button
-                            onclick="setPresetBg('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?q=80&w=2342&auto=format&fit=crop')"
-                            class="snap-start shrink-0 px-5 py-3 rounded-xl bg-zinc-800 text-xs font-bold text-white border border-transparent hover:border-brand-500 transition-all">Space</button>
-                        <button
-                            onclick="setPresetBg('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2346&auto=format&fit=crop')"
-                            class="snap-start shrink-0 px-5 py-3 rounded-xl bg-sky-100 dark:bg-sky-900/20 text-xs font-bold text-sky-800 dark:text-sky-300 border border-transparent hover:border-brand-500 transition-all">Ocean</button>
-                    </div>
-                    <input type="text" id="settings-bg-url" oninput="markSettingsDirty()"
-                        placeholder="Or paste custom image URL..."
-                        class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white appearance-none font-medium">
-                </div>
-
-                <div class="space-y-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
-                    <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Squad Profile
-                        Banner</label>
-                    <div class="flex gap-3">
-                        <button onclick="setBannerTheme('default')"
-                            class="w-8 h-8 rounded-full bg-zinc-300 dark:bg-zinc-700 border-2 border-transparent hover:scale-110 transition-transform shadow-md banner-btn"
-                            id="banner-btn-default"></button>
-                        <button onclick="setBannerTheme('lavender')"
-                            class="w-8 h-8 rounded-full bg-purple-400 border-2 border-transparent hover:scale-110 transition-transform shadow-md banner-btn"
-                            id="banner-btn-lavender"></button>
-                        <button onclick="setBannerTheme('rose')"
-                            class="w-8 h-8 rounded-full bg-rose-400 border-2 border-transparent hover:scale-110 transition-transform shadow-md banner-btn"
-                            id="banner-btn-rose"></button>
-                        <button onclick="setBannerTheme('emerald')"
-                            class="w-8 h-8 rounded-full bg-emerald-400 border-2 border-transparent hover:scale-110 transition-transform shadow-md banner-btn"
-                            id="banner-btn-emerald"></button>
-                        <button onclick="setBannerTheme('sky')"
-                            class="w-8 h-8 rounded-full bg-sky-400 border-2 border-transparent hover:scale-110 transition-transform shadow-md banner-btn"
-                            id="banner-btn-sky"></button>
-                    </div>
-                </div>
-
-                <div class="space-y-2 pt-4">
-                    <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Custom Banner
-                        Image (URL)</label>
-                    <input type="url" id="settings-banner-url" oninput="markSettingsDirty()"
-                        placeholder="https://example.com/anime-scenery.gif"
-                        class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-2.5 text-sm outline-none dark:text-white transition-colors focus:border-brand-500 placeholder:text-zinc-400/50" />
-                    <p class="text-[10px] text-zinc-500">Overrides theme color. Must be a secure HTTPS link ending in
-                        .jpg, .png, .gif,
-                        or .webp</p>
-                </div>
-
-                <div class="space-y-2 pt-4">
-                    <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Profile
-                        Quote</label>
-                    <input type="text" id="settings-profile-quote" oninput="markSettingsDirty()" maxlength="60"
-                        placeholder="Quote/Status here."
-                        class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-2.5 text-sm outline-none dark:text-white transition-colors focus:border-brand-500 placeholder:text-zinc-400/50" />
-                </div>
-
-
-                <div class="space-y-2 pt-4 pb-4">
-                    <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Avatar
-                        Shape</label>
-                    <div class="flex gap-2">
-                        <button onclick="setAvatarShape('circle')" id="shape-btn-circle"
-                            class="px-5 py-2 rounded-xl text-xs font-bold border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">Circle</button>
-                        <button onclick="setAvatarShape('squircle')" id="shape-btn-squircle"
-                            class="px-5 py-2 rounded-xl text-xs font-bold border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">Squircle</button>
-                    </div>
-                </div>
-
-
-                <div class="space-y-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
-                    <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Data
-                        Management</label>
-                    <div class="flex flex-col gap-2">
-                        <div class="flex gap-2">
-                            <button onclick="exportData()"
-                                class="flex-1 py-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-xs font-bold text-zinc-700 dark:text-zinc-300 transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center gap-2 border border-transparent hover:border-zinc-300 dark:hover:border-zinc-600"><i
-                                    data-lucide="download" class="w-4 h-4"></i> Export JSON</button>
-                            <button onclick="document.getElementById('import-file').click()"
-                                class="flex-1 py-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-xs font-bold text-zinc-700 dark:text-zinc-300 transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center gap-2 border border-transparent hover:border-zinc-300 dark:hover:border-zinc-600"><i
-                                    data-lucide="upload" class="w-4 h-4"></i> Import JSON</button>
-                            <input type="file" id="import-file" accept=".json" class="hidden"
-                                onchange="importData(event)">
-                        </div>
-
-                        <button onclick="exportTasksAsICS()"
-                            class="w-full py-3 bg-brand-50 dark:bg-brand-900/20 rounded-xl text-xs font-bold text-brand-600 dark:text-brand-400 transition-colors hover:bg-brand-100 dark:hover:bg-brand-900/40 flex items-center justify-center gap-2 border border-brand-200 dark:border-brand-800/50 shadow-sm">
-                            <i data-lucide="calendar" class="w-4 h-4"></i> Export to Calendar (.ics)
-                        </button>
-                    </div>
-                </div>
-
-                <div class="pt-4 space-y-3 border-t border-zinc-100 dark:border-zinc-800">
-                    <a href="docs.html" target="_blank"
-                        class="w-full py-4 text-brand-600 dark:text-brand-400 font-bold bg-brand-50 dark:bg-brand-900/10 rounded-2xl flex items-center justify-center gap-2 border border-brand-100 dark:border-brand-900/30 active:scale-95 transition-transform hover:bg-brand-100 dark:hover:bg-brand-900/30">
-                        <i data-lucide="book-open" class="w-5 h-5"></i> Open Documentation
-                    </a>
-                    <button onclick="handleSignOut()"
-                        class="w-full py-4 text-rose-500 font-bold bg-rose-50 dark:bg-rose-900/10 rounded-2xl flex items-center justify-center gap-2 border border-rose-100 dark:border-rose-900/30 active:scale-95 transition-transform hover:bg-rose-100 dark:hover:bg-rose-900/30"><i
-                            data-lucide="log-out" class="w-5 h-5"></i> Sign Out</button>
-                </div>
-            </div>
-
-            <div
-                class="p-6 border-t border-zinc-100 dark:border-zinc-800/50 bg-white/80 dark:bg-[#18181b]/80 backdrop-blur-md shrink-0">
-                <div id="unsaved-changes-indicator"
-                    class="hidden flex items-center gap-2 mb-3 text-amber-600 dark:text-amber-400 text-xs font-bold justify-center animate-bounce-slight">
-                    <i data-lucide="alert-circle" class="w-4 h-4"></i> Unsaved Changes
-                </div>
-                <button id="save-settings-btn" onclick="saveSettings()"
-                    class="w-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold py-4 rounded-2xl shadow-floating dark:shadow-white/10 transition-all active:scale-95 text-base">Done</button>
-            </div>
-        </div>
-    </div>
+    
 
     <!-- Confirm Modal -->
     <div id="confirm-modal"

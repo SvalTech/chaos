@@ -77,7 +77,7 @@ state = {
 };
 
 
-let tempSettings = {};
+
 
 let myFriendCode = null;
 let squadListeners = {}; // Stores unsubs for active squad members
@@ -1830,6 +1830,28 @@ window.spawnFloatingIcons = function (element, theme) {
 };
 
 // --- THEME & SETTINGS ---
+window.applyLiteMode = function (isLite) {
+    if (isLite) {
+        document.documentElement.classList.add('lite-mode');
+    } else {
+        document.documentElement.classList.remove('lite-mode');
+    }
+}
+
+window.updateLiteModeToggleUI = function (isLite) {
+    const knob = document.getElementById('litemode-knob');
+    const toggle = document.getElementById('litemode-toggle');
+    if (knob && toggle) {
+        if (isLite) {
+            knob.style.transform = 'translateX(20px)';
+            toggle.className = "relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300 shrink-0";
+        } else {
+            knob.style.transform = 'translateX(0)';
+            toggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300 shrink-0";
+        }
+    }
+}
+
 window.applyTheme = function (theme) {
     const html = document.documentElement; const knob = document.getElementById('theme-knob'); const toggle = document.getElementById('theme-toggle');
     if (theme === 'dark') {
@@ -1925,57 +1947,183 @@ window.applyBackground = function (url) {
 }
 
 window.setPresetBg = function (url) { document.getElementById('settings-bg-url').value = url; applyBackground(url); markSettingsDirty(); }
+// ==========================================
+// AUTO-SAVE ENGINE & SETTINGS
+// ==========================================
+let autoSaveTimeout = null;
 
-window.markSettingsDirty = function () {
-    isSettingsDirty = true; document.getElementById('unsaved-changes-indicator').classList.remove('hidden');
-    const btn = document.getElementById('save-settings-btn'); btn.classList.remove('bg-zinc-900', 'dark:bg-white', 'text-white', 'dark:text-zinc-900'); btn.classList.add('bg-brand-600', 'hover:bg-brand-700', 'text-white'); btn.innerText = "Save Changes";
+window.autoSaveSettings = async function () {
+    if (!currentUser) return;
+
+    const indicator = document.getElementById('unsaved-changes-indicator');
+    if (indicator) {
+        indicator.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> Saving...`;
+        indicator.classList.remove('hidden');
+        indicator.className = 'flex items-center gap-2 text-zinc-500 text-xs font-bold transition-all';
+        lucide.createIcons();
+    }
+
+    // Pull text/select values directly from DOM to capture live typing
+    const rolloverEl = document.getElementById('settings-rollover');
+    if (rolloverEl) state.settings.dayRolloverHour = parseInt(rolloverEl.value) || 0;
+
+    const bgUrlEl = document.getElementById('settings-bg-url');
+    if (bgUrlEl) state.settings.bgUrl = bgUrlEl.value;
+
+    const bannerUrlEl = document.getElementById('settings-banner-url');
+    if (bannerUrlEl) state.settings.bannerUrl = bannerUrlEl.value;
+
+    const profileQuoteEl = document.getElementById('settings-profile-quote');
+    if (profileQuoteEl) state.settings.profileQuote = profileQuoteEl.value;
+
+    updateTargetDateConfig();
+
+    try {
+        await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), state.settings, { merge: true });
+
+        if (indicator) {
+            indicator.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> Saved`;
+            indicator.className = 'flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-bold transition-all';
+            lucide.createIcons();
+
+            // Hide the indicator gently after 2 seconds
+            setTimeout(() => {
+                if (indicator.innerHTML.includes('Saved')) {
+                    indicator.classList.add('opacity-0');
+                    setTimeout(() => { indicator.classList.add('hidden'); indicator.classList.remove('opacity-0'); }, 300);
+                }
+            }, 2000);
+        }
+
+        // Live apply visuals
+        applyBackground(state.settings.bgUrl);
+        renderCountdown();
+
+    } catch (e) {
+        console.error("Auto-save failed", e);
+        if (indicator) {
+            indicator.innerHTML = `<i data-lucide="x" class="w-3.5 h-3.5"></i> Error`;
+            indicator.className = 'flex items-center gap-2 text-rose-500 text-xs font-bold transition-all';
+            lucide.createIcons();
+        }
+    }
 }
 
-window.resetSettingsDirty = function () {
-    isSettingsDirty = false; document.getElementById('unsaved-changes-indicator').classList.add('hidden');
-    const btn = document.getElementById('save-settings-btn'); btn.classList.add('bg-zinc-900', 'dark:bg-white', 'text-white', 'dark:text-zinc-900'); btn.classList.remove('bg-brand-600', 'hover:bg-brand-700'); btn.innerText = "Done";
+window.triggerAutoSave = function () {
+    if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
+    // Wait 800ms after the user stops interacting before firing the save
+    autoSaveTimeout = setTimeout(() => { window.autoSaveSettings(); }, 800);
 }
 
+// --- GORGEOUS NEW COLOR PICKER ---
 window.renderSubjectColorSettings = function () {
     const container = document.getElementById('settings-subject-colors');
     if (!container) return;
 
-    // Use the helper to check tempSettings first (live preview before saving)
-    const type = tempSettings.examType || state.settings.examType;
-    const customs = tempSettings.customSubjects || state.settings.customSubjects || [];
+    const type = state.settings.examType || 'JEE Main';
+    const customs = state.settings.customSubjects || [];
     const subjects = window.getExamSubjects(type, customs);
+
     let html = '';
     subjects.forEach(sub => {
-        const currentColor = tempSettings.subjectColors?.[sub] || state.settings.subjectColors?.[sub] || defaultColorsMap[sub] || 'teal';
-        let paletteHtml = Object.keys(colorPalette).map(c => `
-                    <button onclick="setSubjectColor('${sub}', '${c}')" class="w-6 h-6 rounded-full border-2 ${currentColor === c ? 'border-zinc-900 dark:border-white shadow-md' : 'border-transparent'} scale-100 hover:scale-110 transition-transform" style="background-color: ${colorPalette[c].hex}"></button>
-                `).join('');
+        const currentColor = state.settings.subjectColors?.[sub] || defaultColorsMap[sub] || 'teal';
+
+        let paletteHtml = Object.keys(colorPalette).map(c => {
+            const isActive = currentColor === c;
+            // Upgraded premium styling for color swatches
+            return `
+                <button onclick="setSubjectColor('${sub}', '${c}')" 
+                    class="w-8 h-8 rounded-full border-[3px] flex items-center justify-center transition-all duration-300 ${isActive ? 'scale-110 shadow-md ring-2 ring-offset-2 dark:ring-offset-[#18181b] z-10' : 'border-transparent scale-100 hover:scale-110 opacity-60 hover:opacity-100'}" 
+                    style="background-color: ${colorPalette[c].hex}; ${isActive ? `border-color: white; --tw-ring-color: ${colorPalette[c].hex};` : ''}">
+                    ${isActive ? `<i data-lucide="check" class="w-4 h-4 text-white drop-shadow-md"></i>` : ''}
+                </button>
+            `;
+        }).join('');
+
         html += `
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-100 dark:border-zinc-800 gap-3">
-                    <span class="text-sm font-bold text-zinc-700 dark:text-zinc-200 tracking-tight">${sub}</span>
-                    <div class="flex gap-2 flex-wrap">${paletteHtml}</div>
-                </div>`;
+            <div class="flex flex-col gap-3 p-5 bg-white dark:bg-[#18181b] rounded-3xl border border-zinc-200/80 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
+                <span class="font-black text-sm text-zinc-900 dark:text-white tracking-tight flex items-center gap-2.5">
+                    <span class="w-3 h-3 rounded-full shadow-inner" style="background-color: ${colorPalette[currentColor].hex}"></span>
+                    ${sub}
+                </span>
+                <div class="flex gap-3 flex-wrap">
+                    ${paletteHtml}
+                </div>
+            </div>`;
     });
-    container.innerHTML = html;
+
+    // Use a grid to make them sit beautifully next to each other
+    container.innerHTML = `<div class="grid grid-cols-1 xl:grid-cols-2 gap-4">${html}</div>`;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 window.setSubjectColor = function (sub, colorKey) {
-    if (!tempSettings.subjectColors) tempSettings.subjectColors = { ...(state.settings.subjectColors || {}) };
-    tempSettings.subjectColors[sub] = colorKey;
-    renderSubjectColorSettings();
-    markSettingsDirty();
-    updateSubjectSelectors();
+    if (!state.settings.subjectColors) state.settings.subjectColors = {};
+    state.settings.subjectColors[sub] = colorKey;
+    renderSubjectColorSettings(); // Re-render the grid instantly
+    updateSubjectSelectors(); // Update UI elsewhere
+    triggerAutoSave();
 }
+
+// --- UPDATED LIVE TOGGLES & SETTERS ---
+window.setBannerTheme = function (themeName) {
+    state.settings.bannerTheme = themeName;
+    document.querySelectorAll('.banner-btn').forEach(btn => {
+        btn.classList.remove('border-zinc-900', 'dark:border-white');
+        btn.classList.add('border-transparent');
+    });
+    const activeBtn = document.getElementById(`banner-btn-${themeName}`);
+    if (activeBtn) {
+        activeBtn.classList.add('border-zinc-900', 'dark:border-white');
+        activeBtn.classList.remove('border-transparent');
+    }
+    triggerAutoSave();
+}
+
+window.setAvatarShape = function (shape) {
+    state.settings.avatarShape = shape;
+    ['circle', 'squircle'].forEach(b => {
+        document.getElementById(`shape-btn-${b}`).classList.remove('bg-brand-50', 'text-brand-600', 'border-brand-200', 'dark:bg-brand-900/20', 'dark:text-brand-400', 'dark:border-brand-800');
+    });
+    const activeBtn = document.getElementById(`shape-btn-${shape}`);
+    if (activeBtn) activeBtn.classList.add('bg-brand-50', 'text-brand-600', 'border-brand-200', 'dark:bg-brand-900/20', 'dark:text-brand-400', 'dark:border-brand-800');
+    triggerAutoSave();
+}
+
+window.setAccentTheme = function (themeName) {
+    state.settings.accentTheme = themeName;
+    applyAccentTheme(themeName);
+    ['default', 'matcha', 'cobalt', 'crimson', 'monochrome'].forEach(t => {
+        const btn = document.getElementById(`theme-btn-${t}`);
+        if (btn) {
+            if (t === themeName) {
+                btn.classList.add('border-zinc-900', 'dark:border-white');
+                btn.classList.remove('border-transparent');
+            } else {
+                btn.classList.remove('border-zinc-900', 'dark:border-white');
+                btn.classList.add('border-transparent');
+            }
+        }
+    });
+    triggerAutoSave();
+}
+
+window.setPresetBg = function (url) {
+    document.getElementById('settings-bg-url').value = url;
+    state.settings.bgUrl = url;
+    applyBackground(url);
+    triggerAutoSave();
+}
+
 window.setExamType = function (type) {
-    // 💥 TRIGGER EXAM ANIMATION 💥
-    const previousType = tempSettings.examType;
+    const previousType = state.settings.examType;
     if (previousType !== type && type !== 'Custom') {
         const map = { 'JEE Main': 'jee', 'NEET': 'neet', 'JEE Advanced': 'jeeadv' };
         const activeBtn = document.getElementById(`btn-${map[type]}`);
         if (activeBtn) window.spawnFloatingIcons(activeBtn, type);
     }
 
-    tempSettings.examType = type;
+    state.settings.examType = type;
     ['jee', 'neet', 'jeeadv', 'custom'].forEach(id => {
         const btn = document.getElementById(`btn-${id}`);
         const map = { 'jee': 'JEE Main', 'neet': 'NEET', 'jeeadv': 'JEE Advanced', 'custom': 'Custom' };
@@ -1991,42 +2139,37 @@ window.setExamType = function (type) {
 
     if (type === 'JEE Main') {
         document.getElementById('jee-session-container').classList.remove('hidden');
-        if (!tempSettings.session) tempSettings.session = 'Apr';
+        if (!state.settings.session) state.settings.session = 'Apr';
         updateSessionUI();
     } else {
         document.getElementById('jee-session-container').classList.add('hidden');
     }
 
-    // Force prompt custom subject manager if empty
-    if (type === 'Custom' && (!tempSettings.customSubjects || tempSettings.customSubjects.length === 0)) {
-        setTimeout(() => {
-            showToast("Add your custom subjects!");
-            openCustomSubjectModal();
-        }, 300);
+    if (type === 'Custom' && (!state.settings.customSubjects || state.settings.customSubjects.length === 0)) {
+        setTimeout(() => { showToast("Add your custom subjects!"); openCustomSubjectModal(); }, 300);
     }
 
-    document.getElementById('custom-date-container').classList.toggle('hidden', type !== 'Custom');
+    const dateContainer = document.getElementById('custom-date-container');
+    if (dateContainer) dateContainer.classList.toggle('hidden', type !== 'Custom');
+
     renderSubjectColorSettings(); // Instantly update color palette
     updateTargetDateConfig();
-    markSettingsDirty();
+    triggerAutoSave();
 }
 
 window.setSession = function (session) {
-    tempSettings.session = session;
+    state.settings.session = session;
     updateSessionUI();
-
-    // Auto-fill the default date when switching sessions to guide the user
-    const year = document.getElementById('settings-year').value || tempSettings.targetYear || new Date().getFullYear();
+    const year = document.getElementById('settings-year').value || state.settings.targetYear || new Date().getFullYear();
     const defaultDate = session === 'Jan' ? `${year}-01-22` : `${year}-04-04`;
     document.getElementById('settings-jee-shift-date').value = defaultDate;
-
     updateTargetDateConfig();
-    markSettingsDirty();
+    triggerAutoSave();
 }
 
 function updateSessionUI() {
     const janBtn = document.getElementById('btn-session-jan'); const aprBtn = document.getElementById('btn-session-apr');
-    if (tempSettings.session === 'Jan') {
+    if (state.settings.session === 'Jan') {
         janBtn.classList.add('bg-brand-600', 'text-white', 'border-brand-600'); janBtn.classList.remove('bg-white', 'dark:bg-zinc-800', 'text-zinc-900', 'dark:text-white', 'border-brand-200', 'dark:border-brand-700');
         aprBtn.classList.remove('bg-brand-600', 'text-white', 'border-brand-600'); aprBtn.classList.add('bg-white', 'dark:bg-zinc-800', 'text-zinc-900', 'dark:text-white', 'border-brand-200', 'dark:border-brand-700');
     } else {
@@ -2039,51 +2182,130 @@ window.updateTargetDateConfig = function () {
     const year = document.getElementById('settings-year').value;
     let date = `${year}-01-01`;
 
-    if (tempSettings.examType === 'JEE Main') {
+    if (state.settings.examType === 'JEE Main') {
         const shiftInput = document.getElementById('settings-jee-shift-date').value;
-        if (shiftInput) {
-            date = shiftInput;
-        } else {
-            // Fallback if they somehow cleared the input
-            date = (tempSettings.session === 'Jan') ? `${year}-01-22` : `${year}-04-04`;
-        }
+        date = shiftInput ? shiftInput : ((state.settings.session === 'Jan') ? `${year}-01-22` : `${year}-04-04`);
     }
-    else if (tempSettings.examType === 'NEET') date = `${year}-05-05`;
-    else if (tempSettings.examType === 'JEE Advanced') date = `${year}-05-17`;
-    else if (tempSettings.examType === 'Custom') {
+    else if (state.settings.examType === 'NEET') date = `${year}-05-05`;
+    else if (state.settings.examType === 'JEE Advanced') date = `${year}-05-17`;
+    else if (state.settings.examType === 'Custom') {
         const m = document.getElementById('settings-custom-date').value;
         if (m) date = m;
     }
 
-    tempSettings.targetDate = date;
-    tempSettings.targetYear = parseInt(year);
+    state.settings.targetDate = date;
+    state.settings.targetYear = parseInt(year);
 }
-window.saveSettings = async function () {
-    if (!currentUser) return;
 
-    // Capture the new rollover time
-    tempSettings.dayRolloverHour = parseInt(document.getElementById('settings-rollover').value) || 0;
-    const rolloverChanged = state.settings.dayRolloverHour !== tempSettings.dayRolloverHour;
+// Ensure all toggles auto-save 
+window.toggleCountdownSetting = () => {
+    state.settings.showCountdown = !state.settings.showCountdown;
+    const isShown = state.settings.showCountdown;
+    const knob = document.getElementById('countdown-knob'); const toggle = document.getElementById('countdown-toggle');
+    if (isShown) { knob.style.transform = 'translateX(20px)'; toggle.className = "relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300"; } else { knob.style.transform = 'translateX(0)'; toggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300"; }
+    triggerAutoSave();
+}
 
-    tempSettings.bgUrl = document.getElementById('settings-bg-url').value;
-    updateTargetDateConfig();
+window.toggleTheme = () => {
+    state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
+    applyTheme(state.settings.theme);
+    triggerAutoSave();
+}
 
-    // Immediately merge into state.settings so UI re-renders instantly use the new values
-    state.settings = { ...state.settings, ...tempSettings };
+window.toggleLiteModeSetting = () => {
+    state.settings.liteMode = !state.settings.liteMode;
+    updateLiteModeToggleUI(state.settings.liteMode);
+    applyLiteMode(state.settings.liteMode);
+    triggerAutoSave();
+}
 
-    try {
-        await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), { ...state.settings, ...tempSettings });
-        resetSettingsDirty();
-        closeSettings();
-        showToast("Saved Settings");
-
-        // If they changed the rollover time, cleanly reload to reset all calendars and targets
-        if (rolloverChanged) {
-            setTimeout(() => window.location.reload(), 500);
-        }
+window.toggleSquadBGsSetting = function () {
+    if (state.settings.showSquadBGs === undefined) state.settings.showSquadBGs = true;
+    state.settings.showSquadBGs = !state.settings.showSquadBGs;
+    const bgKnob = document.getElementById('squadbgs-knob'); const bgToggle = document.getElementById('squadbgs-toggle');
+    if (bgKnob && bgToggle) {
+        if (state.settings.showSquadBGs) { bgKnob.style.transform = 'translateX(20px)'; bgToggle.className = "relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300"; }
+        else { bgKnob.style.transform = 'translateX(0)'; bgToggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300"; }
     }
-    catch (e) { console.error(e); }
+    triggerAutoSave();
 }
+
+window.toggleMusicSetting = function () {
+    if (state.settings.showMusic === undefined) state.settings.showMusic = true;
+    state.settings.showMusic = !state.settings.showMusic;
+    const mKnob = document.getElementById('music-knob'); const mToggle = document.getElementById('music-toggle');
+    if (mKnob && mToggle) {
+        if (state.settings.showMusic) { mKnob.style.transform = 'translateX(20px)'; mToggle.className = "relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300"; }
+        else { mKnob.style.transform = 'translateX(0)'; mToggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300"; }
+    }
+    triggerAutoSave();
+}
+
+window.toggleShareTasksSetting = function () {
+    if (state.settings.shareTasks === undefined) state.settings.shareTasks = true;
+    state.settings.shareTasks = !state.settings.shareTasks;
+    const knob = document.getElementById('sharetasks-knob'); const toggle = document.getElementById('sharetasks-toggle');
+    if (state.settings.shareTasks) {
+        knob.style.transform = 'translateX(20px)'; toggle.className = "relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300";
+        syncMySocialTasks();
+    } else {
+        knob.style.transform = 'translateX(0)'; toggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300";
+        updateDoc(doc(db, 'artifacts', appId, 'socialProfiles', currentUser.uid), { shareTasks: false, tasks: [] }).catch(e => e);
+    }
+    triggerAutoSave();
+}
+
+window.initSettingsView = () => {
+    // Populate inputs from live state (no more tempSettings)
+    setAccentTheme(state.settings.accentTheme || 'default');
+
+    const bgInput = document.getElementById('settings-bg-url');
+    if (bgInput) bgInput.value = state.settings.bgUrl || '';
+
+    const yearSelect = document.getElementById('settings-year');
+    if (yearSelect) yearSelect.value = state.settings.targetYear || 2026;
+
+    const rolloverSelect = document.getElementById('settings-rollover');
+    if (rolloverSelect) rolloverSelect.value = state.settings.dayRolloverHour || 0;
+
+    if (state.settings.examType === 'Custom') {
+        const customDateContainer = document.getElementById('custom-date-container');
+        const customDateInput = document.getElementById('settings-custom-date');
+        if (customDateContainer) customDateContainer.classList.remove('hidden');
+        if (customDateInput) customDateInput.value = state.settings.targetDate || '';
+    } else {
+        const customDateContainer = document.getElementById('custom-date-container');
+        if (customDateContainer) customDateContainer.classList.add('hidden');
+    }
+
+    if (state.settings.examType === 'JEE Main') {
+        const shiftDateInput = document.getElementById('settings-jee-shift-date');
+        if (shiftDateInput) shiftDateInput.value = state.settings.targetDate || '';
+    }
+
+    setExamType(state.settings.examType || 'JEE Main');
+
+    // Toggles initialization
+    const setupToggle = (settingVal, knobId, toggleId, defaultVal = true) => {
+        const val = settingVal !== undefined ? settingVal : defaultVal;
+        const knob = document.getElementById(knobId);
+        const toggle = document.getElementById(toggleId);
+        if (knob && toggle) {
+            if (val) { knob.style.transform = 'translateX(20px)'; toggle.className = "relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300"; }
+            else { knob.style.transform = 'translateX(0)'; toggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300"; }
+        }
+    };
+
+    setupToggle(state.settings.showCountdown, 'countdown-knob', 'countdown-toggle');
+    setupToggle(state.settings.shareTasks, 'sharetasks-knob', 'sharetasks-toggle');
+    setupToggle(state.settings.showMusic, 'music-knob', 'music-toggle');
+    setupToggle(state.settings.showSquadBGs, 'squadbgs-knob', 'squadbgs-toggle');
+
+    renderSubjectColorSettings();
+    updateLiteModeToggleUI(state.settings.liteMode);
+}
+
+
 window.updateTaskScore = async function (id, type, value) {
     if (!currentUser) return;
     const numVal = value === "" ? null : parseInt(value); const updateData = {};
@@ -2620,6 +2842,7 @@ window.switchView = function (view) {
     if (view === 'syllabus') renderSyllabusView();
     if (view === 'squad') renderSquadView();
     if (view === 'timer') { updateSubjectSelectors(); updateTimerTaskSelector(); updateTimerStats(); renderRecentLogs(); renderTimerChart(); }
+    if (view === 'settings') initSettingsView();
 
     if (typeof updateMiniTimerVisibility === 'function') updateMiniTimerVisibility();
 }
@@ -3137,136 +3360,6 @@ function renderCountdown() {
 
 function getLocalISODate(d) { const z = d.getTimezoneOffset() * 60000; return new Date(d.getTime() - z).toISOString().split('T')[0]; }
 function showToast(msg) { const t = document.getElementById('toast'); document.getElementById('toast-msg').innerText = msg; t.classList.remove('opacity-0', 'translate-y-[-20px]', 'md:translate-y-4'); setTimeout(() => t.classList.add('opacity-0', 'translate-y-[-20px]', 'md:translate-y-4'), 3000); }
-window.openSettings = () => {
-    tempSettings = { ...state.settings };
-    setAccentTheme(tempSettings.accentTheme || state.settings.accentTheme || 'default');
-    document.getElementById('settings-bg-url').value = tempSettings.bgUrl || '';
-    document.getElementById('settings-year').value = tempSettings.targetYear || 2026;
-    document.getElementById('settings-rollover').value = tempSettings.dayRolloverHour || 0;
-
-    // Load the custom date into the input field BEFORE setting the exam type
-    if (tempSettings.examType === 'Custom') {
-        document.getElementById('custom-date-container').classList.remove('hidden');
-        document.getElementById('settings-custom-date').value = tempSettings.targetDate || '';
-    } else {
-        document.getElementById('custom-date-container').classList.add('hidden');
-    }
-
-    // Load the JEE Shift Date if they already set it
-    if (tempSettings.examType === 'JEE Main') {
-        document.getElementById('settings-jee-shift-date').value = tempSettings.targetDate || '';
-    }
-
-    // Now it is safe to set the exam type (which reads the input field we just populated)
-    setExamType(tempSettings.examType || 'JEE Main');
-
-    const isShown = tempSettings.showCountdown !== false;
-    const knob = document.getElementById('countdown-knob');
-    const toggle = document.getElementById('countdown-toggle');
-
-    if (tempSettings.shareTasks === undefined) tempSettings.shareTasks = true;
-    const sKnob = document.getElementById('sharetasks-knob');
-    const sToggle = document.getElementById('sharetasks-toggle');
-    if (sKnob && sToggle) {
-        if (tempSettings.shareTasks) { sKnob.style.transform = 'translateX(20px)'; sToggle.className = "relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300"; }
-        else { sKnob.style.transform = 'translateX(0)'; sToggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300"; }
-    }
-
-    if (isShown) { knob.style.transform = 'translateX(20px)'; toggle.className = "relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300"; } else { knob.style.transform = 'translateX(0)'; toggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300"; }
-
-    if (tempSettings.showMusic === undefined) tempSettings.showMusic = true;
-    const mKnob = document.getElementById('music-knob');
-    const mToggle = document.getElementById('music-toggle');
-    if (mKnob && mToggle) {
-        if (tempSettings.showMusic) {
-            mKnob.style.transform = 'translateX(20px)';
-            mToggle.className = "relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300";
-        } else {
-            mKnob.style.transform = 'translateX(0)';
-            mToggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300";
-        }
-    }
-
-    // Setup Squad BGs toggle
-    if (tempSettings.showSquadBGs === undefined) tempSettings.showSquadBGs = true;
-    const bgKnob = document.getElementById('squadbgs-knob');
-    const bgToggle = document.getElementById('squadbgs-toggle');
-    if (bgKnob && bgToggle) {
-        if (tempSettings.showSquadBGs) {
-            bgKnob.style.transform = 'translateX(20px)';
-            bgToggle.className = "relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300";
-        } else {
-            bgKnob.style.transform = 'translateX(0)';
-            bgToggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300";
-        }
-    }
-
-    resetSettingsDirty();
-    renderSubjectColorSettings();
-    updateLiteModeToggleUI(tempSettings.liteMode);
-    applyTheme(tempSettings.theme || 'light');
-
-    const modal = document.getElementById('settings-modal');
-    modal.classList.remove('hidden');
-    setTimeout(() => { modal.classList.remove('opacity-0'); modal.querySelector('.mobile-sheet').classList.add('open'); }, 10);
-}
-
-window.closeSettings = () => { if (state.settings.theme) applyTheme(state.settings.theme); applyAccentTheme(state.settings.accentTheme || 'default'); const modal = document.getElementById('settings-modal'); modal.querySelector('.mobile-sheet').classList.remove('open'); modal.classList.add('opacity-0'); setTimeout(() => modal.classList.add('hidden'), 400); }
-
-window.toggleCountdownSetting = () => {
-    tempSettings.showCountdown = !tempSettings.showCountdown; const isShown = tempSettings.showCountdown; const knob = document.getElementById('countdown-knob'); const toggle = document.getElementById('countdown-toggle');
-    if (isShown) { knob.style.transform = 'translateX(20px)'; toggle.className = "relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300"; } else { knob.style.transform = 'translateX(0)'; toggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300"; }
-    markSettingsDirty();
-}
-
-window.toggleTheme = () => { const currentTheme = tempSettings.theme || state.settings.theme || 'light'; const newTheme = currentTheme === 'dark' ? 'light' : 'dark'; tempSettings.theme = newTheme; applyTheme(newTheme); markSettingsDirty(); }
-
-window.applyLiteMode = function (isLite) {
-    if (isLite) {
-        document.documentElement.classList.add('lite-mode');
-    } else {
-        document.documentElement.classList.remove('lite-mode');
-    }
-}
-
-window.toggleLiteModeSetting = () => {
-    tempSettings.liteMode = !tempSettings.liteMode;
-    updateLiteModeToggleUI(tempSettings.liteMode);
-    applyLiteMode(tempSettings.liteMode); // Preview immediately
-    markSettingsDirty();
-}
-
-window.toggleSquadBGsSetting = function () {
-    if (tempSettings.showSquadBGs === undefined) tempSettings.showSquadBGs = true;
-    tempSettings.showSquadBGs = !tempSettings.showSquadBGs;
-
-    const bgKnob = document.getElementById('squadbgs-knob');
-    const bgToggle = document.getElementById('squadbgs-toggle');
-    if (bgKnob && bgToggle) {
-        if (tempSettings.showSquadBGs) {
-            bgKnob.style.transform = 'translateX(20px)';
-            bgToggle.className = "relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300";
-        } else {
-            bgKnob.style.transform = 'translateX(0)';
-            bgToggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300";
-        }
-    }
-    markSettingsDirty();
-}
-
-
-function updateLiteModeToggleUI(isLite) {
-    const knob = document.getElementById('litemode-knob');
-    const toggle = document.getElementById('litemode-toggle');
-    if (!knob || !toggle) return;
-    if (isLite) {
-        knob.style.transform = 'translateX(20px)';
-        toggle.className = "relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300";
-    } else {
-        knob.style.transform = 'translateX(0)';
-        toggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300";
-    }
-}
 
 // --- KEYBOARD & TOUCH ---
 function setupKeyboardShortcuts() {
@@ -3278,7 +3371,7 @@ function setupKeyboardShortcuts() {
             case 'ArrowLeft': if (isModalOpen) return; if (state.currentView === 'calendar') { changeMonth(-1); showToast('Prev Month'); } else if (state.currentView === 'weekly') { changeWeek(-1); showToast('Prev Week'); } else if (state.currentView === 'timer') { changeTimerChartWeek(-1); showToast('Prev Week'); } break;
             case 'n': case 'N': if (isModalOpen) return; e.preventDefault(); if (window.innerWidth < 768) openAddTaskModal(); else document.getElementById('task-input').focus(); break;
             case 't': case 'T': if (isModalOpen) return; goToToday(); showToast('Today'); break;
-            case 'Escape': if (!document.getElementById('add-task-modal').classList.contains('hidden')) closeAddTaskModal(); if (!document.getElementById('settings-modal').classList.contains('hidden')) closeSettings(); if (!document.getElementById('day-view-modal').classList.contains('hidden')) closeDayView(); if (!document.getElementById('custom-subject-modal').classList.contains('hidden')) closeCustomSubjectModal(); if (!document.getElementById('manual-log-modal').classList.contains('hidden')) closeManualLogModal(); if (!document.getElementById('edit-mock-modal') && !document.getElementById('edit-mock-modal')?.classList.contains('hidden')) closeEditMockModal(); break;
+            case 'Escape': if (!document.getElementById('add-task-modal').classList.contains('hidden')) closeAddTaskModal(); if (!document.getElementById('settings-modal').classList.contains('hidden')); if (!document.getElementById('day-view-modal').classList.contains('hidden')) closeDayView(); if (!document.getElementById('custom-subject-modal').classList.contains('hidden')) closeCustomSubjectModal(); if (!document.getElementById('manual-log-modal').classList.contains('hidden')) closeManualLogModal(); if (!document.getElementById('edit-mock-modal') && !document.getElementById('edit-mock-modal')?.classList.contains('hidden')) closeEditMockModal(); break;
             case '1': switchView('calendar'); showToast('Planner'); break; case '2': switchView('weekly'); showToast('Targets'); break; case '3': switchView('timer'); showToast('Timer'); break; case '4': switchView('stats-mocks'); showToast('Stats'); break; case '5': switchView('syllabus'); showToast('Syllabus'); break;
         }
     });
@@ -3304,7 +3397,7 @@ function setupTouchGestures() {
         sheet.addEventListener('touchend', (e) => { if (startY === -1) return; const diff = currentY - startY; sheet.style.transform = ''; if (diff > 100) { closeFn(); } else { sheet.classList.add('open'); } startY = -1; currentY = 0; });
     }
 
-    attachSwipeDown('add-task-modal', closeAddTaskModal); attachSwipeDown('day-view-modal', closeDayView); attachSwipeDown('settings-modal', closeSettings);
+    attachSwipeDown('add-task-modal', closeAddTaskModal); attachSwipeDown('day-view-modal', closeDayView);
 }
 
 
@@ -4399,6 +4492,30 @@ window.unblockUser = async (friendUid, friendName) => {
 };
 
 // 4. Render the Squad UI
+
+window.squadShowOnlyFocusing = false;
+
+window.toggleSquadFocusFilter = function () {
+    squadShowOnlyFocusing = !squadShowOnlyFocusing;
+
+    const btn = document.getElementById('squad-focus-filter-btn');
+    const dot = document.getElementById('squad-focus-filter-dot');
+
+    if (squadShowOnlyFocusing) {
+        btn.classList.add('text-rose-600', 'dark:text-rose-400', 'bg-rose-50', 'dark:bg-rose-500/10', 'border-rose-200', 'dark:border-rose-500/20');
+        btn.classList.remove('text-zinc-500', 'dark:text-zinc-400', 'bg-zinc-100', 'dark:bg-zinc-800', 'border-zinc-200', 'dark:border-zinc-700');
+        dot.classList.add('bg-rose-500', 'animate-pulse');
+        dot.classList.remove('bg-zinc-400');
+    } else {
+        btn.classList.remove('text-rose-600', 'dark:text-rose-400', 'bg-rose-50', 'dark:bg-rose-500/10', 'border-rose-200', 'dark:border-rose-500/20');
+        btn.classList.add('text-zinc-500', 'dark:text-zinc-400', 'bg-zinc-100', 'dark:bg-zinc-800', 'border-zinc-200', 'dark:border-zinc-700');
+        dot.classList.remove('bg-rose-500', 'animate-pulse');
+        dot.classList.add('bg-zinc-400');
+    }
+
+    if (typeof renderSquadView === 'function') renderSquadView();
+}
+
 window.renderSquadView = function () {
     const grid = document.getElementById('squad-grid');
     if (!grid) return;
@@ -4430,7 +4547,12 @@ window.renderSquadView = function () {
 
     displayList.push(...sortedSquad);
 
-    displayList.forEach(friend => {
+    let finalDisplayList = displayList;
+    if (squadShowOnlyFocusing) {
+        finalDisplayList = finalDisplayList.filter(user => user.isStudying || user.isMe);
+    }
+
+    finalDisplayList.forEach(friend => {
 
         if (friend.isMe && state.settings) {
             friend.bannerTheme = state.settings.bannerTheme ?? friend.bannerTheme;
@@ -4634,34 +4756,60 @@ window.renderSquadView = function () {
 
         // --- VIP / ROLE CONFIGURATION ---
         const VIP_USERS = {
-            "KLh2R14NZCZinFvgCm6DtzghkBf2": { role: "DEV", icon: "zap" },
-            // "TEMPLATE": { role: "Beta Tester", icon: "beaker" }
+            // Added 'isDev' flag to make this specific user supreme
+            "KLh2R14NZCZinFvgCm6DtzghkBf2": { role: "DEV", icon: "zap", isDev: true },
         };
 
-        // Check database first, then fallback to hardcoded list
-        const databaseRole = friend.role;
-        const databaseIcon = friend.roleIcon;
         const vip = VIP_USERS[friend.uid];
+        const isDev = vip && vip.isDev;
 
-        const activeRole = databaseRole || (vip ? vip.role : null);
-        const activeIcon = databaseIcon || (vip ? vip.icon : 'crown');
+        // DEV user overrides everything. Otherwise, use database role, then fallback to standard VIP.
+        const activeRole = isDev ? vip.role : (friend.role || (vip ? vip.role : null));
+        const activeIcon = isDev ? vip.icon : (friend.roleIcon || (vip ? vip.icon : 'crown'));
 
-        let cardClasses = "glass-card p-0 rounded-[2rem] border relative overflow-hidden flex flex-col transition-all duration-500 hover:-translate-y-1 ";
-
+        let cardClasses = "glass-card p-0 rounded-[2rem] border relative flex flex-col transition-all duration-500 hover:-translate-y-1 ";
         let devBadge = '';
 
         if (activeRole) {
-            cardClasses += " border-brand-500 shadow-[0_0_35px_-10px_rgba(139,92,246,0.4)] hover:shadow-[0_0_50px_-10px_rgba(139,92,246,0.6)] ring-1 ring-brand-500/50 z-10";
-
             premiumBannerFx = `<div class="absolute inset-0 bg-gradient-to-r from-brand-500/20 via-fuchsia-500/20 to-brand-500/20 animate-pulse pointer-events-none z-10 mix-blend-overlay"></div>`;
 
-            devBadge = `
-                <span class="ml-2 relative group cursor-default shrink-0 inline-flex mt-0.5">
-                    <span class="absolute inset-0 bg-gradient-to-r from-brand-500 to-fuchsia-500 rounded-full blur-sm opacity-60 group-hover:opacity-100 transition duration-500"></span>
-                    <span class="relative inline-flex items-center gap-1 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border border-zinc-700 dark:border-zinc-200 shadow-sm">
+            let badgeHtml = '';
+            let tooltipHtml = '';
+
+            if (isDev) {
+                // 🌟 SPECIAL DEV BADGE (Gradient background, glowing shadow, amber icon)
+                badgeHtml = `
+                    <span class="relative inline-flex items-center gap-1 bg-gradient-to-r from-brand-600 to-fuchsia-600 text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border border-white/20 shadow-[0_0_15px_rgba(139,92,246,0.6)] cursor-help">
+                        <i data-lucide="${activeIcon}" class="w-3 h-3 text-amber-300 fill-current"></i> ${activeRole}
+                    </span>
+                `;
+                tooltipHtml = `
+                    <p class="text-brand-300 mb-1 uppercase tracking-tighter">Creator</p>
+                    Developer of ChaosPrep.
+                `;
+            } else {
+                // 🛡️ STANDARD BADGE
+                badgeHtml = `
+                    <span class="relative inline-flex items-center gap-1 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border border-zinc-700 dark:border-zinc-200 shadow-sm cursor-help">
                         <i data-lucide="${activeIcon}" class="w-3 h-3 text-brand-400 dark:text-brand-600 fill-current"></i> ${activeRole}
                     </span>
-                </span>
+                `;
+                tooltipHtml = `
+                    <p class="text-zinc-500 mb-1 uppercase tracking-tighter">Exclusive Squad Badge</p>
+                    Join <a href="https://discord.gg/mKXPpSY6Dz" target="_blank" class="text-brand-400 underline hover:text-brand-300">Discord</a> to request!
+                `;
+            }
+
+            devBadge = `
+                <div class="relative group inline-flex items-center ml-2 shrink-0">
+                    ${badgeHtml}
+                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 pb-2 w-48 pointer-events-none group-hover:pointer-events-auto opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-y-1 group-hover:translate-y-0 z-[999]">
+                        <div class="relative bg-zinc-900 dark:bg-zinc-800 text-white p-3 rounded-2xl text-[10px] text-center shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-zinc-700/50 leading-snug font-bold">
+                            ${tooltipHtml}
+                            <div class="absolute h-2 w-2 bg-zinc-900 dark:bg-zinc-800 rotate-45 left-1/2 -translate-x-1/2 -bottom-[5px] border-b border-r border-zinc-700/50"></div>
+                        </div>
+                    </div>
+                </div>
             `;
         } else {
             cardClasses += " border-zinc-200/80 dark:border-zinc-800 shadow-sm hover:shadow-md";
@@ -4675,8 +4823,8 @@ window.renderSquadView = function () {
             <div class="${contentPaddingClass} px-6 pb-6 flex flex-col flex-1">
                 <div class="flex justify-between items-start mb-2 gap-2">
                     <div class="min-w-0 flex-1">
-                        <h3 class="font-black text-xl text-zinc-900 dark:text-white tracking-tight leading-none mb-2 truncate flex items-center">
-                            ${displayName} ${devBadge}
+                        <h3 class="font-black text-xl text-zinc-900 dark:text-white tracking-tight leading-none mb-2 flex items-center min-w-0">
+                            <span class="truncate">${displayName}</span> ${devBadge}
                         </h3>
                         ${quoteHtml}
                         <div class="flex flex-wrap items-center gap-2 mb-4">
@@ -4712,8 +4860,10 @@ window.renderSquadView = function () {
         grid.appendChild(card);
     });
 
-    // 7. EMPTY STATE HANDLING
+    const visibleFriends = finalDisplayList.filter(user => !user.isMe);
+
     if (state.squad.length === 0) {
+        // True empty state (No friends added at all)
         grid.innerHTML += `
             <div class="glass-card p-8 rounded-[2.5rem] border-2 border-dashed border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col items-center justify-center text-center bg-transparent min-h-[250px] col-span-full md:col-span-1">
                 <div class="w-16 h-16 bg-brand-50 dark:bg-brand-900/20 text-brand-500 rounded-full flex items-center justify-center mb-4 shadow-inner-light">
@@ -4729,9 +4879,26 @@ window.renderSquadView = function () {
                     <span>Copy Invite Link</span>
                 </button>
             </div>`;
+    } else if (window.squadShowOnlyFocusing && visibleFriends.length === 0) {
+        // Filter is ON, but no FRIENDS are studying (Only you are visible)
+        grid.innerHTML += `
+            <div class="glass-card p-8 rounded-[2.5rem] border-2 border-dashed border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col items-center justify-center text-center bg-transparent min-h-[250px] col-span-full md:col-span-1">
+                <div class="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 rounded-full flex items-center justify-center mb-4 shadow-inner-light">
+                    <i data-lucide="moon" class="w-8 h-8"></i>
+                </div>
+                <h3 class="text-lg font-black text-zinc-900 dark:text-white mb-2 tracking-tight">All Quiet</h3>
+                <p class="text-sm text-zinc-500 dark:text-zinc-400 max-w-xs mb-6 font-medium leading-relaxed">
+                    Nobody in your squad is currently focusing. Time to take the lead.
+                </p>
+                <button onclick="switchView('timer')" 
+                    class="flex items-center justify-center gap-2 px-6 py-3.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-bold transition-all active:scale-95 shadow-floating">
+                    <i data-lucide="play" class="w-4 h-4"></i>
+                    <span>Start Session</span>
+                </button>
+            </div>`;
     }
 
-    lucide.createIcons();
+    if (window.lucide) window.lucide.createIcons();
 }
 
 
@@ -5713,9 +5880,6 @@ if (_musicWidget) _musicWidget.style.display = 'none';
 // ==========================================
 window.openProfileModal = () => {
     if (!currentUser) return;
-    
-    // Copy active state so temporary clicks don't override settings if cancelled
-    tempSettings = { ...state.settings };
 
     // Safely pull variables from either the social profile or private config
     const bTheme = state.myProfile?.bannerTheme ?? state.settings?.bannerTheme ?? 'default';
@@ -5728,7 +5892,7 @@ window.openProfileModal = () => {
     document.getElementById('profile-name-input').value = dName;
     document.getElementById('profile-quote-input').value = pQuote;
     document.getElementById('profile-banner-url').value = bUrl;
-    
+
     // Visually update the button rings inside the modal
     window.setBannerTheme(bTheme);
     window.setAvatarShape(aShape);
@@ -5736,12 +5900,11 @@ window.openProfileModal = () => {
     // Open Modal
     const modal = document.getElementById('profile-modal');
     modal.classList.remove('hidden');
-    setTimeout(() => { 
-        modal.classList.remove('opacity-0'); 
-        modal.querySelector('div').classList.replace('scale-95', 'scale-100'); 
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        modal.querySelector('div').classList.replace('scale-95', 'scale-100');
     }, 10);
 };
-
 window.closeProfileModal = () => {
     const modal = document.getElementById('profile-modal');
     modal.classList.add('opacity-0');
@@ -5751,7 +5914,7 @@ window.closeProfileModal = () => {
 
 window.saveProfileSettings = async () => {
     if (!currentUser) return;
-    
+
     const btn = document.getElementById('save-profile-btn');
     const ogHtml = btn.innerHTML;
     btn.innerHTML = `<div class="btn-spinner border-zinc-400 border-t-zinc-900 dark:border-t-white"></div>`;
@@ -5761,10 +5924,11 @@ window.saveProfileSettings = async () => {
     const newName = document.getElementById('profile-name-input').value.trim();
     const newQuote = document.getElementById('profile-quote-input').value.trim();
     const bannerUrlInput = document.getElementById('profile-banner-url').value.trim();
-    const safeBannerUrl = isValidImageUrl(bannerUrlInput) ? bannerUrlInput : null;
-    
-    const bTheme = tempSettings.bannerTheme ?? state.myProfile?.bannerTheme ?? 'default';
-    const aShape = tempSettings.avatarShape ?? state.myProfile?.avatarShape ?? 'circle';
+    const safeBannerUrl = window.isValidImageUrl(bannerUrlInput) ? bannerUrlInput : null;
+
+    // Read directly from the live state instead of tempSettings
+    const bTheme = state.settings?.bannerTheme ?? state.myProfile?.bannerTheme ?? 'default';
+    const aShape = state.settings?.avatarShape ?? state.myProfile?.avatarShape ?? 'circle';
 
     const updates = {
         name: newName || "Aspirant",
@@ -5777,64 +5941,80 @@ window.saveProfileSettings = async () => {
     try {
         // 1. Publish to public squad system
         await updateDoc(doc(db, 'artifacts', appId, 'socialProfiles', currentUser.uid), updates);
-        
+
         // 2. Persist to private config
         await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), updates);
-        
+
         // 3. Update local states
         if (state.myProfile) state.myProfile = { ...state.myProfile, ...updates };
         state.settings = { ...state.settings, ...updates };
-        
+
         // 4. Update the UI
         myDisplayName = updates.name;
         const desktopNameEl = document.getElementById('user-name-desktop');
         if (desktopNameEl) desktopNameEl.innerText = updates.name;
-        
+
         if (state.currentView === 'squad') renderSquadView();
-        
+
         showToast("Profile Updated");
-        closeProfileModal();
+        window.closeProfileModal();
     } catch (e) {
         console.error(e);
         showToast("Failed to update profile");
     }
-    
+
     btn.innerHTML = ogHtml;
     btn.disabled = false;
 };
 
 // --- SPACIOUS SCROLLING FOOTER INJECTOR ---
+// --- SPACIOUS SCROLLING FOOTER INJECTOR ---
 function injectGlobalFooters() {
     const globalFooterHTML = `
-    <footer class="shrink-0 w-full bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-xl border-t border-zinc-200/80 dark:border-zinc-800/80 p-3 md:px-8 flex flex-col sm:flex-row justify-between items-center gap-3 z-40">
-            <div class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
-                © 2026 SVAL.TECH — ALL RIGHTS RESERVED
+    <div class="w-full flex flex-col items-center gap-4 mt-12 mb-6 px-4">
+        <!-- New Centered Pill Footer with Integrated Partner Link -->
+        <footer class="shrink-0 w-auto max-w-full bg-white/60 dark:bg-[#09090b]/60 backdrop-blur-xl border border-zinc-200/80 dark:border-zinc-800/80 p-2 md:px-3 rounded-full flex flex-col sm:flex-row items-center gap-3 z-40 shadow-md dark:shadow-floating-dark">
+            
+            <!-- Left Side: Copyright -->
+            <div class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest px-2 whitespace-nowrap">
+                © 2026 SVAL.TECH
             </div>
-            <div class="flex items-center gap-6">
+
+            <!-- Center Divider -->
+            <div class="w-px h-4 bg-zinc-200 dark:bg-zinc-700 hidden sm:block"></div>
+
+            <!-- Middle: Partner Link (Subtle) -->
+            <a href="https://alphajee.online" target="_blank" rel="noopener noreferrer" 
+               class="group flex items-center gap-1.5 px-2 py-1 rounded-full transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800/50">
+                <span class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Partner:</span>
+                <img class="h-4 object-contain opacity-70 group-hover:opacity-100 transition-opacity" alt="AlphaJEE" src="https://jtestify.alphajee.online/alphajee.png">
+                <span class="text-[9px] font-bold text-zinc-500 dark:text-zinc-400 group-hover:text-brand-500 transition-colors">AlphaJEE</span>
+            </a>
+
+            <!-- Right Divider -->
+            <div class="w-px h-4 bg-zinc-200 dark:bg-zinc-700 hidden sm:block"></div>
+
+            <!-- Right Side: Social Links -->
+            <div class="flex items-center gap-4 px-1">
                 <a href="https://discord.gg/mKXPpSY6Dz" target="_blank" class="text-[10px] font-bold text-zinc-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors uppercase tracking-widest flex items-center gap-1.5">
-                    <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Discord
+                    <i data-lucide="message-square" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">Discord</span>
                 </a>
                 <a href="https://github.com/svalordev" target="_blank" class="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors uppercase tracking-widest flex items-center gap-1.5">
-                    <i data-lucide="github" class="w-3.5 h-3.5"></i> GitHub
+                    <i data-lucide="github" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">GitHub</span>
                 </a>
             </div>
         </footer>
+    </div>
     `;
 
-    // Select the scrollable wrapper for every view in the app
     const scrollableViews = document.querySelectorAll(
         '#calendar-scroll-area, #view-container-weekly > .overflow-y-auto, #view-container-timer > .overflow-y-auto, #view-container-stats-mocks, #view-container-stats-errors, #view-container-stats-questions, #view-container-syllabus > .overflow-y-auto, #view-container-squad > .overflow-y-auto'
     );
-
-    // Append the footer to the bottom of each view's scrollable flow
     scrollableViews.forEach(view => {
-        // Safety check to prevent duplicating footers if this runs twice
         if (!view.querySelector('footer')) {
             view.insertAdjacentHTML('beforeend', globalFooterHTML);
         }
     });
-
-    // Render the lucide icons for the newly injected footers
     if (window.lucide) {
         window.lucide.createIcons();
     }
@@ -5845,6 +6025,55 @@ if (document.readyState === 'loading') {
     document.addEventListener("DOMContentLoaded", injectGlobalFooters);
 } else {
     injectGlobalFooters();
+}
+
+window.handleResetAllData = async function () {
+    if (!currentUser) return;
+
+    // Use your existing premium confirmation dialog
+    const isSure = await customConfirm(
+        "Are you absolutely sure? Every single task, log, and progress marker will be wiped forever.",
+        "Nuclear Reset",
+        true, // Danger mode (red styling)
+        "Yes, Wipe Everything"
+    );
+
+    if (!isSure) return;
+
+    try {
+        showToast("Starting total reset...");
+        const collections = ['tasks', 'weeklyTargets', 'studyLogs', 'errorLogs', 'questionLogs'];
+        const batch = writeBatch(db);
+
+        // 1. Clear main collections
+        for (const colName of collections) {
+            const q = query(collection(db, 'artifacts', appId, 'users', currentUser.uid, colName));
+            const snap = await getDocs(q);
+            snap.forEach(doc => batch.delete(doc.ref));
+        }
+
+        // 2. Reset Syllabus Progress
+        const syllabusRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'syllabus', 'progress');
+        batch.set(syllabusRef, { status: {}, meta: {} });
+
+        // 3. Reset Settings to default
+        const settingsRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config');
+        batch.update(settingsRef, {
+            customSubjects: [],
+            subjectColors: {}
+        });
+
+        await batch.commit();
+
+        showToast("Account reset complete.");
+
+        // Reload the app to clear local state and trigger fresh renders
+        setTimeout(() => window.location.reload(), 1500);
+
+    } catch (e) {
+        console.error("Reset failed:", e);
+        showToast("Error during reset.");
+    }
 }
 
 initAuth(); lucide.createIcons();
