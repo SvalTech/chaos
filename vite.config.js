@@ -11,7 +11,10 @@ export default defineConfig({
             input: {
                 // Define all your HTML entry points here
                 main: resolve(__dirname, 'index.html'),
-                documentation: resolve(__dirname, 'docs.html')
+                documentation: resolve(__dirname, 'docs.html'),
+                pp: resolve(__dirname, 'privacypolicy.html'),
+                toc: resolve(__dirname, 'termsandconditions.html'),
+                
             }
         }
     },

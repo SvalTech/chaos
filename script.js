@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, setDoc, onSnapshot, updateDoc, deleteDoc, arrayUnion, arrayRemove, writeBatch, query, where, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, setDoc, onSnapshot, updateDoc, deleteDoc, arrayUnion, arrayRemove, writeBatch, query, where, getDocs, getDoc, getCountFromServer } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 console.log("What you looking here at for? 🥀")
 
@@ -2565,79 +2565,141 @@ window.openAddMockFromStats = function () {
 window.renderMockStats = function () {
     const mockTasks = state.tasks.filter(t => t.subject === 'MockTest').sort((a, b) => new Date(a.date) - new Date(b.date));
     const scored = mockTasks.filter(t => t.marks !== undefined && t.marks !== null && t.marks !== "");
+
+    if (scored.length === 0) return;
+
     const marks = scored.map(t => parseInt(t.marks));
+    const maxMarksArray = scored.map(t => parseInt(t.maxMarks || 300));
 
-    const physicsData = scored.map(t => t.subjectMarks?.Physics || null); const chemData = scored.map(t => t.subjectMarks?.Chemistry || null); const mathsData = scored.map(t => t.subjectMarks?.Maths || null); const bioData = scored.map(t => t.subjectMarks?.Biology || null);
+    // Global max for graph scaling (accommodates 360 advanced tests)
+    const globalMax = Math.max(...maxMarksArray, 300);
+    const minScore = Math.min(...marks);
+    const maxScore = Math.max(...marks);
+    const total = scored.length;
 
-    const total = scored.length; const globalMax = scored.length > 0 ? Math.max(...scored.map(t => parseInt(t.maxMarks || 300))) : 300;
+    // Calculate Overall Accuracy
+    let totalAttempted = 0, totalCorrect = 0;
+    scored.forEach(t => {
+        if (t.attempted) totalAttempted += parseInt(t.attempted);
+        if (t.correct) totalCorrect += parseInt(t.correct);
+    });
+    const avgAccuracy = totalAttempted > 0 ? Math.round((totalCorrect / totalAttempted) * 100) : 0;
 
-    document.getElementById('stats-total-tests').innerText = total; document.getElementById('stats-avg-score').innerText = total ? Math.round(marks.reduce((a, b) => a + b, 0) / total) : 0;
-    document.getElementById('stats-max-score').innerText = total ? Math.max(...marks) : 0; document.getElementById('stats-last-5').innerText = marks.slice(-5).length ? Math.round(marks.slice(-5).reduce((a, b) => a + b, 0) / marks.slice(-5).length) : 0;
+    // Update Stats Cards
+    if (document.getElementById('stats-total-tests')) document.getElementById('stats-total-tests').innerText = total;
+    if (document.getElementById('stats-avg-score')) document.getElementById('stats-avg-score').innerText = Math.round(marks.reduce((a, b) => a + b, 0) / total);
+    if (document.getElementById('stats-max-score')) document.getElementById('stats-max-score').innerText = maxScore;
+    if (document.getElementById('stats-last-5')) document.getElementById('stats-last-5').innerText = marks.slice(-5).length ? Math.round(marks.slice(-5).reduce((a, b) => a + b, 0) / marks.slice(-5).length) : 0;
+    if (document.getElementById('stats-accuracy')) document.getElementById('stats-accuracy').innerText = avgAccuracy + '%';
 
-    const ctx = document.getElementById('mockChart'); if (mockChartInstance) mockChartInstance.destroy();
-    const datasets = [];
+    // Fetch dynamic Target Score
+    const targetInput = document.getElementById('mock-target-input');
+    const targetScore = targetInput ? parseInt(targetInput.value) : 200;
+    const targetData = scored.map(() => targetScore);
 
-    // 1. Refined Total Line (Added pointBorderWidth and pointHoverRadius for better interactivity)
-    datasets.push({
-        label: 'Total',
-        data: marks,
-        borderColor: '#7c3aed',
-        backgroundColor: (context) => {
-            const ctx = context.chart.ctx;
-            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-            gradient.addColorStop(0, 'rgba(124, 58, 237, 0.5)');
-            gradient.addColorStop(1, 'rgba(124, 58, 237, 0.0)');
-            return gradient;
-        },
-        borderWidth: 4,
-        pointBackgroundColor: state.settings.theme === 'dark' ? '#18181b' : '#ffffff',
-        pointBorderColor: '#7c3aed',
-        pointBorderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-        fill: true,
-        tension: 0.4,
-        hidden: false
+    const ctx = document.getElementById('mockChart');
+    if (mockChartInstance) mockChartInstance.destroy();
+
+    // Dynamically color highlight the Lowest and Highest scores for data points
+    const pointColors = marks.map(m => {
+        if (m === maxScore) return '#10b981'; // Emerald for Highest
+        if (m === minScore) return '#f43f5e'; // Rose for Lowest
+        return '#7c3aed'; // Brand Purple default
     });
 
+    const datasets = [];
+
+    // Layer 1: Target Line (Dashed)
+    datasets.push({
+        type: 'line',
+        label: 'Target Score',
+        data: targetData,
+        borderColor: '#f59e0b', // Amber
+        borderWidth: 2,
+        borderDash: [6, 6],
+        pointRadius: 0,
+        fill: false,
+        order: 1
+    });
+
+    // Layer 2: Obtained Score (Foreground Line)
+    datasets.push({
+        type: 'line',
+        label: 'Obtained Score',
+        data: marks,
+        borderColor: '#7c3aed', // Brand Purple line
+        borderWidth: 3,
+        backgroundColor: state.settings.theme === 'dark' ? 'rgba(124, 58, 237, 0.1)' : 'rgba(124, 58, 237, 0.05)',
+        fill: true, // Creates a subtle gradient area under the line
+        pointBackgroundColor: pointColors, // Applies the Min/Max highlights to the dots
+        pointBorderColor: state.settings.theme === 'dark' ? '#18181b' : '#ffffff',
+        pointBorderWidth: 2,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        tension: 0.3, // Smooth curve
+        order: 2
+    });
+
+    // Layer 3: Max Marks boundary (Background Area) - Visualizes varying exam types
+    datasets.push({
+        type: 'line',
+        label: 'Max Marks Boundary',
+        data: maxMarksArray,
+        borderColor: state.settings.theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+        borderWidth: 2,
+        backgroundColor: state.settings.theme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
+        fill: true,
+        pointRadius: 0,
+        stepped: 'middle',
+        order: 3
+    });
+
+    // Subject Tracking (Dynamically tied to user's set colors!)
+    const physicsData = scored.map(t => t.subjectMarks?.Physics || null);
+    const chemData = scored.map(t => t.subjectMarks?.Chemistry || null);
+    const mathsData = scored.map(t => t.subjectMarks?.Maths || null);
+    const bioData = scored.map(t => t.subjectMarks?.Biology || null);
+
     const subjectConfig = [
-        { label: 'Physics', data: physicsData, color: '#f43f5e' },
-        { label: 'Chemistry', data: chemData, color: '#f59e0b' },
-        { label: 'Maths', data: mathsData, color: '#3b82f6' },
-        { label: 'Biology', data: bioData, color: '#10b981' }
+        { label: 'Physics', data: physicsData, color: getSubjectColor('Physics').hex },
+        { label: 'Chemistry', data: chemData, color: getSubjectColor('Chemistry').hex },
+        { label: 'Maths', data: mathsData, color: getSubjectColor('Maths').hex },
+        { label: 'Biology', data: bioData, color: getSubjectColor('Biology').hex }
     ];
 
-    // 2. Upgraded Subject Lines
     subjectConfig.forEach(sub => {
         if (sub.data.some(d => d !== null)) {
             datasets.push({
+                type: 'line',
                 label: sub.label,
                 data: sub.data,
                 borderColor: sub.color,
-                backgroundColor: sub.color, // Keeps tooltip colors correct
-                borderWidth: 3, // Increased from 2 to 3 for better visibility
-                // borderDash: [6, 4] HAS BEEN REMOVED for clean, solid lines
-                pointBackgroundColor: state.settings.theme === 'dark' ? '#18181b' : '#ffffff', // Hollow center
-                pointBorderColor: sub.color, // Colored ring
+                backgroundColor: sub.color,
+                borderWidth: 3,
+                pointBackgroundColor: state.settings.theme === 'dark' ? '#18181b' : '#ffffff',
+                pointBorderColor: sub.color,
                 pointBorderWidth: 2,
                 pointRadius: 4,
-                pointHoverRadius: 6, // Expands smoothly on hover
+                pointHoverRadius: 6,
                 tension: 0.4,
-                hidden: true
+                hidden: true,
+                order: 0
             });
         }
     });
-    const gridColor = state.settings.theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'; const textColor = state.settings.theme === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
+
+    const gridColor = state.settings.theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+    const textColor = state.settings.theme === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
 
     mockChartInstance = new Chart(ctx, {
-        type: 'line',
         data: {
-            // CHANGED: Use the task text (test name) instead of the date for the x-axis labels
             labels: scored.map(t => t.text || 'Mock Test'),
             datasets: datasets
         },
         options: {
-            responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
             plugins: {
                 legend: { display: false },
                 tooltip: {
@@ -2647,25 +2709,44 @@ window.renderMockStats = function () {
                     borderColor: state.settings.theme === 'dark' ? '#27272a' : '#e4e4e7',
                     borderWidth: 1, padding: 16, titleFont: { size: 14, weight: 'bold', family: 'Inter' },
                     bodyFont: { size: 13, family: 'Inter' }, cornerRadius: 16, displayColors: true,
-                    usePointStyle: true, boxPadding: 6, filter: function (ti) { return ti.dataset.hidden !== true; },
-                    // CHANGED: Added custom tooltip title to show Test Name + Date on hover
+                    usePointStyle: true, boxPadding: 6,
                     callbacks: {
                         title: function (tooltipItems) {
                             const index = tooltipItems[0].dataIndex;
                             const test = scored[index];
                             const dateStr = new Date(test.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
                             return `${test.text || 'Mock Test'}  •  ${dateStr}`;
+                        },
+                        label: function (context) {
+                            let label = context.dataset.label || '';
+                            if (label) { label += ': '; }
+                            if (context.parsed.y !== null) { label += context.parsed.y; }
+
+                            // Dynamically calculate and append accuracy to the tooltip
+                            if (context.dataset.label === 'Obtained Score') {
+                                const test = scored[context.dataIndex];
+                                if (test.attempted && test.correct) {
+                                    const acc = Math.round((parseInt(test.correct) / parseInt(test.attempted)) * 100);
+                                    label += `  (Accuracy: ${acc}%)`;
+                                }
+                            }
+                            return label;
                         }
                     }
                 }
             },
             scales: {
-                y: { beginAtZero: true, max: globalMax, grid: { display: true, color: gridColor, drawBorder: false }, ticks: { font: { size: 11, family: 'Inter', weight: '600' }, color: textColor } },
+                y: {
+                    beginAtZero: true,
+                    max: globalMax,
+                    grid: { display: true, color: gridColor, drawBorder: false },
+                    ticks: { font: { size: 11, family: 'Inter', weight: '600' }, color: textColor }
+                },
                 x: {
-                    grid: { display: false, drawBorder: false }, ticks: {
+                    grid: { display: false, drawBorder: false },
+                    ticks: {
                         font: { size: 11, family: 'Inter', weight: '600' }, color: textColor,
-                        // Optional: Truncate super long names so the chart doesn't squish
-                        callback: function (value, index, values) {
+                        callback: function (value) {
                             const label = this.getLabelForValue(value);
                             return label.length > 15 ? label.substring(0, 15) + '...' : label;
                         }
@@ -2675,22 +2756,42 @@ window.renderMockStats = function () {
         }
     });
 
-    const filterContainer = document.getElementById('chart-filters'); filterContainer.innerHTML = '';
+    // Re-render Subject Filters correctly ignoring the core layers
+    const filterContainer = document.getElementById('chart-filters');
+    filterContainer.innerHTML = '';
     datasets.forEach((ds, index) => {
-        const btn = document.createElement('button'); const color = ds.borderColor; btn.className = `px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-2 select-none shadow-sm`;
+        if (['Target Score', 'Obtained Score', 'Max Marks Boundary'].includes(ds.label)) return;
+
+        const btn = document.createElement('button');
+        const color = ds.borderColor;
+        btn.className = `px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-2 select-none shadow-sm`;
+
         const updateBtnStyle = () => {
-            const isVisible = mockChartInstance.isDatasetVisible(index); if (isVisible) { btn.style.backgroundColor = color; btn.style.borderColor = color; btn.style.color = '#fff'; btn.style.opacity = '1'; } else { btn.style.backgroundColor = 'transparent'; btn.style.borderColor = state.settings.theme === 'dark' ? '#27272a' : '#e4e4e7'; btn.style.color = state.settings.theme === 'dark' ? '#71717a' : '#a1a1aa'; btn.style.opacity = '0.8'; }
+            const isVisible = mockChartInstance.isDatasetVisible(index);
+            if (isVisible) {
+                btn.style.backgroundColor = color;
+                btn.style.borderColor = color;
+                btn.style.color = '#fff';
+                btn.style.opacity = '1';
+            } else {
+                btn.style.backgroundColor = 'transparent';
+                btn.style.borderColor = state.settings.theme === 'dark' ? '#27272a' : '#e4e4e7';
+                btn.style.color = state.settings.theme === 'dark' ? '#71717a' : '#a1a1aa';
+                btn.style.opacity = '0.8';
+            }
             btn.innerHTML = `<span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${isVisible ? '#fff' : color}; border: 2px solid ${isVisible ? '#fff' : color}"></span> <span class="truncate">${ds.label}</span>`;
         };
-        btn.onclick = () => { mockChartInstance.setDatasetVisibility(index, !mockChartInstance.isDatasetVisible(index)); mockChartInstance.update(); updateBtnStyle(); };
-        updateBtnStyle(); filterContainer.appendChild(btn);
+        btn.onclick = () => {
+            mockChartInstance.setDatasetVisibility(index, !mockChartInstance.isDatasetVisible(index));
+            mockChartInstance.update();
+            updateBtnStyle();
+        };
+        updateBtnStyle();
+        filterContainer.appendChild(btn);
     });
 
-    // ... [Keep the Chart.js code above exactly as is] ...
-
+    // --- Render History Cards ---
     const list = document.getElementById('mock-history-list');
-
-    // OPTIMIZATION: Build a single HTML string instead of appending DOM nodes in a loop
     let historyHtml = '';
 
     [...mockTasks].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((t, index) => {
@@ -2701,43 +2802,40 @@ window.renderMockStats = function () {
         if (t.subjectMarks) {
             breakdownHtml = '<div class="flex flex-wrap gap-2 mt-3">';
             Object.entries(t.subjectMarks).forEach(([sub, score]) => {
-                let colorClass = 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300';
-                if (sub === 'Physics') colorClass = 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 border-rose-200 dark:border-rose-900/50';
-                if (sub === 'Chemistry') colorClass = 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400 border-amber-200 dark:border-amber-900/50';
-                if (sub === 'Maths') colorClass = 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 border-blue-200 dark:border-blue-900/50';
-                if (sub === 'Biology') colorClass = 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50';
+                // Dynamically pull from your color palette system instead of hardcoding
+                const colorObj = getSubjectColor(sub);
+                const colorClass = state.settings.theme === 'dark' ? colorObj.dark : colorObj.light;
+
                 breakdownHtml += `<span class="text-[10px] font-black px-2.5 py-1 rounded-lg border ${colorClass} uppercase tracking-wider">${sub.substring(0, 3)}: ${score}</span>`;
             });
             breakdownHtml += '</div>';
         }
 
         historyHtml += `
-        <div class="stagger-item flex flex-col p-5 md:p-6 bg-white dark:bg-[#18181b] rounded-3xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm gap-4 relative overflow-hidden group hover:-translate-y-1 transition-transform" style="animation-delay: ${index * 60}ms">
-            <div class="flex justify-between items-start w-full relative z-10">
-                <div class="flex-1">
-                    <div class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 mb-1 uppercase tracking-widest">${formatDate(t.date)}</div>
-                    <div class="font-black text-lg text-zinc-900 dark:text-white tracking-tight">${t.text || 'Mock Test'}</div>
-                    ${breakdownHtml}
-                </div>
-                <div class="flex flex-col items-end gap-2">
-                    <div class="flex items-baseline gap-0.5">
-                        <span class="text-3xl font-black text-brand-600 dark:text-brand-400 tracking-tighter">${marksVal}</span>
-                        <span class="text-sm font-bold text-zinc-400">/${maxVal}</span>
+            <div class="stagger-item flex flex-col p-5 md:p-6 bg-white dark:bg-[#18181b] rounded-3xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm gap-4 relative overflow-hidden group hover:-translate-y-1 transition-transform" style="animation-delay: ${index * 60}ms">
+                <div class="flex justify-between items-start w-full relative z-10">
+                    <div class="flex-1">
+                        <div class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 mb-1 uppercase tracking-widest">${formatDate(t.date)}</div>
+                        <div class="font-black text-lg text-zinc-900 dark:text-white tracking-tight">${t.text || 'Mock Test'}</div>
+                        ${breakdownHtml}
                     </div>
-                    <div class="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                        <button onclick="requestDelete('task', '${t.id}')" class="text-xs font-bold text-rose-500 hover:text-rose-600 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1.5">
-                            <i data-lucide="trash-2" class="w-3 h-3"></i> Delete
-                        </button>
-                        <button onclick="openEditMockModal('${t.id}')" class="text-xs font-bold text-zinc-500 hover:text-brand-600 bg-zinc-100 dark:bg-zinc-800 hover:bg-brand-50 dark:hover:bg-brand-900/30 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1.5">
-                            <i data-lucide="edit-2" class="w-3 h-3"></i> Edit
-                        </button>
+                    <div class="flex flex-col items-end gap-2">
+                        <div class="flex items-baseline gap-0.5">
+                            <span class="text-3xl font-black text-brand-600 dark:text-brand-400 tracking-tighter">${marksVal}</span>
+                            <span class="text-sm font-bold text-zinc-400">/${maxVal}</span>
+                        </div>
+                        <div class="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                            <button onclick="requestDelete('task', '${t.id}')" class="text-xs font-bold text-rose-500 hover:text-rose-600 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1.5">
+                                <i data-lucide="trash-2" class="w-3 h-3"></i> Delete
+                            </button>
+                            <button onclick="openEditMockModal('${t.id}')" class="text-xs font-bold text-zinc-500 hover:text-brand-600 bg-zinc-100 dark:bg-zinc-800 hover:bg-brand-50 dark:hover:bg-brand-900/30 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1.5">
+                                <i data-lucide="edit-2" class="w-3 h-3"></i> Edit
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>`;
+            </div>`;
     });
-
-    // Inject the fully built string once
     list.innerHTML = historyHtml;
     lucide.createIcons();
 }
@@ -2759,18 +2857,68 @@ window.openEditMockModal = function (id) {
     });
     container.innerHTML = html;
 
-    document.getElementById('edit-mock-total').innerText = task.marks || '0';
+    // Properly inject the data into the new input fields
+    const totalInput = document.getElementById('edit-mock-total-input');
+    if (totalInput) totalInput.value = task.marks !== undefined && task.marks !== null ? task.marks : '';
+
+    const maxInput = document.getElementById('edit-mock-max');
+    if (maxInput) maxInput.value = task.maxMarks || (type === 'NEET' ? 720 : 300);
 
     const modal = document.getElementById('edit-mock-modal');
     modal.classList.remove('hidden');
     setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 window.calcEditMockTotal = function () {
     const inputs = document.querySelectorAll('.edit-mock-subject-input');
     let total = 0;
-    inputs.forEach(input => { const val = parseInt(input.value); if (!isNaN(val)) total += val; });
-    document.getElementById('edit-mock-total').innerText = total;
+    let hasValues = false;
+    inputs.forEach(input => {
+        const val = parseInt(input.value);
+        if (!isNaN(val)) {
+            total += val;
+            hasValues = true;
+        }
+    });
+
+    // Only auto-fill if the user is actually typing into the subject inputs
+    if (hasValues) {
+        const totalInput = document.getElementById('edit-mock-total-input');
+        if (totalInput) totalInput.value = total;
+    }
+}
+
+window.saveMockBreakdown = async function () {
+    const id = document.getElementById('edit-mock-id').value;
+    const inputs = document.querySelectorAll('.edit-mock-subject-input');
+    let subjectMarks = {};
+
+    inputs.forEach(input => {
+        const sub = input.dataset.subject;
+        const val = parseInt(input.value);
+        if (!isNaN(val)) { subjectMarks[sub] = val; }
+    });
+
+    const totalInput = document.getElementById('edit-mock-total-input');
+    const maxInput = document.getElementById('edit-mock-max');
+
+    const finalMarks = (totalInput && totalInput.value !== '') ? parseInt(totalInput.value) : null;
+    const finalMax = (maxInput && maxInput.value !== '') ? parseInt(maxInput.value) : 300;
+
+    try {
+        await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', id), {
+            subjectMarks: Object.keys(subjectMarks).length > 0 ? subjectMarks : null,
+            marks: finalMarks,
+            maxMarks: finalMax,
+            completed: finalMarks !== null
+        });
+        showToast('Score Updated');
+        closeEditMockModal();
+    } catch (e) {
+        console.error(e);
+        showToast('Error updating');
+    }
 }
 
 window.closeEditMockModal = function () {
@@ -2779,27 +2927,7 @@ window.closeEditMockModal = function () {
     setTimeout(() => modal.classList.add('hidden'), 300);
 }
 
-window.saveMockBreakdown = async function () {
-    const id = document.getElementById('edit-mock-id').value;
-    const inputs = document.querySelectorAll('.edit-mock-subject-input');
-    let subjectMarks = {};
-    let total = 0;
-    inputs.forEach(input => {
-        const sub = input.dataset.subject;
-        const val = parseInt(input.value);
-        if (!isNaN(val)) { subjectMarks[sub] = val; total += val; }
-    });
 
-    try {
-        await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', id), {
-            subjectMarks: subjectMarks,
-            marks: total,
-            completed: true
-        });
-        showToast('Score Updated');
-        closeEditMockModal();
-    } catch (e) { console.error(e); showToast('Error updating'); }
-}
 
 
 window.switchView = function (view) {
@@ -2873,9 +3001,15 @@ window.renderMockSubjectFields = function (containerId, suffix) {
     html += `
             </div>
             <div class="flex items-center gap-2 mb-2 text-fuchsia-700 dark:text-fuchsia-300"><i data-lucide="calculator" class="w-4 h-4"></i><span class="text-xs font-bold uppercase tracking-wide">Totals</span></div>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-2 gap-3 mb-4">
                 <div><label class="block text-[10px] font-bold text-fuchsia-600/70 dark:text-fuchsia-400/70 mb-1 uppercase tracking-widest">Obtained</label><input type="number" id="task-marks${suffix}" placeholder="Auto" class="w-full bg-zinc-100/50 dark:bg-zinc-800/50 border border-transparent rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-black text-fuchsia-600 dark:text-fuchsia-400 text-center cursor-not-allowed" readonly></div>
                 <div><label class="block text-[10px] font-bold text-fuchsia-600/70 dark:text-fuchsia-400/70 mb-1 uppercase tracking-widest">Max</label><input type="number" id="task-max-marks${suffix}" value="${type === 'NEET' ? 720 : 300}" class="w-full bg-white dark:bg-zinc-800 border border-fuchsia-200/50 dark:border-fuchsia-900/50 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-black text-zinc-500 focus:ring-2 focus:ring-fuchsia-500 text-center shadow-inner-light dark:shadow-inner-dark"></div>
+            </div>
+
+            <div class="flex items-center gap-2 mb-2 text-fuchsia-700 dark:text-fuchsia-300"><i data-lucide="target" class="w-4 h-4"></i><span class="text-xs font-bold uppercase tracking-wide">Accuracy Tracking</span></div>
+            <div class="grid grid-cols-2 gap-3">
+                <div><label class="block text-[10px] font-bold text-fuchsia-600/70 dark:text-fuchsia-400/70 mb-1 uppercase tracking-widest">Attempted</label><input type="number" id="task-attempted${suffix}" placeholder="e.g. 60" class="w-full bg-white dark:bg-zinc-800 border border-fuchsia-200/50 dark:border-fuchsia-900/50 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-black text-zinc-700 dark:text-zinc-300 focus:ring-2 focus:ring-fuchsia-500 text-center shadow-inner-light dark:shadow-inner-dark"></div>
+                <div><label class="block text-[10px] font-bold text-fuchsia-600/70 dark:text-fuchsia-400/70 mb-1 uppercase tracking-widest">Correct</label><input type="number" id="task-correct${suffix}" placeholder="e.g. 52" class="w-full bg-white dark:bg-zinc-800 border border-fuchsia-200/50 dark:border-fuchsia-900/50 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-black text-zinc-700 dark:text-zinc-300 focus:ring-2 focus:ring-fuchsia-500 text-center shadow-inner-light dark:shadow-inner-dark"></div>
             </div>
         </div>
     `;
@@ -3012,16 +3146,7 @@ async function handleTaskSubmit(mode) {
             const marksId = `task-marks${suffix}`;
             const maxMarksId = `task-max-marks${suffix}`;
             const marks = document.getElementById(marksId).value;
-            const subjectInputs = document.querySelectorAll(`.mock-subject-input${suffix}`);
-            let subjectMarks = {};
-
-            subjectInputs.forEach(input => {
-                const sub = input.dataset.subject;
-                const val = parseInt(input.value);
-                if (!isNaN(val)) subjectMarks[sub] = val;
-            });
-
-            if (Object.keys(subjectMarks).length > 0) newTask.subjectMarks = subjectMarks;
+            // ... (keep your existing subject loop here)
 
             if (!marks || marks === '') {
                 showToast("Please enter marks to log results!");
@@ -3033,6 +3158,14 @@ async function handleTaskSubmit(mode) {
             newTask.marks = marks;
             newTask.completed = true; // Auto-complete it because it's a logged result
             newTask.maxMarks = document.getElementById(maxMarksId).value || 300;
+
+            // --- ADD THESE 4 NEW LINES HERE ---
+            const attemptedVal = document.getElementById(`task-attempted${suffix}`).value;
+            const correctVal = document.getElementById(`task-correct${suffix}`).value;
+            if (attemptedVal) newTask.attempted = parseInt(attemptedVal);
+            if (correctVal) newTask.correct = parseInt(correctVal);
+            // ----------------------------------
+
         } else {
             // It's a Schedule! Do not attach marks, and keep it incomplete.
             newTask.completed = false;
@@ -4902,6 +5035,7 @@ window.renderSquadView = function () {
 }
 
 
+
 // 5. Hooks to update YOUR status automatically 
 let heartbeatInterval;
 window.syncMySocialStatus = async (isStudying, subject) => {
@@ -4996,37 +5130,7 @@ window.syncMySocialTasks = async () => {
         }
     }, 800);
 }
-window.toggleShareTasksSetting = function () {
-    if (tempSettings.shareTasks === undefined) tempSettings.shareTasks = true;
-    tempSettings.shareTasks = !tempSettings.shareTasks;
 
-    const knob = document.getElementById('sharetasks-knob');
-    const toggle = document.getElementById('sharetasks-toggle');
-
-    if (tempSettings.shareTasks) {
-        // UI Updates
-        knob.style.transform = 'translateX(20px)';
-        toggle.className = "relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300";
-
-        // FIX: Update live state so the sync isn't blocked, and push immediately
-        state.settings.shareTasks = true;
-        syncMySocialTasks();
-
-    } else {
-        // UI Updates
-        knob.style.transform = 'translateX(0)';
-        toggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300";
-
-        // FIX: Update live state and immediately clear tasks from public profile
-        state.settings.shareTasks = false;
-        updateDoc(doc(db, 'artifacts', appId, 'socialProfiles', currentUser.uid), {
-            shareTasks: false,
-            tasks: []
-        }).catch(e => e);
-    }
-
-    markSettingsDirty();
-}
 
 window.applyMusicSetting = function (show) {
     const widget = document.getElementById('music-widget');
@@ -5046,23 +5150,6 @@ window.applyMusicSetting = function (show) {
     }
 }
 
-window.toggleMusicSetting = function () {
-    if (tempSettings.showMusic === undefined) tempSettings.showMusic = true;
-    tempSettings.showMusic = !tempSettings.showMusic;
-
-    const mKnob = document.getElementById('music-knob');
-    const mToggle = document.getElementById('music-toggle');
-    if (mKnob && mToggle) {
-        if (tempSettings.showMusic) {
-            mKnob.style.transform = 'translateX(20px)';
-            mToggle.className = "relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300";
-        } else {
-            mKnob.style.transform = 'translateX(0)';
-            mToggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300";
-        }
-    }
-    markSettingsDirty();
-}
 
 window.editTaskText = async function (id, currentText) {
     if (!currentUser) return;
@@ -5976,23 +6063,10 @@ function injectGlobalFooters() {
         <footer class="shrink-0 w-auto max-w-full bg-white/60 dark:bg-[#09090b]/60 backdrop-blur-xl border border-zinc-200/80 dark:border-zinc-800/80 p-2 md:px-3 rounded-full flex flex-col sm:flex-row items-center gap-3 z-40 shadow-md dark:shadow-floating-dark">
             
             <!-- Left Side: Copyright -->
-            <div class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest px-2 whitespace-nowrap">
-                © 2026 SVAL.TECH
+            <div class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 tracking-widest px-2 whitespace-nowrap">
+                © 2026 sval.tech
             </div>
 
-            <!-- Center Divider -->
-            <div class="w-px h-4 bg-zinc-200 dark:bg-zinc-700 hidden sm:block"></div>
-
-            <!-- Middle: Partner Link (Subtle) -->
-            <a href="https://alphajee.online" target="_blank" rel="noopener noreferrer" 
-               class="group flex items-center gap-1.5 px-2 py-1 rounded-full transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800/50">
-                <span class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Partner:</span>
-                <img class="h-4 object-contain opacity-70 group-hover:opacity-100 transition-opacity" alt="AlphaJEE" src="https://jtestify.alphajee.online/alphajee.png">
-                <span class="text-[9px] font-bold text-zinc-500 dark:text-zinc-400 group-hover:text-brand-500 transition-colors">AlphaJEE</span>
-            </a>
-
-            <!-- Right Divider -->
-            <div class="w-px h-4 bg-zinc-200 dark:bg-zinc-700 hidden sm:block"></div>
 
             <!-- Right Side: Social Links -->
             <div class="flex items-center gap-4 px-1">
@@ -6000,7 +6074,7 @@ function injectGlobalFooters() {
                     <i data-lucide="message-square" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">Discord</span>
                 </a>
                 <a href="https://github.com/svalordev" target="_blank" class="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors uppercase tracking-widest flex items-center gap-1.5">
-                    <i data-lucide="github" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">GitHub</span>
+                    <i data-lucide="code" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">GitHub</span>
                 </a>
             </div>
         </footer>
@@ -6075,5 +6149,102 @@ window.handleResetAllData = async function () {
         showToast("Error during reset.");
     }
 }
+
+window.openSquadHelp = function () {
+    const modal = document.getElementById('squad-help-modal');
+    if (!modal) return;
+
+    modal.classList.remove('hidden');
+
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        const content = modal.querySelector('.transform');
+        if (content) content.classList.replace('scale-95', 'scale-100');
+    }, 10);
+};
+
+window.closeSquadHelp = function () {
+    const modal = document.getElementById('squad-help-modal');
+    if (!modal) return;
+
+    const content = modal.querySelector('.transform');
+    if (content) content.classList.replace('scale-100', 'scale-95');
+
+    modal.classList.add('opacity-0');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+};
+
+// --- Auto-scroll to Today on Desktop (Dynamic Load Fix) ---
+window.addEventListener('load', () => {
+    // Only execute on desktop/tablet
+    if (window.innerWidth <= 768) return;
+
+    const calendarGrid = document.getElementById('calendar-grid');
+    if (!calendarGrid) return;
+
+    let scrollTimeout;
+    let hasScrolled = false;
+
+    // 1. Create the lookout (MutationObserver)
+    const observer = new MutationObserver(() => {
+        if (hasScrolled) return;
+
+        // Every time a task is added to the DOM, reset the countdown.
+        clearTimeout(scrollTimeout);
+
+        // When the DOM goes quiet for 250ms (meaning all tasks have finished rendering), trigger the scroll.
+        scrollTimeout = setTimeout(() => {
+            const todayCard = document.getElementById('today-card');
+
+            if (todayCard) {
+                todayCard.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+
+                hasScrolled = true;
+                observer.disconnect(); // Turn off the observer to save memory
+            }
+        }, 250);
+    });
+
+    // 2. Start watching the calendar grid and all its children
+    observer.observe(calendarGrid, {
+        childList: true,
+        subtree: true,
+        attributes: false // We only care about elements being added/removed
+    });
+
+    // 3. Failsafe: If tasks load instantly from local cache and the observer misses it
+    setTimeout(() => {
+        if (!hasScrolled) {
+            const todayCard = document.getElementById('today-card');
+            if (todayCard) {
+                todayCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                observer.disconnect();
+            }
+        }
+    }, 1500);
+});
+
+async function updateLiveStudentCount() {
+    const countElement = document.getElementById('live-student-count');
+    if (!countElement) return;
+
+    try {
+        const statsRef = doc(db, 'artifacts', appId, 'stats', 'public');
+        const snap = await getDoc(statsRef);
+
+        if (snap.exists()) {
+            const count = snap.data().totalUsers;
+            countElement.innerText = `${count.toLocaleString()} Students grinding`;
+        }
+    } catch (error) {
+        console.error("Error fetching user count:", error);
+        countElement.innerText = "2,000 Students grinding";
+    }
+}
+// Execute immediately to fetch the count on page load
+updateLiveStudentCount();
 
 initAuth(); lucide.createIcons();

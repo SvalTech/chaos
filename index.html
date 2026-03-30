@@ -41,270 +41,127 @@
     class="h-screen flex flex-col md:flex-row overflow-hidden text-zinc-800 bg-zinc-50 dark:bg-[#09090b] dark:text-zinc-100 transition-colors duration-500 selection:bg-brand-500 selection:text-white">
 
 
-    <div id="app-background"></div>
-
-    <div id="login-screen"
-        class="fixed inset-0 z-[70] bg-black overflow-y-auto overflow-x-hidden custom-scrollbar transition-opacity duration-700 font-sans scroll-smooth selection:bg-brand-500 selection:text-white text-zinc-100">
-
-        <style>
-            @keyframes fade-up-cinematic {
-                0% {
-                    opacity: 0;
-                    transform: translateY(30px) scale(0.95);
-                    filter: blur(10px);
-                }
-
-                100% {
-                    opacity: 1;
-                    transform: translateY(0) scale(1);
-                    filter: blur(0);
-                }
-            }
-
-            .animate-fade-up {
-                animation: fade-up-cinematic 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-                opacity: 0;
-            }
-
-            .delay-100 {
-                animation-delay: 100ms;
-            }
-
-            .delay-200 {
-                animation-delay: 200ms;
-            }
-
-            .delay-300 {
-                animation-delay: 300ms;
-            }
-
-            .delay-400 {
-                animation-delay: 400ms;
-            }
-
-            /* The grid background for tech vibes */
-            .bg-grid-pattern {
-                background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-                    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-                background-size: 40px 40px;
-                mask-image: radial-gradient(ellipse 80% 50% at 50% 0%, #000 70%, transparent 100%);
-                -webkit-mask-image: radial-gradient(ellipse 80% 50% at 50% 0%, #000 70%, transparent 100%);
-            }
-        </style>
-
-        <div class="absolute inset-0 bg-grid-pattern pointer-events-none z-0"></div>
+    <div id="app-background" class="fixed inset-0 z-[-1] pointer-events-none">
         <div
-            class="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-brand-600/30 blur-[120px] rounded-[100%] pointer-events-none z-0">
+            class="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-brand-500/10 dark:bg-brand-500/5 blur-[120px] rounded-full">
         </div>
+    </div>
 
-        <nav class="relative z-50 px-6 py-6 animate-fade-up">
-            <div class="max-w-7xl mx-auto flex items-center justify-between">
-                <div class="flex items-center gap-3 group cursor-pointer">
-                    <div class="relative">
-                        <div
-                            class="absolute inset-0 bg-brand-500 blur-md opacity-0 group-hover:opacity-50 transition-opacity">
-                        </div>
-                        <img src="logo.png" alt="ChaosPrep Logo"
-                            class="relative w-10 h-10 rounded-xl shrink-0 object-contain shadow-[0_0_15px_rgba(255,255,255,0.1)] border border-white/10">
-                    </div>
-                    <div class="flex flex-col justify-center">
-                        <h1
-                            class="text-xl font-black text-white tracking-tight leading-none group-hover:text-brand-400 transition-colors">
-                            ChaosPrep</h1>
-                        <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">by
+    <div id="login-screen" class="fixed inset-0 z-[70] transition-opacity duration-700 font-sans"
+        style="background-color: #09090b; color: #ffffff;">
+    
+        <div class="absolute inset-0 flex flex-col md:flex-row w-full h-full" style="min-height: 100dvh; overflow: hidden;">
+    
+            <div class="hidden md:flex relative w-[40%] max-w-lg h-full border-r border-zinc-800 flex-col justify-between p-10"
+                style="background-color: #050505;">
+    
+                <div class="absolute inset-0 z-0 pointer-events-none"
+                    style="background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px); background-size: 40px 40px;">
+                </div>
+    
+                <div class="relative z-10 flex items-center gap-3">
+                    <img src="logo.png" alt="ChaosPrep Logo" class="w-10 h-10 rounded-xl object-contain shadow-md"
+                        style="filter: none !important; -webkit-filter: none !important;">
+                    <div class="flex flex-col">
+                        <span class="text-xl font-black tracking-tighter leading-none"
+                            style="color: #ffffff;">ChaosPrep</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest mt-0.5" style="color: #a78bfa;">by
                             sval.tech</span>
                     </div>
                 </div>
-                <div class="flex items-center gap-6">
+    
+                <div class="relative z-10 my-auto">
+                    <div class="flex flex-col gap-6border-zinc-800 pl-6 py-2">
+
+                            <h3>
+                                <span id="live-student-count" class="font-bold uppercase tracking-[0.15em] text-brand-300">
+                                    Loading...
+                                </span>
+                            </h3>
+
+                    </div>
+                </div>
+    
+                <div class="relative z-10 text-[10px] font-bold text-zinc-600 uppercase tracking-widest"></div>
+            </div>
+    
+            <div class="flex-1 h-full relative z-10 flex flex-col overflow-y-auto custom-scrollbar"
+                style="background-color: #09090b;">
+                <nav class="w-full p-6 flex items-center justify-between shrink-0"
+                    style="opacity: 1 !important; visibility: visible !important;">
+                    <div class="flex md:hidden items-center gap-3">
+                        <img src="logo.png" alt="Logo" class="w-8 h-8 rounded-lg object-contain shadow-sm"
+                            style="filter: none !important; -webkit-filter: none !important;">
+                        <span class="text-lg font-black tracking-tighter leading-none"
+                            style="color: #ffffff;">ChaosPrep</span>
+                    </div>
+                    <div class="hidden md:block"></div>
                     <a href="docs.html"
-                        class="text-xs font-bold text-zinc-400 hover:text-white uppercase tracking-widest hidden sm:block transition-colors">Docs</a>
+                        class="text-[10px] font-bold text-zinc-400 hover:text-white uppercase tracking-widest transition-colors flex items-center gap-1.5 px-4 py-2 rounded-full border border-zinc-800">
+                        <i data-lucide="book" class="w-3 h-3"></i> Docs
+                    </a>
+                </nav>
+    
+                <header class="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-lg mx-auto text-center"
+                    style="opacity: 1 !important; visibility: visible !important; display: flex !important;">
+    
+                    <h1 class="text-5xl lg:text-7xl font-black tracking-tighter leading-[0.9] mb-5 uppercase"
+                        style="color: #ffffff;">
+                        Master <br> <span style="color: #8b5cf6;">The Chaos.</span>
+                    </h1>
+    
+                    <p class="text-sm font-medium mb-10 tracking-tight leading-relaxed max-w-[320px]"
+                        style="color: #a1a1aa;">
+                        The quiet, distraction-free tracking system for JEE, NEET and competitive exam aspirants. Log hours, track errors, and hit
+                        targets.
+                    </p>
+    
                     <button onclick="signInWithGoogle()"
-                        class="px-5 py-2.5 bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest text-white shadow-sm transition-all active:scale-95">
-                        Sign In
+                        class="w-full sm:w-[320px] px-8 py-4 bg-white text-black font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 transition-all hover:bg-zinc-200 active:translate-y-1"
+                        style="border-radius: 0; box-shadow: 4px 4px 0px #8b5cf6; border: 2px solid transparent; cursor: pointer;">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                            class="w-5 h-5 bg-white rounded-full p-0.5" alt="Google">
+                        Initialize Tracking
                     </button>
-                </div>
-            </div>
-        </nav>
-
-        <header
-            class="relative max-w-7xl mx-auto px-6 pt-20 pb-32 flex flex-col items-center justify-center text-center z-10 min-h-[85vh]">
-
-            <div
-                class="animate-fade-up delay-100 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-brand-500/30 bg-brand-500/10 backdrop-blur-md mb-8 shadow-[0_0_20px_rgba(139,92,246,0.15)]">
-                <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-brand-300">2,000+ Students tracking
-                    daily</span>
-            </div>
-
-            <h1
-                class="animate-fade-up delay-200 text-6xl md:text-8xl lg:text-[100px] font-black text-white tracking-tighter leading-[1.05] mb-8 max-w-5xl drop-shadow-2xl">
-                Master the chaos.<br>
-                <span
-                    class="bg-clip-text text-transparent bg-gradient-to-r from-zinc-100 via-zinc-400 to-zinc-600">Conquer
-                    the exam.</span>
-            </h1>
-
-            <p
-                class="animate-fade-up delay-300 text-lg md:text-xl text-zinc-400 leading-relaxed font-medium mb-12 max-w-2xl">
-                The quiet, distraction-free tracking system for JEE, NEET and competitive aspirants. Just the tools you
-                need
-                to hit your targets and visualize your growth. No excuses.
-            </p>
-
-            <div class="animate-fade-up delay-400 flex flex-col items-center gap-4 w-full sm:w-auto z-20">
-                <div class="relative group w-full sm:w-auto">
-                    <div
-                        class="absolute -inset-1 bg-gradient-to-r from-brand-600 to-fuchsia-600 rounded-2xl blur-lg opacity-60 group-hover:opacity-100 transition duration-500 group-hover:duration-200">
-                    </div>
-                    <button onclick="signInWithGoogle()"
-                        class="relative h-16 w-full sm:w-auto px-10 bg-white text-black font-black text-lg rounded-2xl flex items-center justify-center gap-3 hover:scale-[1.02] transition-all active:scale-95">
-                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6 h-6"
-                            alt="Google">
-                        Start Tracking — It's Free
-                    </button>
-                </div>
-                <p class="text-[11px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 mt-2">
-                    <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Private & Secure
-                </p>
-            </div>
-
-            <div class="animate-fade-up delay-400 relative w-full mt-24 sm:mt-32 perspective-[2000px] z-10">
-                <div
-                    class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-20 pointer-events-none translate-y-20 scale-y-110">
-                </div>
-
-                <div
-                    class="relative rounded-[2rem] border border-white/10 bg-[#09090b]/80 shadow-[0_0_100px_rgba(139,92,246,0.15)] overflow-hidden transform rotateX-[12deg] hover:rotateX-[2deg] transition-transform duration-1000 ease-out will-change-transform max-w-6xl mx-auto backdrop-blur-xl">
-                    <div
-                        class="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-1000 z-10 pointer-events-none">
-                    </div>
-                    <img src="hero-dashboard.png" alt="ChaosPrep Dashboard"
-                        class="w-full h-auto object-cover opacity-90 relative z-0">
-                </div>
-            </div>
-        </header>
-
-        <section class="relative max-w-7xl mx-auto px-6 py-32 z-20">
-            <div
-                class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-px bg-gradient-to-r from-transparent via-white/20 to-transparent">
-            </div>
-
-            <div class="text-center mb-20">
-                <h2 class="text-4xl md:text-6xl font-black text-white tracking-tighter mb-4">Everything you
-                    need.<br><span class="text-zinc-600">Nothing you don't.</span></h2>
-            </div>
-
-            <div class="grid md:grid-cols-2 gap-6 md:gap-8">
-
-                <div
-                    class="group relative bg-[#111] rounded-[2.5rem] border border-white/10 overflow-hidden hover:border-brand-500/50 transition-colors duration-500">
-                    <div
-                        class="absolute inset-0 bg-gradient-to-br from-brand-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    </div>
-                    <div class="relative p-10 flex flex-col h-full z-10">
-                        <div
-                            class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-brand-400 mb-8 shadow-inner">
-                            <i data-lucide="calendar-check" class="w-7 h-7"></i>
+    
+                    <div class="mt-12 grid grid-cols-2 gap-x-4 gap-y-4 w-full text-left border-t border-zinc-800 pt-8 max-w-[320px]"
+                        style="color: #a1a1aa;">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-3.5 h-3.5 shrink-0" style="color: #8b5cf6;"></i>
+                            <span class="text-[9px] font-bold uppercase tracking-widest">Syllabus Mapping</span>
                         </div>
-                        <h4 class="text-2xl font-black text-white mb-3 tracking-tight">Daily & Weekly Targets</h4>
-                        <p class="text-base text-zinc-400 leading-relaxed font-medium mb-10">Break down massive syllabi
-                            into
-                            executable daily tasks and track your weekly completion rate with brutal honesty.</p>
-                        <div class="mt-auto relative rounded-xl overflow-hidden border border-white/10 shadow-2xl">
-                            <img src="feature-planner.png" alt="Planner Preview"
-                                class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-3.5 h-3.5 shrink-0" style="color: #8b5cf6;"></i>
+                            <span class="text-[9px] font-bold uppercase tracking-widest">Deep Work Timer</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-3.5 h-3.5 shrink-0" style="color: #8b5cf6;"></i>
+                            <span class="text-[9px] font-bold uppercase tracking-widest">Mock Analytics</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-3.5 h-3.5 shrink-0" style="color: #8b5cf6;"></i>
+                            <span class="text-[9px] font-bold uppercase tracking-widest">Accountability</span>
                         </div>
                     </div>
-                </div>
-
-                <div
-                    class="group relative bg-[#111] rounded-[2.5rem] border border-white/10 overflow-hidden hover:border-blue-500/50 transition-colors duration-500">
-                    <div
-                        class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                </header>
+    
+                <footer class="w-full p-6 flex items-center justify-between shrink-0 border-t border-zinc-900"
+                    style="opacity: 1 !important; visibility: visible !important;">
+                    <div class="text-[9px] font-bold text-zinc-500 tracking-widest">
+                        © 2026 SVAL.TECH | u/DarthAcademius
                     </div>
-                    <div class="relative p-10 flex flex-col h-full z-10">
-                        <div
-                            class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-blue-400 mb-8 shadow-inner">
-                            <i data-lucide="bar-chart-2" class="w-7 h-7"></i>
-                        </div>
-                        <h4 class="text-2xl font-black text-white mb-3 tracking-tight">Mock & Error Analytics</h4>
-                        <p class="text-base text-zinc-400 leading-relaxed font-medium mb-10">Log your mock scores, track
-                            performance trajectories, and categorize your mistakes to guarantee you never repeat them.
-                        </p>
-                        <div class="mt-auto relative rounded-xl overflow-hidden border border-white/10 shadow-2xl">
-                            <img src="feature-analytics.png" alt="Analytics Preview"
-                                class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700">
-                        </div>
+                    <div class="flex items-center gap-4">
+                        <a href="privacypolicy.html"
+                            class="text-[9px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-widest">Privacy</a>
+                        <a href="termsandconditions.html"
+                            class="text-[9px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-widest">Terms</a>
+                        <a href="https://discord.gg/mKXPpSY6Dz" target="_blank"
+                            class="text-[9px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-widest">Discord</a>
                     </div>
-                </div>
-
-                <div
-                    class="group relative bg-[#111] rounded-[2.5rem] border border-white/10 overflow-hidden hover:border-orange-500/50 transition-colors duration-500">
-                    <div
-                        class="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    </div>
-                    <div class="relative p-10 flex flex-col h-full z-10">
-                        <div
-                            class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-orange-400 mb-8 shadow-inner">
-                            <i data-lucide="timer" class="w-7 h-7"></i>
-                        </div>
-                        <h4 class="text-2xl font-black text-white mb-3 tracking-tight">Focus Timer & Streaks</h4>
-                        <p class="text-base text-zinc-400 leading-relaxed font-medium mb-10">Clock your actual deep work
-                            hours, maintain daily study streaks, and listen to built-in focus radio to stay locked in.
-                        </p>
-                        <div class="mt-auto relative rounded-xl overflow-hidden border border-white/10 shadow-2xl">
-                            <img src="feature-timer.png" alt="Timer Preview"
-                                class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700">
-                        </div>
-                    </div>
-                </div>
-
-                <div
-                    class="group relative bg-[#111] rounded-[2.5rem] border border-white/10 overflow-hidden hover:border-emerald-500/50 transition-colors duration-500">
-                    <div
-                        class="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    </div>
-                    <div class="relative p-10 flex flex-col h-full z-10">
-                        <div
-                            class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-emerald-400 mb-8 shadow-inner">
-                            <i data-lucide="users" class="w-7 h-7"></i>
-                        </div>
-                        <h4 class="text-2xl font-black text-white mb-3 tracking-tight">Accountability Squad</h4>
-                        <p class="text-base text-zinc-400 leading-relaxed font-medium mb-10">Add friends via invite
-                            codes
-                            and keep each other in check. Surround yourself with winners and see who is studying in
-                            real-time.</p>
-                        <div class="mt-auto relative rounded-xl overflow-hidden border border-white/10 shadow-2xl">
-                            <img src="feature-squad.png" alt="Squad Preview"
-                                class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700">
-                        </div>
-                    </div>
-                </div>
-
+                </footer>
+    
             </div>
-
-            <div class="mt-24 text-center">
-                <button onclick="signInWithGoogle()"
-                    class="px-10 py-5 bg-white text-black font-black text-lg rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:shadow-[0_0_50px_rgba(255,255,255,0.4)] hover:-translate-y-1 transition-all active:scale-95 inline-flex items-center gap-3">
-                    Start crushing your targets
-                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
-                </button>
-            </div>
-        </section>
-
-        <footer
-            class="max-w-7xl mx-auto px-6 py-10 flex flex-col md:flex-row justify-between items-center gap-4 relative z-20 border-t border-white/10">
-            <div class="text-[10px] font-bold text-zinc-600 tracking-widest uppercase">
-                © 2026 SVAL.TECH — ALL RIGHTS RESERVED
-            </div>
-            <div class="flex items-center gap-8">
-                <a href="docs.html"
-                    class="text-[10px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-widest">Docs</a>
-                <a href="https://sval.tech/studylocus/privacypolicy.html"
-                    class="text-[10px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-widest">Privacy</a>
-                <a href="https://sval.tech/studylocus/termsandconditions.html"
-                    class="text-[10px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-widest">Terms</a>
-            </div>
-        </footer>
+        </div>
     </div>
 
     <!-- Loading Overlay -->
@@ -339,11 +196,7 @@
                 </div>
                 <div class="flex items-center shrink-0">
 
-                    <a href="docs.html" target="_blank"
-                        class="p-1.5 text-zinc-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20 rounded-xl transition-colors"
-                        title="Documentation">
-                        <i data-lucide="book" class="w-[18px] h-[18px]"></i>
-                    </a>
+                   
                     <button onclick="switchView('settings')"
                         class="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/50 rounded-xl transition-colors">
                         <i data-lucide="settings" class="w-[18px] h-[18px]"></i>
@@ -924,54 +777,65 @@
             class="view-section hidden flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar no-scrollbar">
             <div class="max-w-5xl mx-auto pb-32">
                 <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 px-2 gap-4">
-                    <h2 class="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tighter">Analytics
-                    </h2>
+                    <h2 class="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tighter">Analytics</h2>
                     <button onclick="openAddMockFromStats()"
                         class="text-xs font-bold bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5 self-start md:self-auto"><i
                             data-lucide="plus" class="w-4 h-4"></i> Add Mock</button>
                 </div>
-
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                     <div class="glass-card p-6 rounded-[2rem] border-t-2 border-t-brand-500">
-                        <div class="text-[10px] md:text-xs text-zinc-500 uppercase font-bold tracking-widest mb-2">Tests
-                            Taken</div>
-                        <div id="stats-total-tests"
-                            class="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white">0</div>
+                        <div class="text-[10px] md:text-xs text-zinc-500 uppercase font-bold tracking-widest mb-2">Tests Taken
+                        </div>
+                        <div id="stats-total-tests" class="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white">0
+                        </div>
                     </div>
                     <div class="glass-card p-6 rounded-[2rem] border-t-2 border-t-fuchsia-500">
-                        <div class="text-[10px] md:text-xs text-zinc-500 uppercase font-bold tracking-widest mb-2">Avg
-                            Score</div>
-                        <div id="stats-avg-score" class="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white">
-                            0</div>
+                        <div class="text-[10px] md:text-xs text-zinc-500 uppercase font-bold tracking-widest mb-2">Avg Score
+                        </div>
+                        <div id="stats-avg-score" class="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white">0</div>
                     </div>
                     <div class="glass-card p-6 rounded-[2rem] border-t-2 border-t-emerald-500">
-                        <div class="text-[10px] md:text-xs text-zinc-500 uppercase font-bold tracking-widest mb-2">Best
-                            Score</div>
+                        <div class="text-[10px] md:text-xs text-zinc-500 uppercase font-bold tracking-widest mb-2">Best Score
+                        </div>
                         <div id="stats-max-score" class="text-3xl md:text-4xl font-black text-emerald-500">0</div>
                     </div>
                     <div class="glass-card p-6 rounded-[2rem] border-t-2 border-t-blue-500">
-                        <div class="text-[10px] md:text-xs text-zinc-500 uppercase font-bold tracking-widest mb-2">
-                            Recent Trend</div>
+                        <div class="text-[10px] md:text-xs text-zinc-500 uppercase font-bold tracking-widest mb-2">Recent Trend
+                        </div>
                         <div id="stats-last-5" class="text-3xl md:text-4xl font-black text-blue-500">0</div>
                     </div>
+                    <div class="glass-card p-6 rounded-[2rem] border-t-2 border-t-orange-500">
+                        <div class="text-[10px] md:text-xs text-zinc-500 uppercase font-bold tracking-widest mb-2">Accuracy
+                        </div>
+                        <div id="stats-accuracy" class="text-3xl md:text-4xl font-black text-orange-500">0%</div>
+                    </div>
                 </div>
-
+        
                 <div class="glass-card p-5 md:p-8 rounded-[2rem] mb-10">
                     <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                        <h3 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Performance
-                            Trajectory</h3>
-                        <div id="chart-filters" class="flex flex-wrap gap-2"></div>
+                        <h3 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Performance Trajectory</h3>
+        
+                        <div class="flex items-center gap-4">
+                            <div
+                                class="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 rounded-xl px-3 py-2 shadow-inner border border-zinc-200/50 dark:border-zinc-700/50">
+                                <label
+                                    class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1"><i
+                                        data-lucide="crosshair" class="w-3 h-3"></i> Target</label>
+                                <input type="number" id="mock-target-input" value="200" onchange="renderMockStats()"
+                                    class="w-14 bg-transparent text-sm font-black text-brand-600 dark:text-brand-400 outline-none text-right">
+                            </div>
+                            <div id="chart-filters" class="flex flex-wrap gap-2"></div>
+                        </div>
                     </div>
-                    <div class="relative h-72 md:h-80 w-full">
+                    <div class="relative h-96 md:h-[500px] w-full">
                         <canvas id="mockChart"></canvas>
                     </div>
                 </div>
-
+        
                 <h3 class="text-xl font-black text-zinc-900 dark:text-white mb-6 tracking-tight px-2">Test History</h3>
                 <div id="mock-history-list" class="space-y-4 pb-12"></div>
             </div>
-
-
         </div>
 
 
@@ -1219,32 +1083,32 @@
             </div>
         </div>
 
-
         <div id="view-container-squad" class="view-section hidden flex-1 flex flex-col h-full overflow-hidden">
             <div class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar no-scrollbar">
                 <div class="max-w-5xl mx-auto pb-32">
-
+        
                     <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-8">
                         <div>
                             <h2
                                 class="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tighter flex items-center gap-3">
                                 <i data-lucide="users" class="w-8 h-8 text-brand-500"></i> Accountability
-                            </h2>
+                            </h2><br>
                             <div class="flex items-center gap-3 mt-1.5">
-                                <a href="docs.html#squads-intro" target="_blank"
-                                    class="text-[10px] font-bold uppercase tracking-widest text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/20 px-2 py-1 rounded-md hover:bg-brand-100 dark:hover:bg-brand-900/40 transition-colors flex items-center gap-1">
+                                <a href="javascript:void(0)" onclick="openSquadHelp()"
+                                    class="text-[10px] font-bold uppercase tracking-widest text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/20 px-2 py-1 rounded-md hover:bg-brand-100 dark:hover:bg-brand-900/40 transition-colors flex items-center gap-1 cursor-pointer">
                                     <i data-lucide="book" class="w-3 h-3"></i> Guide
                                 </a>
-                            
+        
                                 <!-- New "Live Only" Filter Button -->
                                 <button onclick="toggleSquadFocusFilter()" id="squad-focus-filter-btn"
                                     class="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex items-center gap-1.5 border border-zinc-200 dark:border-zinc-700">
-                                    <span class="w-2 h-2 rounded-full bg-zinc-400 transition-colors" id="squad-focus-filter-dot"></span>
+                                    <span class="w-2 h-2 rounded-full bg-zinc-400 transition-colors"
+                                        id="squad-focus-filter-dot"></span>
                                     Live Only
                                 </button>
                             </div>
                         </div>
-
+        
                         <div
                             class="glass-card p-2 pl-5 md:pl-6 rounded-[2rem] flex items-center justify-between border border-zinc-200/80 dark:border-zinc-800 bg-white/60 dark:bg-[#18181b]/60 shadow-sm w-full xl:w-auto overflow-x-auto no-scrollbar">
                             <div class="shrink-0 mr-4">
@@ -1262,8 +1126,7 @@
                                 </button>
                                 <button onclick="window.copyInviteLink()" title="Copy Invite Link"
                                     class="bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 px-4 py-2.5 rounded-xl font-bold text-xs shadow-sm active:scale-95 transition-all flex items-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-700">
-                                    <i data-lucide="link" class="w-4 h-4"></i> <span
-                                        class="hidden sm:inline">Link</span>
+                                    <i data-lucide="link" class="w-4 h-4"></i> <span class="hidden sm:inline">Link</span>
                                 </button>
                                 <button onclick="openAddFriendModal()"
                                     class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md active:scale-95 transition-all flex items-center gap-2">
@@ -1272,13 +1135,14 @@
                             </div>
                         </div>
                     </div>
-
+        
                     <div id="squad-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     </div>
-
+        
                 </div>
             </div>
         </div>
+
 
         <div id="add-friend-modal"
             class="fixed inset-0 z-[140] flex items-center justify-center modal-backdrop hidden opacity-0 transition-opacity duration-300 px-4">
@@ -1410,6 +1274,7 @@
                                 </div>
                             </button>
                         </div>
+                        
                         <div
                             class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
                             <div>
@@ -1823,20 +1688,35 @@
     <div id="edit-mock-modal"
         class="fixed inset-0 z-[130] flex items-center justify-center modal-backdrop hidden opacity-0 transition-opacity duration-300 px-4">
         <div
-            class="bg-white dark:bg-[#18181b] rounded-[2.5rem] shadow-2xl p-8 w-full max-w-sm transform scale-95 transition-transform duration-300 border border-zinc-200/50 dark:border-zinc-800">
+            class="bg-white dark:bg-[#18181b] rounded-[2.5rem] shadow-2xl p-6 md:p-8 w-full max-w-md transform scale-95 transition-transform duration-300 border border-zinc-200/50 dark:border-zinc-800">
             <div class="flex items-center gap-2 mb-2"><i data-lucide="trophy" class="w-5 h-5 text-brand-500"></i>
                 <h3 class="text-xl font-black text-zinc-900 dark:text-white">Edit Score</h3>
             </div>
             <p class="text-xs font-bold text-zinc-400 mb-6 uppercase tracking-widest truncate" id="edit-mock-title">
                 Update subject marks</p>
             <input type="hidden" id="edit-mock-id">
-            <div id="edit-mock-inputs" class="grid grid-cols-3 gap-3 mb-6"></div>
-            <div
-                class="bg-brand-50 dark:bg-brand-900/20 p-4 rounded-2xl flex justify-between items-center mb-8 border border-brand-100 dark:border-brand-900/30">
-                <span class="text-[10px] font-bold text-brand-800 dark:text-brand-300 uppercase tracking-widest">Total
-                    Score</span>
-                <span id="edit-mock-total" class="text-3xl font-black text-brand-600 dark:text-brand-400">0</span>
+    
+            <div id="edit-mock-inputs" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5"></div>
+    
+            <div class="flex items-center gap-2 mb-3 text-zinc-500 dark:text-zinc-400">
+                <i data-lucide="calculator" class="w-4 h-4"></i>
+                <span class="text-xs font-bold uppercase tracking-wide">Totals</span>
             </div>
+            <div class="grid grid-cols-2 gap-3 mb-8">
+                <div>
+                    <label
+                        class="block text-[10px] font-bold text-zinc-500 dark:text-zinc-400 mb-1 uppercase tracking-widest">Obtained</label>
+                    <input type="number" id="edit-mock-total-input"
+                        class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-black text-brand-600 dark:text-brand-400 text-center shadow-inner-light dark:shadow-inner-dark">
+                </div>
+                <div>
+                    <label
+                        class="block text-[10px] font-bold text-zinc-500 dark:text-zinc-400 mb-1 uppercase tracking-widest">Max</label>
+                    <input type="number" id="edit-mock-max"
+                        class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-black text-zinc-500 focus:ring-2 focus:ring-brand-500 text-center shadow-inner-light dark:shadow-inner-dark">
+                </div>
+            </div>
+    
             <div class="flex gap-3 justify-end w-full">
                 <button onclick="resetMockScore()"
                     class="px-5 py-2.5 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 font-bold text-sm transition-colors mr-auto">Reset</button>
