@@ -26,8 +26,8 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
-  <script type="module" crossorigin src="./assets/main-BkCkBw8A.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/main-DfgQRgA5.css">
+  <script type="module" crossorigin src="./assets/main-ayZ8fkh2.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/main-COsemaBa.css">
 <script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TCK0S6VC58"></script>
 <script>
@@ -149,7 +149,7 @@
                 <footer class="w-full p-6 flex items-center justify-between shrink-0 border-t border-zinc-900"
                     style="opacity: 1 !important; visibility: visible !important;">
                     <div class="text-[9px] font-bold text-zinc-500 tracking-widest">
-                        © 2026 SVAL.TECH | u/DarthAcademius
+                        © 2026 sval.tech
                     </div>
                     <div class="flex items-center gap-4">
                         <a href="privacypolicy.html"
@@ -333,6 +333,17 @@
 
     <main id="main-content-area"
         class="flex-1 flex flex-col h-full overflow-hidden relative bg-transparent touch-pan-x z-10">
+
+        <div id="top-announcement-banner"
+            class="hidden bg-brand-500 text-white px-4 py-2 items-center justify-center relative text-sm font-medium z-50 shadow-md transition-all duration-300">
+            <div id="banner-text" class="text-center mr-8">
+            </div>
+            <button id="dismiss-banner-btn"
+                class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-black/20 rounded-md transition-colors"
+                aria-label="Dismiss">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
 
         <div id="global-mini-timer"
             class="w-full z-[150] transition-all duration-500 overflow-hidden max-h-0 opacity-0 pointer-events-none bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-2xl border-b border-zinc-200/80 dark:border-zinc-800/80 shadow-sm shrink-0">

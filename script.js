@@ -6268,7 +6268,71 @@ async function updateLiveStudentCount() {
         countElement.innerText = "2,000 Students grinding";
     }
 }
+
+// --- Dynamic Top Banner System ---
+async function fetchAndInitBanner() {
+    const bannerEl = document.getElementById('top-announcement-banner');
+    const textEl = document.getElementById('banner-text');
+    const dismissBtn = document.getElementById('dismiss-banner-btn');
+
+    if (!bannerEl || !textEl || !dismissBtn) return;
+
+    try {
+        // Fetch from a 'banner' doc inside a 'config' collection for ChaosPrep
+        const bannerRef = doc(db, 'artifacts', appId, 'config', 'banner');
+        const snap = await getDoc(bannerRef);
+
+        // 1. Account for NO BANNER: If doc doesn't exist or isActive is explicitly false
+        if (!snap.exists() || snap.data().isActive === false) {
+            bannerEl.classList.add('hidden');
+            bannerEl.classList.remove('flex');
+            return;
+        }
+
+        const bannerData = snap.data();
+        const dismissedId = localStorage.getItem('dismissed_banner_id');
+
+        // 2. Check if the user has already dismissed this specific banner version
+        if (dismissedId !== bannerData.id) {
+
+            // Build the text
+            let content = bannerData.text;
+
+            // Add link if you provided one in Firestore
+            if (bannerData.link) {
+                // If the link is "#changelog", hook it to your changelog modal. Otherwise, treat as normal URL.
+                if (bannerData.link === '#changelog' && typeof openChangelog === 'function') {
+                    content += ` <a href="#" onclick="openChangelog(); return false;" class="underline font-bold ml-2 hover:text-zinc-200 transition-colors">${bannerData.linkText || 'Read More'}</a>`;
+                } else {
+                    content += ` <a href="${bannerData.link}" target="_blank" class="underline font-bold ml-2 hover:text-zinc-200 transition-colors">${bannerData.linkText || 'Read More'}</a>`;
+                }
+            }
+
+            textEl.innerHTML = content;
+
+            // Show it by swapping Tailwind classes
+            bannerEl.classList.remove('hidden');
+            bannerEl.classList.add('flex');
+
+            // Attach the current dynamic ID to the dismiss button
+            dismissBtn.onclick = () => {
+                localStorage.setItem('dismissed_banner_id', bannerData.id);
+                bannerEl.classList.add('hidden');
+                bannerEl.classList.remove('flex');
+            };
+
+            // Re-render the close icon
+            if (window.lucide) lucide.createIcons();
+        }
+    } catch (error) {
+        console.error("Error fetching banner config:", error);
+        // Failsafe: hide banner if Firebase errors out so it doesn't break UI
+        bannerEl.classList.add('hidden');
+        bannerEl.classList.remove('flex');
+    }
+}
+
 // Execute immediately to fetch the count on page load
 updateLiveStudentCount();
-
+fetchAndInitBanner();
 initAuth(); lucide.createIcons();
