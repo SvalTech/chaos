@@ -833,3 +833,13 @@ html.dark[data-theme="monochrome"] #music-toggle-btn {
     background-clip: border-box !important; 
 }
 
+#changelog-content h1 { font-size: 1.75rem; font-weight: 800; color: white; margin-bottom: 1.5rem; }
+    #changelog-content h2 { font-size: 1.25rem; font-weight: 700; color: white; margin-top: 2rem; margin-bottom: 1rem; border-bottom: 1px solid #27272a; padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
+    #changelog-content h3 { font-size: 1.1rem; font-weight: 600; color: #e4e4e7; margin-top: 1.5rem; }
+    #changelog-content ul { list-style-type: none; padding-left: 0; margin-top: 0.75rem; margin-bottom: 1.5rem; color: #a1a1aa; }
+    #changelog-content li { position: relative; padding-left: 1.5rem; margin-bottom: 0.5rem; }
+    #changelog-content li::before { content: "•"; color: #8b5cf6; position: absolute; left: 0.25rem; font-weight: bold; font-size: 1.2em; }
+    #changelog-content strong { color: #f4f4f5; font-weight: 600; }
+    #changelog-content code { background-color: #27272a; padding: 0.2rem 0.4rem; border-radius: 0.375rem; font-family: monospace; font-size: 0.85em; color: #38bdf8; border: 1px solid #3f3f46; }
+    #changelog-content a { color: #8b5cf6; text-decoration: underline; text-underline-offset: 2px; }
+    #changelog-content a:hover { color: #a78bfa; }

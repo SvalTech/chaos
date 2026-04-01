@@ -6332,6 +6332,78 @@ async function fetchAndInitBanner() {
     }
 }
 
+const GIST_URL = 'https://gist.githubusercontent.com/svalordev/5783159ab47a4430afe6d0ab0732e8e0/raw/f4ca02e6b3c2db09b61ebc21101e5ebcba57d388/CHANGELOG.md';
+
+async function fetchChangelog() {
+    const contentDiv = document.getElementById('changelog-content');
+
+    try {
+        // Fetch raw markdown from the Gist
+        const response = await fetch(`${GIST_URL}?t=${new Date().getTime()}`);
+
+        if (!response.ok) throw new Error('Failed to fetch changelog');
+
+        const markdown = await response.text();
+        const htmlContent = marked.parse(markdown);
+        contentDiv.innerHTML = htmlContent;
+
+    } catch (error) {
+        console.error("Error loading changelog:", error);
+        contentDiv.innerHTML = `
+            <div class="text-center text-zinc-400 py-8">
+                <i data-lucide="wifi-off" class="w-12 h-12 mx-auto mb-3 opacity-50 text-zinc-500"></i>
+                <p class="font-medium text-white mb-1">Couldn't load updates</p>
+                <p class="text-sm">Please check your connection and try again.</p>
+            </div>
+        `;
+        if (window.lucide) lucide.createIcons();
+    }
+}
+
+window.openChangelog = function () {
+    const modal = document.getElementById('changelog-modal');
+    const container = document.getElementById('changelog-container');
+
+    // Remove hidden class to render block, then animate opacity/scale
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    // Tiny timeout to allow DOM to update before triggering transition
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        container.classList.remove('scale-95');
+    }, 10);
+
+    fetchChangelog();
+}
+
+window.closeChangelog = function () {
+    const modal = document.getElementById('changelog-modal');
+    const container = document.getElementById('changelog-container');
+
+    // Animate out
+    modal.classList.add('opacity-0');
+    container.classList.add('scale-95');
+
+    // Wait for transition to finish before hiding completely
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+
+        // Reset content back to loading spinner for next open
+        document.getElementById('changelog-content').innerHTML = `
+            <div class="flex justify-center items-center h-32">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
+            </div>
+        `;
+    }, 300);
+}
+
+// Close modal when clicking outside the container
+document.getElementById('changelog-modal')?.addEventListener('click', function (e) {
+    if (e.target === this) closeChangelog();
+});
+
 // Execute immediately to fetch the count on page load
 updateLiveStudentCount();
 fetchAndInitBanner();
