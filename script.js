@@ -6359,7 +6359,7 @@ async function fetchAndInitBanner() {
     }
 }
 
-const GIST_URL = 'https://gist.githubusercontent.com/svalordev/5783159ab47a4430afe6d0ab0732e8e0/raw/f4ca02e6b3c2db09b61ebc21101e5ebcba57d388/CHANGELOG.md';
+const GIST_URL = 'https://gist.githubusercontent.com/svalordev/5783159ab47a4430afe6d0ab0732e8e0/raw/CHANGELOG.md';
 
 async function fetchChangelog() {
     const contentDiv = document.getElementById('changelog-content');
