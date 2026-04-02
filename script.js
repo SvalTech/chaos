@@ -465,6 +465,7 @@ window.mergeAndRenderTasks = function () {
 
 // --- FIRESTORE LISTENERS ---
 function setupListeners(user) {
+    let isBannerLoaded = false;
     onSnapshot(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'config'), (snap) => {
         if (snap.exists()) {
             state.settings = { ...state.settings, ...snap.data() };
@@ -475,7 +476,16 @@ function setupListeners(user) {
             if (state.currentView === 'timer') { updateSubjectSelectors(); updateTimerStats(); renderRecentLogs(); renderTimerChart(); }
             if (state.currentView === 'stats-mocks') renderMockStats();
             if (state.settings.shareTasks !== false) syncMySocialTasks();
-        } else setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'config'), state.settings);
+            if (!isBannerLoaded) {
+                fetchAndInitBanner();
+                isBannerLoaded = true;
+            }
+        } else {
+            setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'config'), state.settings)
+            setTimeout(() => {
+                window.openOnboardingModal();
+            }, 800);
+        };
     });
 
     // 🚨 1. Start Dynamic Month Listener
@@ -526,6 +536,13 @@ window.processPendingInvite = async function () {
     // If there's an invite ID and it's not the user clicking their own link
     if (inviterUid && inviterUid !== currentUser.uid) {
         try {
+            // 🌟 NEW: Fetch the inviter's name for a personalized notification
+            const inviterDoc = await getDoc(doc(db, 'artifacts', appId, 'socialProfiles', inviterUid));
+            let inviterName = "your friend";
+            if (inviterDoc.exists() && inviterDoc.data().name) {
+                inviterName = inviterDoc.data().name;
+            }
+
             // 1. Add them to YOUR squad list
             await setDoc(doc(db, 'artifacts', appId, 'socialFriends', currentUser.uid, 'list', inviterUid), {
                 addedAt: new Date().toISOString()
@@ -544,8 +561,8 @@ window.processPendingInvite = async function () {
                 switchView('squad');
             }
 
-            // 5. Hit them with the cinematic confirmation
-            showToast("Squad joined. No excuses now.");
+            // 5. 🌟 Upgraded cinematic confirmation
+            showToast(`Joined ${inviterName}'s Squad. No excuses now.`);
 
         } catch (error) {
             console.error("Error processing invite:", error);
@@ -555,7 +572,6 @@ window.processPendingInvite = async function () {
         // If they clicked their own link by mistake
         window.history.replaceState({}, document.title, window.location.pathname);
 
-        // Still route them to the squad tab so the click doesn't feel "broken"
         if (typeof switchView === 'function') {
             switchView('squad');
         }
@@ -4578,7 +4594,7 @@ window.submitAddFriend = async () => {
                 addedAt: new Date().toISOString()
             });
 
-            showToast("Added to Squad!");
+            showToast(`Added ${friendName} to Squad!`);
             closeAddFriendModal();
         }
     } catch (e) {
@@ -6077,23 +6093,28 @@ window.saveProfileSettings = async () => {
 function injectGlobalFooters() {
     const globalFooterHTML = `
     <div class="w-full flex flex-col items-center gap-4 mt-12 mb-6 px-4">
-        <!-- New Centered Pill Footer with Integrated Partner Link -->
-        <footer class="shrink-0 w-auto max-w-full bg-white/60 dark:bg-[#09090b]/60 backdrop-blur-xl border border-zinc-200/80 dark:border-zinc-800/80 p-2 md:px-3 rounded-full flex flex-col sm:flex-row items-center gap-3 z-40 shadow-md dark:shadow-floating-dark">
+        <footer class="shrink-0 w-auto max-w-full bg-white/60 dark:bg-[#09090b]/60 backdrop-blur-xl border border-zinc-200/80 dark:border-zinc-800/80 px-4 py-2.5 rounded-full flex flex-row items-center gap-4 sm:gap-6 z-40 shadow-md dark:shadow-floating-dark transition-all">
             
-            <!-- Left Side: Copyright -->
-            <div class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 tracking-widest px-2 whitespace-nowrap">
-                © sval.tech
+            <div class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 tracking-widest whitespace-nowrap">
+                © sval.tech 2026
             </div>
 
+            <div class="flex items-center gap-4 sm:gap-5">
+                <a href="mailto:support@sval.tech" class="text-[10px] font-bold text-zinc-500 hover:text-brand-500 dark:hover:text-brand-400 transition-colors uppercase tracking-widest flex items-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                        <path d="M1.5 8.67v8.58a3 3 0 003 3h15a3 3 0 003-3V8.67l-8.928 5.493a3 3 0 01-3.144 0L1.5 8.67z" />
+                        <path d="M22.5 6.908V6.75a3 3 0 00-3-3h-15a3 3 0 00-3 3v.158l9.714 5.978a1.5 1.5 0 001.572 0L22.5 6.908z" />
+                    </svg>
+                    <span class="hidden sm:inline">Support</span>
+                </a>
 
-            <!-- Right Side: Social Links -->
-            <div class="flex items-center gap-4 px-1">
                 <a href="https://discord.gg/mKXPpSY6Dz" target="_blank" class="text-[10px] font-bold text-zinc-500 hover:text-[#5865F2] dark:hover:text-[#5865F2] transition-colors uppercase tracking-widest flex items-center gap-1.5">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
                         <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/>
                     </svg>
                     <span class="hidden sm:inline">Discord</span>
                 </a>
+
                 <a href="https://github.com/svalordev" target="_blank" class="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors uppercase tracking-widest flex items-center gap-1.5">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
                         <path d="M12 0C5.37 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.6.113.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
@@ -6269,6 +6290,7 @@ async function updateLiveStudentCount() {
     }
 }
 
+
 // --- Dynamic Top Banner System ---
 async function fetchAndInitBanner() {
     const bannerEl = document.getElementById('top-announcement-banner');
@@ -6278,11 +6300,9 @@ async function fetchAndInitBanner() {
     if (!bannerEl || !textEl || !dismissBtn) return;
 
     try {
-        // Fetch from a 'banner' doc inside a 'config' collection for ChaosPrep
         const bannerRef = doc(db, 'artifacts', appId, 'config', 'banner');
         const snap = await getDoc(bannerRef);
 
-        // 1. Account for NO BANNER: If doc doesn't exist or isActive is explicitly false
         if (!snap.exists() || snap.data().isActive === false) {
             bannerEl.classList.add('hidden');
             bannerEl.classList.remove('flex');
@@ -6292,41 +6312,48 @@ async function fetchAndInitBanner() {
         const bannerData = snap.data();
         const dismissedId = localStorage.getItem('dismissed_banner_id');
 
-        // 2. Check if the user has already dismissed this specific banner version
-        if (dismissedId !== bannerData.id) {
+        if (dismissedId === bannerData.id) return;
 
-            // Build the text
-            let content = bannerData.text;
+        // 🎯 TARGETING LOGIC 🎯
+        // Grab the user's live settings
+        const userExam = state.settings?.examType;
+        const userYear = parseInt(state.settings?.targetYear);
 
-            // Add link if you provided one in Firestore
-            if (bannerData.link) {
-                // If the link is "#changelog", hook it to your changelog modal. Otherwise, treat as normal URL.
-                if (bannerData.link === '#changelog' && typeof openChangelog === 'function') {
-                    content += ` <a href="#" onclick="openChangelog(); return false;" class="underline font-bold ml-2 hover:text-zinc-200 transition-colors">${bannerData.linkText || 'Read More'}</a>`;
-                } else {
-                    content += ` <a href="${bannerData.link}" target="_blank" class="underline font-bold ml-2 hover:text-zinc-200 transition-colors">${bannerData.linkText || 'Read More'}</a>`;
-                }
-            }
-
-            textEl.innerHTML = content;
-
-            // Show it by swapping Tailwind classes
-            bannerEl.classList.remove('hidden');
-            bannerEl.classList.add('flex');
-
-            // Attach the current dynamic ID to the dismiss button
-            dismissBtn.onclick = () => {
-                localStorage.setItem('dismissed_banner_id', bannerData.id);
-                bannerEl.classList.add('hidden');
-                bannerEl.classList.remove('flex');
-            };
-
-            // Re-render the close icon
-            if (window.lucide) lucide.createIcons();
+        // 1. Exam Type Targeting (e.g., ['JEE Main', 'JEE Advanced'])
+        if (bannerData.targetExams && Array.isArray(bannerData.targetExams) && bannerData.targetExams.length > 0) {
+            if (!bannerData.targetExams.includes(userExam)) return; // User doesn't match, abort
         }
+
+        // 2. Year Targeting (e.g., [2025, 2026])
+        if (bannerData.targetYears && Array.isArray(bannerData.targetYears) && bannerData.targetYears.length > 0) {
+            if (!bannerData.targetYears.includes(userYear)) return; // User doesn't match, abort
+        }
+
+        // Build the text
+        let content = bannerData.text;
+
+        if (bannerData.link) {
+            if (bannerData.link === '#changelog' && typeof openChangelog === 'function') {
+                content += ` <a href="#" onclick="openChangelog(); return false;" class="underline font-bold ml-2 hover:text-zinc-200 transition-colors">${bannerData.linkText || 'Read More'}</a>`;
+            } else {
+                content += ` <a href="${bannerData.link}" target="_blank" class="underline font-bold ml-2 hover:text-zinc-200 transition-colors">${bannerData.linkText || 'Read More'}</a>`;
+            }
+        }
+
+        textEl.innerHTML = content;
+        bannerEl.classList.remove('hidden');
+        bannerEl.classList.add('flex');
+
+        dismissBtn.onclick = () => {
+            localStorage.setItem('dismissed_banner_id', bannerData.id);
+            bannerEl.classList.add('hidden');
+            bannerEl.classList.remove('flex');
+        };
+
+        if (window.lucide) lucide.createIcons();
+
     } catch (error) {
         console.error("Error fetching banner config:", error);
-        // Failsafe: hide banner if Firebase errors out so it doesn't break UI
         bannerEl.classList.add('hidden');
         bannerEl.classList.remove('flex');
     }
@@ -6405,6 +6432,91 @@ document.getElementById('changelog-modal')?.addEventListener('click', function (
 });
 
 // Execute immediately to fetch the count on page load
+
+// --- ONBOARDING LOGIC ---
+// --- ONBOARDING LOGIC ---
+window.openOnboardingModal = function () {
+    const modal = document.getElementById('onboarding-modal');
+    if (!modal) return;
+
+    // Auto-fill their Google name if available
+    const nameInput = document.getElementById('ob-name');
+    if (nameInput && currentUser && currentUser.displayName) {
+        nameInput.value = currentUser.displayName;
+    }
+
+    modal.classList.remove('hidden');
+    modal.classList.remove('pointer-events-none');
+
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        modal.querySelector('div.relative').classList.replace('scale-95', 'scale-100');
+    }, 10);
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+window.completeOnboarding = async function () {
+    if (!currentUser) return;
+
+    const btn = document.getElementById('btn-submit-onboarding');
+    const ogHtml = btn.innerHTML;
+    btn.innerHTML = `<div class="btn-spinner border-white border-t-transparent"></div>`;
+    btn.disabled = true;
+
+    const name = document.getElementById('ob-name').value.trim() || "Aspirant";
+    const exam = document.getElementById('ob-exam').value;
+    const year = parseInt(document.getElementById('ob-year').value);
+
+    try {
+        // 1. Update their social profile
+        await setDoc(doc(db, 'artifacts', appId, 'socialProfiles', currentUser.uid), {
+            name: name,
+            lastActive: new Date().toISOString()
+        }, { merge: true });
+
+        // 2. Update their core app settings
+        state.settings.examType = exam;
+        state.settings.targetYear = year;
+
+        // 🚨 THE FIX: Force the hidden settings menu to match the onboarding choice
+        // If we don't do this, setExamType() will read the default "2026" from the hidden settings UI.
+        const hiddenSettingsYearInput = document.getElementById('settings-year');
+        if (hiddenSettingsYearInput) {
+            hiddenSettingsYearInput.value = year;
+        }
+
+        // Now it's perfectly safe to run the global setter
+        window.setExamType(exam);
+
+        // Overwrite the config doc cleanly
+        await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), state.settings, { merge: true });
+
+        // Update UI locally
+        if (typeof myDisplayName !== 'undefined') myDisplayName = name;
+        const desktopNameEl = document.getElementById('user-name-desktop');
+        if (desktopNameEl) desktopNameEl.innerText = name;
+
+        // Animate out
+        const modal = document.getElementById('onboarding-modal');
+        modal.classList.add('opacity-0', 'pointer-events-none');
+        modal.querySelector('div.relative').classList.replace('scale-100', 'scale-95');
+
+        setTimeout(() => modal.classList.add('hidden'), 500);
+        showToast("Setup complete. Welcome to ChaosPrep!");
+
+        // Render things that depend on the exam type
+        if (state.currentView === 'syllabus') renderSyllabusView();
+        renderCountdown();
+
+    } catch (e) {
+        console.error("Onboarding failed:", e);
+        showToast("Error saving setup.");
+        btn.innerHTML = ogHtml;
+        btn.disabled = false;
+    }
+}
+
+
 updateLiveStudentCount();
-fetchAndInitBanner();
 initAuth(); lucide.createIcons();

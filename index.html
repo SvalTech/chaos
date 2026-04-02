@@ -96,11 +96,7 @@
                             style="color: #ffffff;">ChaosPrep</span>
                     </div>
                     <div class="hidden md:block"></div>
-                    <button onclick="openChangelog()"
-                        class="flex items-center gap-3 px-3 py-2 text-zinc-400 hover:text-white hover:bg-zinc-800/50 rounded-xl transition-all group">
-                        <i data-lucide="file-clock" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
-
-                    </button>
+                   
                 </nav>
     
                 <header class="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-lg mx-auto text-center"
@@ -2206,6 +2202,76 @@
     </div>
 </div>
 
+<div id="onboarding-modal"
+    class="fixed inset-0 z-[400] hidden flex items-center justify-center p-4 sm:p-6 transition-all duration-500 opacity-0 pointer-events-none">
+    <div class="absolute inset-0 bg-black/30 dark:bg-black/60 backdrop-blur-xl"></div>
+
+    <div
+        class="relative w-full max-w-md bg-white dark:bg-[#18181b] rounded-[2.5rem] border border-zinc-200/50 dark:border-zinc-800/50 shadow-2xl overflow-hidden transform scale-95 transition-transform duration-500">
+
+        <div
+            class="h-32 bg-gradient-to-br from-brand-500 to-brand-700 relative overflow-hidden flex items-center justify-center">
+            <div class="absolute inset-0 bg-black/10 mix-blend-overlay"></div>
+            <div class="absolute -top-10 -left-10 w-32 h-32 bg-white/20 rounded-full blur-2xl"></div>
+            <div class="absolute -bottom-10 -right-10 w-32 h-32 bg-fuchsia-500/20 rounded-full blur-2xl"></div>
+            <i data-lucide="compass" class="w-12 h-12 text-white drop-shadow-md z-10 animate-pulse"></i>
+        </div>
+
+        <div class="p-6 sm:p-8 flex flex-col gap-6 relative z-10 bg-white dark:bg-[#18181b]">
+            <div class="text-center">
+                <h2 class="text-2xl font-black text-zinc-900 dark:text-white tracking-tight mb-2">Welcome to ChaosPrep
+                </h2>
+                <p class="text-xs font-medium text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                    Let's set your primary academic targets. This calibrates your countdowns and syllabus tracking.
+                </p>
+            </div>
+
+            <div class="space-y-5 mt-1">
+                <div>
+                    <label
+                        class="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Display
+                        Name</label>
+                    <input type="text" id="ob-name" placeholder="How should we address you?"
+                        class="w-full bg-zinc-50 dark:bg-[#09090b] border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-bold focus:ring-2 focus:ring-brand-500 transition-all shadow-inner-light dark:shadow-inner-dark">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label
+                            class="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Target
+                            Exam</label>
+                        <select id="ob-exam"
+                            class="w-full bg-zinc-50 dark:bg-[#09090b] border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-bold focus:ring-2 focus:ring-brand-500 transition-all shadow-inner-light dark:shadow-inner-dark appearance-none cursor-pointer">
+                            <option value="JEE Main">JEE Main</option>
+                            <option value="JEE Advanced">JEE Advanced</option>
+                            <option value="NEET">NEET</option>
+                        </select>
+                        <p class="text-[9px] text-zinc-500 dark:text-zinc-400 mt-2 ml-1 leading-tight font-medium">
+                            Need a different target? You can switch to a <span class="text-brand-500 font-bold">Custom
+                                Exam</span> later in Settings.
+                        </p>
+                    </div>
+                    <div>
+                        <label
+                            class="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Target
+                            Year</label>
+                        <select id="ob-year"
+                            class="w-full bg-zinc-50 dark:bg-[#09090b] border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-bold focus:ring-2 focus:ring-brand-500 transition-all shadow-inner-light dark:shadow-inner-dark appearance-none cursor-pointer">
+                            <option value="2026" selected>2026</option>
+                            <option value="2027">2027</option>
+                            <option value="2028">2028</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <button id="btn-submit-onboarding" onclick="completeOnboarding()"
+                class="mt-2 w-full h-14 bg-brand-600 hover:bg-brand-700 text-white rounded-2xl text-sm font-black transition-all active:scale-95 shadow-floating flex items-center justify-center gap-2">
+                Continue to Dashboard <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </div>
+</div>
     <script type="module" src="script.js"></script>
 </body>
 
