@@ -466,27 +466,47 @@ window.mergeAndRenderTasks = function () {
 // --- FIRESTORE LISTENERS ---
 function setupListeners(user) {
     let isBannerLoaded = false;
-    onSnapshot(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'config'), (snap) => {
-        if (snap.exists()) {
-            state.settings = { ...state.settings, ...snap.data() };
-            if (state.settings.showCountdown === undefined) state.settings.showCountdown = true;
-            applyTheme(state.settings.theme); applyAccentTheme(state.settings.accentTheme || 'default'); applyBackground(state.settings.bgUrl); updateSubjectSelectors(); renderCountdown(); applyLiteMode(state.settings.liteMode); applyMusicSetting(state.settings.showMusic);
-            if (state.currentView === 'calendar') renderCalendar();
-            if (state.currentView === 'syllabus') renderSyllabusView();
-            if (state.currentView === 'timer') { updateSubjectSelectors(); updateTimerStats(); renderRecentLogs(); renderTimerChart(); }
-            if (state.currentView === 'stats-mocks') renderMockStats();
-            if (state.settings.shareTasks !== false) syncMySocialTasks();
-            if (!isBannerLoaded) {
-                fetchAndInitBanner();
-                isBannerLoaded = true;
+
+    // 🚨 ADDED { includeMetadataChanges: true } to accurately track cache vs server
+    onSnapshot(
+        doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'config'),
+        { includeMetadataChanges: true },
+        (snap) => {
+            if (snap.exists()) {
+                state.settings = { ...state.settings, ...snap.data() };
+                if (state.settings.showCountdown === undefined) state.settings.showCountdown = true;
+                applyTheme(state.settings.theme);
+                applyAccentTheme(state.settings.accentTheme || 'default');
+                applyBackground(state.settings.bgUrl);
+                updateSubjectSelectors();
+                renderCountdown();
+                applyLiteMode(state.settings.liteMode);
+                applyMusicSetting(state.settings.showMusic);
+
+                if (state.currentView === 'calendar') renderCalendar();
+                if (state.currentView === 'syllabus') renderSyllabusView();
+                if (state.currentView === 'timer') { updateSubjectSelectors(); updateTimerStats(); renderRecentLogs(); renderTimerChart(); }
+                if (state.currentView === 'stats-mocks') renderMockStats();
+                if (state.settings.shareTasks !== false && typeof syncMySocialTasks === 'function') syncMySocialTasks();
+
+                if (!isBannerLoaded) {
+                    fetchAndInitBanner();
+                    isBannerLoaded = true;
+                }
+            } else {
+                // 🛑 THE CRITICAL FIX: 
+                // When a tab wakes up from sleep, Firestore often fires an empty 'cache' read before reconnecting.
+                // If we don't check 'fromCache', we accidentally overwrite the database with default settings!
+                if (!snap.metadata.fromCache) {
+                    // We are actually connected to the server and the document truly doesn't exist.
+                    setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'config'), state.settings);
+                    setTimeout(() => {
+                        window.openOnboardingModal();
+                    }, 800);
+                }
             }
-        } else {
-            setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'config'), state.settings)
-            setTimeout(() => {
-                window.openOnboardingModal();
-            }, 800);
-        };
-    });
+        }
+    );
 
     // 🚨 1. Start Dynamic Month Listener
     window.listenToTasksForMonth(state.viewDate);
@@ -945,11 +965,82 @@ window.setTimerMode = async function (mode) {
     updateTimerDisplay();
     if (typeof window.saveTimerState === 'function') window.saveTimerState();
 }
+
+// --- AUDIO FEEDBACK SYSTEM ---
+let audioCtx = null;
+
+window.playAudioFeedback = function (type) {
+    // Initialize AudioContext on first user interaction
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    const now = audioCtx.currentTime;
+
+    if (type === 'start') {
+        // Clean, ascending "Go" beep
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.2, now + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        osc.start(now);
+        osc.stop(now + 0.3);
+    }
+    else if (type === 'pause' || type === 'stop') {
+        // Soft, descending "Halt" beep
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(500, now);
+        osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.1, now + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.start(now);
+        osc.stop(now + 0.2);
+    }
+    else if (type === 'complete') {
+        // Success Chime (Two notes: C5 -> E5)
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523.25, now);
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.2, now + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.start(now);
+        osc.stop(now + 0.2);
+
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(659.25, now + 0.15);
+        gain2.gain.setValueAtTime(0, now + 0.15);
+        gain2.gain.linearRampToValueAtTime(0.2, now + 0.2);
+        gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+        osc2.start(now + 0.15);
+        osc2.stop(now + 0.6);
+    }
+}
+
+
 window.toggleTimer = function () {
     const selector = document.getElementById('timer-task-linker');
     if (selector) linkedTaskId = selector.value || null;
 
     if (isTimerRunning) {
+        // 🔊 Play PAUSE sound
+        playAudioFeedback('pause');
+
         timerWorker.postMessage('stop');
         releaseWakeLock();
         timerAccumulatedMs += Date.now() - timerStartMs;
@@ -959,11 +1050,13 @@ window.toggleTimer = function () {
         document.getElementById('btn-timer-toggle').innerHTML = `<i data-lucide="play" class="w-6 h-6 md:w-7 md:h-7 fill-current"></i>`;
         document.getElementById('btn-timer-stop').disabled = false;
 
-        // FIX: Pause Flow Path Animation
         const flowPath = document.getElementById('timer-active-path');
         if (flowPath) flowPath.style.animationPlayState = 'paused';
 
     } else {
+        // 🔊 Play START sound
+        playAudioFeedback('start');
+
         if (timerMode !== 'flow' && Math.floor(timerAccumulatedMs / 1000) >= targetDurationSecs) {
             resetTimer();
         }
@@ -1010,6 +1103,9 @@ window.toggleTimer = function () {
 window.stopTimer = async function () {
     let wasRunning = isTimerRunning;
     if (isTimerRunning) {
+        // 🔊 Play STOP sound
+        playAudioFeedback('stop');
+
         timerWorker.postMessage('stop');
         releaseWakeLock();
         timerAccumulatedMs += Date.now() - timerStartMs;
@@ -1087,6 +1183,9 @@ function resetTimer() {
 }
 
 function completeCountdownSession() {
+    // 🔊 Play SUCCESS sound
+    playAudioFeedback('complete');
+
     timerWorker.postMessage('stop');
     releaseWakeLock();
 
@@ -1994,23 +2093,21 @@ window.autoSaveSettings = async function () {
         indicator.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> Saving...`;
         indicator.classList.remove('hidden');
         indicator.className = 'flex items-center gap-2 text-zinc-500 text-xs font-bold transition-all';
-        lucide.createIcons();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
-    // Pull text/select values directly from DOM to capture live typing
-    const rolloverEl = document.getElementById('settings-rollover');
-    if (rolloverEl) state.settings.dayRolloverHour = parseInt(rolloverEl.value) || 0;
+    // 🚨 THE FIX: ONLY scrape the HTML inputs if the user is actually inside the Settings view!
+    // Otherwise, empty hidden HTML inputs will overwrite your saved Firestore data during background saves.
+    if (state.currentView === 'settings') {
+        const rolloverEl = document.getElementById('settings-rollover');
+        if (rolloverEl) state.settings.dayRolloverHour = parseInt(rolloverEl.value) || 0;
 
-    const bgUrlEl = document.getElementById('settings-bg-url');
-    if (bgUrlEl) state.settings.bgUrl = bgUrlEl.value;
+        const bgUrlEl = document.getElementById('settings-bg-url');
+        if (bgUrlEl) state.settings.bgUrl = bgUrlEl.value;
 
-    const bannerUrlEl = document.getElementById('settings-banner-url');
-    if (bannerUrlEl) state.settings.bannerUrl = bannerUrlEl.value;
-
-    const profileQuoteEl = document.getElementById('settings-profile-quote');
-    if (profileQuoteEl) state.settings.profileQuote = profileQuoteEl.value;
-
-    updateTargetDateConfig();
+        // Safely calculate the date based on the visible DOM inputs
+        updateTargetDateConfig();
+    }
 
     try {
         await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), state.settings, { merge: true });
@@ -2018,7 +2115,7 @@ window.autoSaveSettings = async function () {
         if (indicator) {
             indicator.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> Saved`;
             indicator.className = 'flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-bold transition-all';
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
 
             // Hide the indicator gently after 2 seconds
             setTimeout(() => {
@@ -2038,7 +2135,7 @@ window.autoSaveSettings = async function () {
         if (indicator) {
             indicator.innerHTML = `<i data-lucide="x" class="w-3.5 h-3.5"></i> Error`;
             indicator.className = 'flex items-center gap-2 text-rose-500 text-xs font-bold transition-all';
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
     }
 }
@@ -2213,24 +2310,48 @@ function updateSessionUI() {
 }
 
 window.updateTargetDateConfig = function () {
-    const year = document.getElementById('settings-year').value;
-    let date = `${year}-01-01`;
+    const yearSelect = document.getElementById('settings-year');
+    const year = yearSelect ? yearSelect.value : (state.settings.targetYear || 2026);
+
+    // Default to the currently saved date to prevent accidental wipes
+    let date = state.settings.targetDate || `${year}-01-01`;
 
     if (state.settings.examType === 'JEE Main') {
-        const shiftInput = document.getElementById('settings-jee-shift-date').value;
-        date = shiftInput ? shiftInput : ((state.settings.session === 'Jan') ? `${year}-01-22` : `${year}-04-04`);
+        const shiftInputEl = document.getElementById('settings-jee-shift-date');
+        if (shiftInputEl && shiftInputEl.value) {
+            let shiftInput = shiftInputEl.value;
+            // Force the year to match the dropdown so they don't get out of sync
+            let parts = shiftInput.split('-');
+            if (parts[0] !== year) {
+                parts[0] = year;
+                shiftInput = parts.join('-');
+                shiftInputEl.value = shiftInput;
+            }
+            date = shiftInput;
+        } else if (!state.settings.targetDate) {
+            // Only fallback to defaults if the database actually has NO date
+            date = (state.settings.session === 'Jan') ? `${year}-01-22` : `${year}-04-04`;
+        }
     }
     else if (state.settings.examType === 'NEET') date = `${year}-05-05`;
     else if (state.settings.examType === 'JEE Advanced') date = `${year}-05-17`;
     else if (state.settings.examType === 'Custom') {
-        const m = document.getElementById('settings-custom-date').value;
-        if (m) date = m;
+        const customInputEl = document.getElementById('settings-custom-date');
+        if (customInputEl && customInputEl.value) {
+            let m = customInputEl.value;
+            let parts = m.split('-');
+            if (parts[0] !== year) {
+                parts[0] = year;
+                m = parts.join('-');
+                customInputEl.value = m;
+            }
+            date = m;
+        }
     }
 
     state.settings.targetDate = date;
     state.settings.targetYear = parseInt(year);
 }
-
 // Ensure all toggles auto-save 
 window.toggleCountdownSetting = () => {
     state.settings.showCountdown = !state.settings.showCountdown;
@@ -2891,12 +3012,19 @@ window.openEditMockModal = function (id) {
     });
     container.innerHTML = html;
 
-    // Properly inject the data into the new input fields
+    // Set existing data
     const totalInput = document.getElementById('edit-mock-total-input');
     if (totalInput) totalInput.value = task.marks !== undefined && task.marks !== null ? task.marks : '';
 
     const maxInput = document.getElementById('edit-mock-max');
     if (maxInput) maxInput.value = task.maxMarks || (type === 'NEET' ? 720 : 300);
+
+    // Set Accuracy Data
+    const attemptedInput = document.getElementById('edit-mock-attempted');
+    if (attemptedInput) attemptedInput.value = task.attempted !== undefined ? task.attempted : '';
+
+    const correctInput = document.getElementById('edit-mock-correct');
+    if (correctInput) correctInput.value = task.correct !== undefined ? task.correct : '';
 
     const modal = document.getElementById('edit-mock-modal');
     modal.classList.remove('hidden');
@@ -2936,15 +3064,23 @@ window.saveMockBreakdown = async function () {
 
     const totalInput = document.getElementById('edit-mock-total-input');
     const maxInput = document.getElementById('edit-mock-max');
+    const attemptedInput = document.getElementById('edit-mock-attempted');
+    const correctInput = document.getElementById('edit-mock-correct');
 
     const finalMarks = (totalInput && totalInput.value !== '') ? parseInt(totalInput.value) : null;
     const finalMax = (maxInput && maxInput.value !== '') ? parseInt(maxInput.value) : 300;
+
+    // Parse accuracy logic
+    const finalAttempted = (attemptedInput && attemptedInput.value !== '') ? parseInt(attemptedInput.value) : null;
+    const finalCorrect = (correctInput && correctInput.value !== '') ? parseInt(correctInput.value) : null;
 
     try {
         await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', id), {
             subjectMarks: Object.keys(subjectMarks).length > 0 ? subjectMarks : null,
             marks: finalMarks,
             maxMarks: finalMax,
+            attempted: finalAttempted,
+            correct: finalCorrect,
             completed: finalMarks !== null
         });
         showToast('Score Updated');
@@ -2954,7 +3090,6 @@ window.saveMockBreakdown = async function () {
         showToast('Error updating');
     }
 }
-
 window.closeEditMockModal = function () {
     const modal = document.getElementById('edit-mock-modal');
     modal.classList.add('opacity-0');
@@ -3143,6 +3278,7 @@ function updateSubjectSelectors() {
 document.getElementById('add-task-form-mobile').addEventListener('submit', async (e) => { e.preventDefault(); await handleTaskSubmit('mobile'); });
 document.getElementById('add-task-form').addEventListener('submit', async (e) => { e.preventDefault(); await handleTaskSubmit('desktop'); });
 
+// Replace handleTaskSubmit function around line 800
 async function handleTaskSubmit(mode) {
     if (!currentUser) return;
     const suffix = mode === 'mobile' ? '-mobile' : '';
@@ -3156,7 +3292,6 @@ async function handleTaskSubmit(mode) {
     const selectorId = mode === 'mobile' ? 'subject-selector-mobile' : 'subject-selector';
     const subject = document.querySelector(`#${selectorId} input[name="subject"]:checked`)?.value;
 
-    // 🛑 THE FIX: Strip whitespace and enforce a strict minimum length
     const cleanText = rawText.trim();
 
     if (!date || cleanText.length < 2 || !subject) {
@@ -3170,7 +3305,6 @@ async function handleTaskSubmit(mode) {
     const tasksOnDate = state.tasks.filter(t => t.date === date);
     const maxOrder = tasksOnDate.length > 0 ? Math.max(...tasksOnDate.map(t => t.order || 0)) : -1;
 
-    // 🚨 Use the 'cleanText' variable here to save the sanitized version
     const newTask = { text: cleanText, date, subject, completed: false, order: maxOrder + 1, createdAt: new Date().toISOString() };
 
     if (subject === 'MockTest') {
@@ -3180,28 +3314,35 @@ async function handleTaskSubmit(mode) {
             const marksId = `task-marks${suffix}`;
             const maxMarksId = `task-max-marks${suffix}`;
             const marks = document.getElementById(marksId).value;
-            // ... (keep your existing subject loop here)
 
             if (!marks || marks === '') {
                 showToast("Please enter marks to log results!");
                 btn.innerHTML = originalContent;
                 btn.disabled = false;
-                return; // Stop submission
+                return;
             }
 
-            newTask.marks = marks;
-            newTask.completed = true; // Auto-complete it because it's a logged result
-            newTask.maxMarks = document.getElementById(maxMarksId).value || 300;
+            // Save marks & max marks strictly as Integers
+            newTask.marks = parseInt(marks);
+            newTask.maxMarks = parseInt(document.getElementById(maxMarksId).value) || 300;
+            newTask.completed = true;
 
-            // --- ADD THESE 4 NEW LINES HERE ---
+            // Collect Subject Marks properly
+            let subjectMarks = {};
+            document.querySelectorAll(`.mock-subject-input${suffix}`).forEach(input => {
+                if (input.value !== '') {
+                    subjectMarks[input.dataset.subject] = parseInt(input.value);
+                }
+            });
+            if (Object.keys(subjectMarks).length > 0) newTask.subjectMarks = subjectMarks;
+
+            // Collect Accuracy tracking
             const attemptedVal = document.getElementById(`task-attempted${suffix}`).value;
             const correctVal = document.getElementById(`task-correct${suffix}`).value;
             if (attemptedVal) newTask.attempted = parseInt(attemptedVal);
             if (correctVal) newTask.correct = parseInt(correctVal);
-            // ----------------------------------
 
         } else {
-            // It's a Schedule! Do not attach marks, and keep it incomplete.
             newTask.completed = false;
         }
     }
@@ -3216,9 +3357,7 @@ async function handleTaskSubmit(mode) {
             state.viewDate = addedDate;
             if (state.currentView === 'calendar') renderCalendar();
         }
-
         if (state.settings && state.settings.shareTasks !== false && typeof syncMySocialTasks === 'function') syncMySocialTasks();
-
     } catch (e) {
         console.error(e);
     }
@@ -3321,8 +3460,8 @@ window.openDayView = function (dateStr) {
             <input type="checkbox" ${t.completed ? 'checked' : ''} class="fancy-checkbox w-6 h-6 shrink-0 cursor-pointer mt-1" onclick="toggleTask('${t.id}', ${t.completed})">
             ${contentHTML}
             <div class="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onclick="editTaskText('${t.id}', '${t.text.replace(/'/g, "\\'")}')" class="text-zinc-400 hover:text-brand-500 p-2 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-                <button onclick="requestDelete('task', '${t.id}')" class="text-zinc-400 hover:text-rose-500 p-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                <button onclick="openEditTaskModal('${t.id}')" class="text-zinc-400 hover:text-brand-500 p-2 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+            <button onclick="requestDelete('task', '${t.id}')" class="text-zinc-400 hover:text-rose-500 p-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </div>
         </div>
         ${subtasksHtml}
@@ -3426,7 +3565,6 @@ function renderCustomSubjectsList() {
         el.innerHTML = `<span class="text-sm font-bold text-zinc-700 dark:text-zinc-200 pl-2 tracking-tight">${sub}</span><button onclick="deleteCustomSubject('${sub}')" class="p-2 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors" title="Remove"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`; list.appendChild(el);
     }); lucide.createIcons();
 }
-
 window.deleteCustomSubject = async (sub) => {
     if (!currentUser) return;
 
@@ -3445,8 +3583,8 @@ window.deleteCustomSubject = async (sub) => {
         await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), { customSubjects: arrayRemove(sub) });
         showToast("Removed");
 
-        // Force color palette to update instantly in settings
-        if (!document.getElementById('settings-modal').classList.contains('hidden')) {
+        // 🚨 THE FIX: Check currentView instead of a non-existent modal
+        if (state.currentView === 'settings') {
             renderSubjectColorSettings();
         }
     } catch (e) {
@@ -3461,10 +3599,8 @@ window.confirmAddSubject = async () => {
         if (!state.settings.customSubjects) state.settings.customSubjects = [];
 
         if (!state.settings.customSubjects.includes(sub)) {
-            // 1. Update live state
             state.settings.customSubjects.push(sub);
 
-            // 2. IMPORTANT: Update draft state so it doesn't overwrite on save!
             if (typeof tempSettings !== 'undefined') {
                 if (!tempSettings.customSubjects) tempSettings.customSubjects = [];
                 if (!tempSettings.customSubjects.includes(sub)) tempSettings.customSubjects.push(sub);
@@ -3478,8 +3614,8 @@ window.confirmAddSubject = async () => {
                 showToast(`${sub} added!`);
                 document.getElementById('custom-subject-input').value = '';
 
-                // Force color palette to update instantly in settings
-                if (!document.getElementById('settings-modal').classList.contains('hidden')) {
+                // 🚨 THE FIX: Check currentView instead of a non-existent modal
+                if (state.currentView === 'settings') {
                     renderSubjectColorSettings();
                 }
             } catch (e) {
@@ -3532,14 +3668,47 @@ function showToast(msg) { const t = document.getElementById('toast'); document.g
 function setupKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
         if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
-        const isModalOpen = !document.getElementById('add-task-modal').classList.contains('hidden') || !document.getElementById('settings-modal').classList.contains('hidden') || !document.getElementById('day-view-modal').classList.contains('hidden') || !document.getElementById('custom-subject-modal').classList.contains('hidden');
+
+        // 🚨 FIXED: Removed the broken settings-modal check
+        const isModalOpen = !document.getElementById('add-task-modal').classList.contains('hidden') ||
+            !document.getElementById('day-view-modal').classList.contains('hidden') ||
+            !document.getElementById('custom-subject-modal').classList.contains('hidden');
+
         switch (e.key) {
-            case 'ArrowRight': if (isModalOpen) return; if (state.currentView === 'calendar') { changeMonth(1); showToast('Next Month'); } else if (state.currentView === 'weekly') { changeWeek(1); showToast('Next Week'); } else if (state.currentView === 'timer') { changeTimerChartWeek(1); showToast('Next Week'); } break;
-            case 'ArrowLeft': if (isModalOpen) return; if (state.currentView === 'calendar') { changeMonth(-1); showToast('Prev Month'); } else if (state.currentView === 'weekly') { changeWeek(-1); showToast('Prev Week'); } else if (state.currentView === 'timer') { changeTimerChartWeek(-1); showToast('Prev Week'); } break;
-            case 'n': case 'N': if (isModalOpen) return; e.preventDefault(); if (window.innerWidth < 768) openAddTaskModal(); else document.getElementById('task-input').focus(); break;
-            case 't': case 'T': if (isModalOpen) return; goToToday(); showToast('Today'); break;
-            case 'Escape': if (!document.getElementById('add-task-modal').classList.contains('hidden')) closeAddTaskModal(); if (!document.getElementById('settings-modal').classList.contains('hidden')); if (!document.getElementById('day-view-modal').classList.contains('hidden')) closeDayView(); if (!document.getElementById('custom-subject-modal').classList.contains('hidden')) closeCustomSubjectModal(); if (!document.getElementById('manual-log-modal').classList.contains('hidden')) closeManualLogModal(); if (!document.getElementById('edit-mock-modal') && !document.getElementById('edit-mock-modal')?.classList.contains('hidden')) closeEditMockModal(); break;
-            case '1': switchView('calendar'); showToast('Planner'); break; case '2': switchView('weekly'); showToast('Targets'); break; case '3': switchView('timer'); showToast('Timer'); break; case '4': switchView('stats-mocks'); showToast('Stats'); break; case '5': switchView('syllabus'); showToast('Syllabus'); break;
+            case 'ArrowRight':
+                if (isModalOpen) return;
+                if (state.currentView === 'calendar') { changeMonth(1); showToast('Next Month'); }
+                else if (state.currentView === 'weekly') { changeWeek(1); showToast('Next Week'); }
+                else if (state.currentView === 'timer') { changeTimerChartWeek(1); showToast('Next Week'); }
+                break;
+            case 'ArrowLeft':
+                if (isModalOpen) return;
+                if (state.currentView === 'calendar') { changeMonth(-1); showToast('Prev Month'); }
+                else if (state.currentView === 'weekly') { changeWeek(-1); showToast('Prev Week'); }
+                else if (state.currentView === 'timer') { changeTimerChartWeek(-1); showToast('Prev Week'); }
+                break;
+            case 'n': case 'N':
+                if (isModalOpen) return;
+                e.preventDefault();
+                if (window.innerWidth < 768) openAddTaskModal(); else document.getElementById('task-input').focus();
+                break;
+            case 't': case 'T':
+                if (isModalOpen) return; goToToday(); showToast('Today');
+                break;
+            case 'Escape':
+                if (!document.getElementById('add-task-modal').classList.contains('hidden')) closeAddTaskModal();
+                if (!document.getElementById('day-view-modal').classList.contains('hidden')) closeDayView();
+                if (!document.getElementById('custom-subject-modal').classList.contains('hidden')) closeCustomSubjectModal();
+                if (!document.getElementById('manual-log-modal').classList.contains('hidden')) closeManualLogModal();
+                if (document.getElementById('edit-mock-modal') && !document.getElementById('edit-mock-modal').classList.contains('hidden')) closeEditMockModal();
+                // NEW: Added the ability to close the Edit Task modal with Escape
+                if (document.getElementById('edit-task-modal') && !document.getElementById('edit-task-modal').classList.contains('hidden')) closeEditTaskModal();
+                break;
+            case '1': switchView('calendar'); showToast('Planner'); break;
+            case '2': switchView('weekly'); showToast('Targets'); break;
+            case '3': switchView('timer'); showToast('Timer'); break;
+            case '4': switchView('stats-mocks'); showToast('Stats'); break;
+            case '5': switchView('syllabus'); showToast('Syllabus'); break;
         }
     });
 }
@@ -4394,20 +4563,27 @@ async function initSocialProfile(user) {
 
     let code = snap.exists() ? snap.data().code : generateFriendCode();
 
-    // Check if they already set a custom name in the database
+    // Check if they already set a custom name/avatar in the database
     let currentName = (snap.exists() && snap.data().name) ? snap.data().name : (user.displayName || "Aspirant");
+    let currentAvatar = (snap.exists() && snap.data().avatar) ? snap.data().avatar : (user.photoURL || "");
 
     myFriendCode = code;
     myDisplayName = currentName;
 
-    // Update the sidebar UI to reflect their actual stored display name
+    // Update the sidebar UI to reflect their actual stored display name & avatar
     document.getElementById('user-name-desktop').innerText = currentName;
+    if (currentAvatar) {
+        const desktopAvatarEl = document.getElementById('user-avatar-desktop');
+        if (desktopAvatarEl) {
+            desktopAvatarEl.innerHTML = `<img src="${currentAvatar}" class="w-full h-full rounded-full object-cover">`;
+        }
+    }
 
     // Make sure we update their name/avatar in case it changed
     await setDoc(profileRef, {
         uid: user.uid,
         name: currentName,
-        avatar: user.photoURL || "",
+        avatar: currentAvatar,
         code: code,
         lastActive: new Date().toISOString()
     }, { merge: true });
@@ -5185,15 +5361,65 @@ window.applyMusicSetting = function (show) {
 }
 
 
-window.editTaskText = async function (id, currentText) {
+window.openEditTaskModal = function (id) {
+    const task = state.tasks.find(t => t.id === id);
+    if (!task) return;
+
+    document.getElementById('edit-task-id').value = id;
+    document.getElementById('edit-task-text').value = task.text || '';
+
+    // Populate Subjects Dropdown
+    const select = document.getElementById('edit-task-subject');
+    const type = state.settings.examType;
+    const subjects = window.getExamSubjects(type, state.settings.customSubjects);
+
+    // Ensure MockTest is an option too
+    if (!subjects.includes('MockTest')) subjects.push('MockTest');
+
+    select.innerHTML = subjects.map(s =>
+        `<option value="${s}" ${s === task.subject ? 'selected' : ''}>${s === 'MockTest' ? '🏆 MockTest' : s}</option>`
+    ).join('');
+
+    const modal = document.getElementById('edit-task-modal');
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        modal.querySelector('div').classList.replace('scale-95', 'scale-100');
+    }, 10);
+}
+
+window.closeEditTaskModal = function () {
+    const modal = document.getElementById('edit-task-modal');
+    modal.classList.add('opacity-0');
+    modal.querySelector('div').classList.replace('scale-100', 'scale-95');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+}
+
+window.saveEditTask = async function () {
     if (!currentUser) return;
-    const newText = await customPrompt("Update your task description below:", currentText, "Edit Task"); if (newText !== null && newText.trim() !== "" && newText !== currentText) {
-        try {
-            await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', id), {
-                text: newText.trim()
-            });
-            showToast("Task updated!");
-        } catch (e) { console.error(e); }
+
+    const id = document.getElementById('edit-task-id').value;
+    const newText = document.getElementById('edit-task-text').value.trim();
+    const newSubject = document.getElementById('edit-task-subject').value;
+
+    if (!newText) {
+        showToast("Task description cannot be empty!");
+        return;
+    }
+
+    try {
+        await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', id), {
+            text: newText,
+            subject: newSubject
+        });
+        showToast("Task updated!");
+        closeEditTaskModal();
+
+        // Auto-sync new data to Squads if enabled
+        if (state.settings.shareTasks !== false) syncMySocialTasks();
+    } catch (e) {
+        console.error(e);
+        showToast("Error updating task");
     }
 }
 
@@ -5349,7 +5575,7 @@ document.addEventListener("visibilitychange", () => {
     }
 });
 
-// Add this right above toggleFullScreenZen so it catches 'ESC' keys or system back-swipes
+// Add this right above Zen so it catches 'ESC' keys or system back-swipes
 document.addEventListener('fullscreenchange', () => {
     if (!document.fullscreenElement && isZenMode) {
         window.toggleFullScreenZen();
@@ -5404,7 +5630,7 @@ window.toggleFullScreenZen = async function () {
         }
         if (display) {
             display.classList.remove('text-5xl', 'md:text-6xl');
-            display.classList.add('text-6xl', 'md:text-[7rem]');
+            display.classList.add('text-6xl', 'md:text-[7rem]'); // Makes text very large
         }
     } else {
         try {
@@ -5431,12 +5657,16 @@ window.toggleFullScreenZen = async function () {
 
         const dial = document.getElementById('timer-dial-wrapper');
         if (dial) {
+            // Ensure you remove all large classes and restore original ones
             dial.classList.remove('w-80', 'h-48', 'md:w-[500px]', 'md:h-[300px]', 'w-64', 'h-64', 'md:w-[400px]', 'md:h-[400px]');
-            dial.classList.add('w-64', 'h-40', 'md:w-80', 'md:h-48');
+            dial.classList.add('w-64', 'h-40', 'md:w-80', 'md:h-48'); // Restores normal dial size
         }
+        
+        const display = document.getElementById('timer-display');
         if (display) {
-            display.classList.remove('text-6xl', 'md:text-[7rem]');
-            display.classList.add('text-5xl', 'md:text-6xl');
+            // Ensure you remove the very large text classes
+            display.classList.remove('text-6xl', 'md:text-[7rem]'); 
+            display.classList.add('text-5xl', 'md:text-6xl'); // Restores normal text size
         }
     }
 }
@@ -5746,20 +5976,9 @@ window.ctxAction = async function (action) {
             await updateDoc(taskRef, { completed: !task.completed });
             showToast(task.completed ? "Marked as pending" : "Marked as completed!");
         }
-        else if (action === 'edit-text') {
-            // Assuming your customPrompt takes (Title, Message, DefaultValue) 
-            // Adjust the parameters if your function signature is slightly different!
-            const newText = await window.customPrompt(
-                "Quick Rename",
-                task.text,
-                task.text
-            );
-
-            // Only update if they actually typed something new and didn't cancel
-            if (newText && newText.trim() !== "" && newText.trim() !== task.text) {
-                await updateDoc(taskRef, { text: newText.trim() });
-                showToast("Task renamed");
-            }
+        else if (action === 'edit-task') {
+            window.openEditTaskModal(activeCtxTaskId);
+            return; // We return early because the modal handles the save internally
         }
         // --- TIME TRAVEL (MOVE) ---
         else if (action === 'move-today') {
@@ -6047,6 +6266,17 @@ window.saveProfileSettings = async () => {
     const bannerUrlInput = document.getElementById('profile-banner-url').value.trim();
     const safeBannerUrl = window.isValidImageUrl(bannerUrlInput) ? bannerUrlInput : null;
 
+    // Process Avatar URL (Falls back to default Google photo if left blank)
+    const avatarUrlInput = document.getElementById('profile-avatar-url').value.trim();
+    let safeAvatarUrl = currentUser.photoURL || "";
+    if (avatarUrlInput) {
+        if (window.isValidImageUrl(avatarUrlInput)) {
+            safeAvatarUrl = avatarUrlInput;
+        } else {
+            showToast("Invalid Avatar URL. Must end in .png, .jpg, etc.");
+        }
+    }
+
     // Read directly from the live state instead of tempSettings
     const bTheme = state.settings?.bannerTheme ?? state.myProfile?.bannerTheme ?? 'default';
     const aShape = state.settings?.avatarShape ?? state.myProfile?.avatarShape ?? 'circle';
@@ -6056,7 +6286,8 @@ window.saveProfileSettings = async () => {
         profileQuote: newQuote,
         bannerUrl: safeBannerUrl,
         bannerTheme: bTheme,
-        avatarShape: aShape
+        avatarShape: aShape,
+        avatar: safeAvatarUrl
     };
 
     try {
@@ -6074,6 +6305,12 @@ window.saveProfileSettings = async () => {
         myDisplayName = updates.name;
         const desktopNameEl = document.getElementById('user-name-desktop');
         if (desktopNameEl) desktopNameEl.innerText = updates.name;
+
+        // Update Desktop Avatar Element Real-time
+        const desktopAvatarEl = document.getElementById('user-avatar-desktop');
+        if (desktopAvatarEl && updates.avatar) {
+            desktopAvatarEl.innerHTML = `<img src="${updates.avatar}" class="w-full h-full rounded-full object-cover">`;
+        }
 
         if (state.currentView === 'squad') renderSquadView();
 

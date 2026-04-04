@@ -26,7 +26,7 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script type="module" crossorigin src="./assets/main-D7TYz8TD.js"></script>
+  <script type="module" crossorigin src="./assets/main-cbJoWP7y.js"></script>
   <link rel="stylesheet" crossorigin href="./assets/main-j3Z1Gyfw.css">
 <script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TCK0S6VC58"></script>
@@ -1710,12 +1710,13 @@
             <input type="hidden" id="edit-mock-id">
     
             <div id="edit-mock-inputs" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5"></div>
-    
+            
             <div class="flex items-center gap-2 mb-3 text-zinc-500 dark:text-zinc-400">
                 <i data-lucide="calculator" class="w-4 h-4"></i>
                 <span class="text-xs font-bold uppercase tracking-wide">Totals</span>
             </div>
-            <div class="grid grid-cols-2 gap-3 mb-8">
+            <!-- Changed mb-8 to mb-5 here -->
+            <div class="grid grid-cols-2 gap-3 mb-5">
                 <div>
                     <label
                         class="block text-[10px] font-bold text-zinc-500 dark:text-zinc-400 mb-1 uppercase tracking-widest">Obtained</label>
@@ -1729,7 +1730,27 @@
                         class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-black text-zinc-500 focus:ring-2 focus:ring-brand-500 text-center shadow-inner-light dark:shadow-inner-dark">
                 </div>
             </div>
-    
+            
+            <!-- NEW ACCURACY SECTION ADDED HERE -->
+            <div class="flex items-center gap-2 mb-3 text-zinc-500 dark:text-zinc-400">
+                <i data-lucide="target" class="w-4 h-4"></i>
+                <span class="text-xs font-bold uppercase tracking-wide">Accuracy</span>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mb-8">
+                <div>
+                    <label
+                        class="block text-[10px] font-bold text-zinc-500 dark:text-zinc-400 mb-1 uppercase tracking-widest">Attempted</label>
+                    <input type="number" id="edit-mock-attempted" placeholder="0"
+                        class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-black text-zinc-700 dark:text-zinc-300 focus:ring-2 focus:ring-brand-500 text-center shadow-inner-light dark:shadow-inner-dark">
+                </div>
+                <div>
+                    <label
+                        class="block text-[10px] font-bold text-zinc-500 dark:text-zinc-400 mb-1 uppercase tracking-widest">Correct</label>
+                    <input type="number" id="edit-mock-correct" placeholder="0"
+                        class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-black text-zinc-700 dark:text-zinc-300 focus:ring-2 focus:ring-brand-500 text-center shadow-inner-light dark:shadow-inner-dark">
+                </div>
+            </div>
+            
             <div class="flex gap-3 justify-end w-full">
                 <button onclick="resetMockScore()"
                     class="px-5 py-2.5 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 font-bold text-sm transition-colors mr-auto">Reset</button>
@@ -2046,10 +2067,9 @@
         <button onclick="ctxAction('toggle-done')"
             class="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-3 transition-colors"><i
                 data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i> Toggle Status</button>
-        <button onclick="ctxAction('edit-text')"
+        <button onclick="ctxAction('edit-task')"
             class="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-3 transition-colors"><i
-                data-lucide="edit-3" class="w-4 h-4 text-zinc-400"></i> Quick Rename</button>
-
+                data-lucide="edit-3" class="w-4 h-4 text-zinc-400"></i> Edit Task</button>
         <div class="h-px bg-zinc-100 dark:bg-zinc-800/50 my-1.5 mx-3"></div>
 
         <div class="px-4 py-1 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Move
@@ -2128,6 +2148,13 @@
             </div>
 
             <div class="space-y-2">
+                <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Custom Avatar (URL)</label>
+                <input type="url" id="profile-avatar-url" placeholder="Leave blank for default Google Photo"
+                    class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white transition-colors focus:border-brand-500 placeholder:text-zinc-400/50 shadow-inner-light dark:shadow-inner-dark" />
+            </div>
+
+
+            <div class="space-y-2">
                 <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Avatar Shape</label>
                 <div class="flex gap-2">
                     <button onclick="setAvatarShape('circle')" id="shape-btn-circle"
@@ -2195,7 +2222,7 @@
             </button>
         </div>
 
-        <div id="changelog-content" class="p-6 overflow-y-auto custom-scrollbar text-zinc-300 space-y-2">
+        <div id="changelog-content" class="p-6 overflow-y-auto custom-scrollbar text-zinc-300 space-y-4 text-sm">
             <div class="flex justify-center items-center h-32">
                 <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
             </div>
@@ -2272,7 +2299,51 @@
             </button>
         </div>
     </div>
+
+    
 </div>
+
+
+<!-- Edit Task Modal -->
+<div id="edit-task-modal"
+    class="fixed inset-0 z-[160] flex items-center justify-center modal-backdrop hidden opacity-0 transition-opacity duration-300 px-4">
+    <div
+        class="bg-white dark:bg-[#18181b] rounded-[2.5rem] shadow-2xl p-6 md:p-8 w-full max-w-sm transform scale-95 transition-transform duration-300 border border-zinc-200/50 dark:border-zinc-800">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-black text-zinc-900 dark:text-white tracking-tight">Edit Task</h3>
+            <button onclick="closeEditTaskModal()"
+                class="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-full text-zinc-400 hover:text-rose-500 transition-colors"><i
+                    data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+
+        <input type="hidden" id="edit-task-id">
+
+        <div class="space-y-5">
+            <div>
+                <label
+                    class="block text-[10px] font-bold text-zinc-500 mb-1.5 uppercase tracking-widest">Subject</label>
+                <select id="edit-task-subject"
+                    class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3.5 text-sm outline-none dark:text-white font-medium shadow-inner-light dark:shadow-inner-dark appearance-none">
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-zinc-500 mb-1.5 uppercase tracking-widest">Task
+                    Description</label>
+                <textarea id="edit-task-text" rows="3"
+                    class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-medium shadow-inner-light dark:shadow-inner-dark resize-none placeholder:text-zinc-400"></textarea>
+            </div>
+        </div>
+
+        <div class="flex gap-3 justify-end mt-8">
+            <button onclick="closeEditTaskModal()"
+                class="px-5 py-2.5 rounded-xl text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-bold text-sm transition-colors">Cancel</button>
+            <button onclick="saveEditTask()"
+                class="px-6 py-2.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold text-sm shadow-md transition-all active:scale-95 flex items-center justify-center">Save
+                Changes</button>
+        </div>
+    </div>
+</div>
+
 </body>
 
 </html>
