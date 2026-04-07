@@ -47,120 +47,161 @@
         </div>
     </div>
 
-    <div id="login-screen" class="fixed inset-0 z-[70] transition-opacity duration-700 font-sans"
-        style="background-color: #09090b; color: #ffffff;">
-    
-        <div class="absolute inset-0 flex flex-col md:flex-row w-full h-full" style="min-height: 100dvh; overflow: hidden;">
-    
-            <div class="hidden md:flex relative w-[40%] max-w-lg h-full border-r border-zinc-800 flex-col justify-between p-10"
-                style="background-color: #050505;">
-    
-                <div class="absolute inset-0 z-0 pointer-events-none"
-                    style="background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px); background-size: 40px 40px;">
-                </div>
-    
-                <div class="relative z-10 flex items-center gap-3">
-                    <img src="logo.png" alt="ChaosPrep Logo" class="w-10 h-10 rounded-xl object-contain shadow-md"
-                        style="filter: none !important; -webkit-filter: none !important;">
-                    <div class="flex flex-col">
-                        <span class="text-xl font-black tracking-tighter leading-none"
-                            style="color: #ffffff;">ChaosPrep</span>
-                        <span class="text-[10px] font-bold uppercase tracking-widest mt-0.5" style="color: #a78bfa;">by
-                            sval.tech</span>
-                    </div>
-                </div>
-    
-                <div class="relative z-10 my-auto">
-                    <div class="flex flex-col gap-6border-zinc-800 pl-6 py-2">
+    <div id="login-screen" class="fixed inset-0 z-[70] bg-black text-white transition-opacity duration-700 font-sans overflow-hidden">
+        
+        <style>
+            @keyframes aurora-1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-5%, 5%) scale(1.1); } }
+            @keyframes aurora-2 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(5%, -5%) scale(1.05); } }
+            @keyframes shimmer { 100% { transform: translateX(200%); } }
+            @keyframes revealUp { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
+            .animate-reveal { animation: revealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+            .delay-100 { animation-delay: 100ms; }
+            .delay-200 { animation-delay: 200ms; }
+            .delay-300 { animation-delay: 300ms; }
+        </style>
 
-                            <h3>
-                                <span id="live-student-count" class="font-bold uppercase tracking-[0.15em] text-brand-300">
-                                    Loading...
-                                </span>
-                            </h3>
+        <div class="absolute inset-0 pointer-events-none z-0 overflow-hidden bg-black">
+            <div class="absolute top-[-20%] left-[-10%] w-[60vw] h-[60vw] rounded-full bg-brand-600/10 blur-[120px]" style="animation: aurora-1 15s ease-in-out infinite;"></div>
+            <div class="absolute bottom-[-20%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-fuchsia-600/10 blur-[120px]" style="animation: aurora-2 18s ease-in-out infinite; animation-delay: -5s;"></div>
+            <div class="absolute inset-0 opacity-[0.04] mix-blend-overlay" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');"></div>
+        </div>
+
+        <div class="absolute inset-0 w-full h-full overflow-y-auto custom-scrollbar z-10">
+            
+            <nav class="sticky top-0 w-full z-50 border-b border-zinc-900 bg-black/60 backdrop-blur-xl">
+                <div class="max-w-6xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-md bg-white flex items-center justify-center overflow-hidden shrink-0">
+                            <img src="logo.png" alt="ChaosPrep Logo" class="w-full h-full object-contain scale-[1.15]">
+                        </div>
+                        <span class="text-xl font-black tracking-tight text-white">ChaosPrep</span>
+                    </div>
+                    <div class="flex items-center gap-4 md:gap-6">
+                        <a href="https://discord.gg/mKXPpSY6Dz" target="_blank" class="hidden md:flex items-center gap-2 text-xs font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-widest">
+                            <i data-lucide="message-square" class="w-4 h-4"></i> Discord
+                        </a>
+                        <button onclick="signInWithGoogle()" class="text-xs font-bold bg-white text-black px-5 py-2.5 rounded-md hover:bg-zinc-200 active:scale-95 transition-all">
+                            Log In
+                        </button>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="w-full max-w-6xl mx-auto px-4 md:px-8 pt-20 pb-32 flex flex-col items-center min-h-max">
+                
+                <div class="flex flex-col sm:flex-row items-center gap-3 mb-8 opacity-0 animate-reveal">
+                    <div class="flex items-center gap-2 px-4 py-2 rounded-full bg-brand-500/10 border border-brand-500/20 backdrop-blur-md shadow-xl">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-brand-400"></i>
+                        <span class="text-[10px] font-bold text-brand-300 uppercase tracking-widest">100% Free Forever</span>
+                    </div>
+                    <div class="hidden sm:block w-1 h-1 rounded-full bg-zinc-800"></div>
+                    <div class="group relative flex items-center gap-2.5 px-4 py-2 rounded-full bg-zinc-950/80 border border-zinc-800/80 backdrop-blur-md overflow-hidden shadow-xl">
+                        <div class="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-[200%] group-hover:animate-[shimmer_2.5s_infinite]"></div>
+                        <i data-lucide="users" class="w-3.5 h-3.5 text-zinc-400"></i>
+                        <div class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-baseline gap-1.5">
+                            <div class="h-[14px] overflow-hidden flex items-center">
+                                <span id="live-student-count" class="text-white font-black text-xs inline-block animate-[revealUp_0.4s_ease-out]">--</span>
+                            </div>
+                            <span>Registered Students</span>
+                        </div>
+                    </div>
+                </div>
+
+                <h1 class="text-6xl md:text-8xl lg:text-[7rem] font-black tracking-tighter text-center leading-[0.9] mb-8 max-w-4xl text-white opacity-0 animate-reveal delay-100">
+                    Master the <br class="hidden md:block">
+                    <span class="text-zinc-500 relative">
+                        chaos.
+                        <svg class="absolute w-full h-3 -bottom-1 left-0 text-brand-500 opacity-60" viewBox="0 0 100 10" preserveAspectRatio="none"><path d="M0 5 Q 50 10 100 5" stroke="currentColor" stroke-width="4" fill="transparent"/></svg>
+                    </span>
+                </h1>
+                
+                <p class="text-base md:text-lg text-zinc-400 text-center max-w-2xl mb-12 font-medium leading-relaxed opacity-0 animate-reveal delay-200">
+                    The quiet, distraction-free operating system for JEE, NEET and competitive exam aspirants. Log hours, track errors, and hit targets without the noise.
+                </p>
+
+                <button onclick="signInWithGoogle()"
+                    class="opacity-0 animate-reveal delay-200 relative overflow-hidden rounded-xl bg-white text-black font-black text-sm py-4 px-8 flex items-center justify-center gap-3 transition-transform hover:scale-105 active:scale-95 shadow-[0_0_40px_-10px_rgba(255,255,255,0.15)]">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5 shrink-0" alt="Google">
+                    <span class="uppercase tracking-widest">Initialize Tracking</span>
+                </button>
+                <p class="text-[10px] text-zinc-500 mt-4 font-bold uppercase tracking-widest opacity-0 animate-reveal delay-200">No Paywalls. No Ads. Just Deep Work.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full mt-32 opacity-0 animate-reveal delay-300">
+                    <div class="bg-zinc-950 border border-zinc-900 p-8 rounded-2xl hover:bg-zinc-900 transition-colors hover:border-zinc-800">
+                        <i data-lucide="map" class="w-6 h-6 text-zinc-100 mb-6"></i>
+                        <h3 class="text-base font-black text-white mb-2 tracking-tight uppercase">Syllabus Mapping</h3>
+                        <p class="text-sm text-zinc-500 font-medium leading-relaxed">Systematically break down chapters, log completion states, and visualize the path to your target score.</p>
+                    </div>
+
+                    <div class="bg-zinc-950 border border-zinc-900 p-8 rounded-2xl hover:bg-zinc-900 transition-colors hover:border-zinc-800">
+                        <i data-lucide="timer" class="w-6 h-6 text-zinc-100 mb-6"></i>
+                        <h3 class="text-base font-black text-white mb-2 tracking-tight uppercase">Deep Work Engine</h3>
+                        <p class="text-sm text-zinc-500 font-medium leading-relaxed">Lock in with a full-screen zen mode timer, Picture-in-Picture support, and integrated ambient radio.</p>
+                    </div>
+
+                    <div class="bg-zinc-950 border border-zinc-900 p-8 rounded-2xl hover:bg-zinc-900 transition-colors hover:border-zinc-800">
+                        <i data-lucide="bar-chart-3" class="w-6 h-6 text-zinc-100 mb-6"></i>
+                        <h3 class="text-base font-black text-white mb-2 tracking-tight uppercase">Mock Analytics</h3>
+                        <p class="text-sm text-zinc-500 font-medium leading-relaxed">Stop making the same mistakes. Categorize errors (Silly, Conceptual, Formula) and track test trajectory.</p>
+                    </div>
+                </div>
+
+                <div class="w-full mt-4 bg-zinc-950 border border-zinc-900 p-8 md:p-16 rounded-3xl relative overflow-hidden group opacity-0 animate-reveal delay-300">
+                    <div class="absolute inset-0 bg-gradient-to-b from-brand-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    
+                    <div class="relative z-10 flex flex-col items-center text-center max-w-4xl mx-auto">
+                        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 mb-6 text-[10px] font-bold text-zinc-300 uppercase tracking-widest">
+                            <i data-lucide="shield-check" class="w-3 h-3 text-brand-500"></i> Zero Distraction
+                        </div>
+                        <h3 class="text-3xl md:text-4xl font-black text-white mb-4 tracking-tight">Squads, without the noise.</h3>
+                        <p class="text-base text-zinc-400 font-medium leading-relaxed mb-10 max-w-3xl">
+                            Accountability shouldn't come at the cost of your focus. Built on a peer-to-peer system, you can connect 1-on-1 or scale up to a massive group using simple 6-digit codes. We stripped away the toxic elements of social studying—no chatrooms, no live-syncs, no endless feeds. Just pure, silent accountability through daily task sharing.
+                        </p>
+
+                        <div class="flex flex-wrap justify-center gap-3 max-w-3xl mx-auto">
+                            <div class="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                                <i data-lucide="network" class="w-3.5 h-3.5 text-emerald-400"></i>
+                                <span class="text-xs font-bold text-emerald-100">Peer-to-Peer Scaling</span>
+                            </div>
+                            <div class="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                                <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i>
+                                <span class="text-xs font-bold text-emerald-100">Daily Task Sharing</span>
+                            </div>
+                            <div class="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900 border border-zinc-800">
+                                <i data-lucide="x" class="w-3.5 h-3.5 text-rose-500 opacity-80"></i>
+                                <span class="text-xs font-medium text-zinc-400">No Chatrooms</span>
+                            </div>
+                            <div class="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900 border border-zinc-800">
+                                <i data-lucide="x" class="w-3.5 h-3.5 text-rose-500 opacity-80"></i>
+                                <span class="text-xs font-medium text-zinc-400">No Groups</span>
+                            </div>
+                            <div class="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                                <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i>
+                                <span class="text-xs font-bold text-emerald-100">Task-Linked Sessions</span>
+                            </div>
+                            <div class="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900 border border-zinc-800">
+                                <i data-lucide="x" class="w-3.5 h-3.5 text-rose-500 opacity-80"></i>
+                                <span class="text-xs font-medium text-zinc-400">No Push Notifications</span>
+                            </div>
+                        </div>
 
                     </div>
                 </div>
-    
-                <div class="relative z-10 text-[10px] font-bold text-zinc-600 uppercase tracking-widest"></div>
-            </div>
-    
-            <div class="flex-1 h-full relative z-10 flex flex-col overflow-y-auto custom-scrollbar"
-                style="background-color: #09090b;">
-                <nav class="w-full p-6 flex items-center justify-between shrink-0"
-                    style="opacity: 1 !important; visibility: visible !important;">
-                    <div class="flex md:hidden items-center gap-3">
-                        <img src="logo.png" alt="Logo" class="w-8 h-8 rounded-lg object-contain shadow-sm"
-                            style="filter: none !important; -webkit-filter: none !important;">
-                        <span class="text-lg font-black tracking-tighter leading-none"
-                            style="color: #ffffff;">ChaosPrep</span>
-                    </div>
-                    <div class="hidden md:block"></div>
-                   
-                </nav>
-    
-                <header class="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-lg mx-auto text-center"
-                    style="opacity: 1 !important; visibility: visible !important; display: flex !important;">
-    
-                    <h1 class="text-5xl lg:text-7xl font-black tracking-tighter leading-[0.9] mb-5 uppercase"
-                        style="color: #ffffff;">
-                        Master <br> <span style="color: #8b5cf6;">The Chaos.</span>
-                    </h1>
-    
-                    <p class="text-sm font-medium mb-10 tracking-tight leading-relaxed max-w-[320px]"
-                        style="color: #a1a1aa;">
-                        The quiet, distraction-free tracking system for JEE, NEET and competitive exam aspirants. Log hours, track errors, and hit
-                        targets.
-                    </p>
-    
-                    <button onclick="signInWithGoogle()"
-                        class="w-full sm:w-[320px] px-8 py-4 bg-white text-black font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 transition-all hover:bg-zinc-200 active:translate-y-1"
-                        style="border-radius: 0; box-shadow: 4px 4px 0px #8b5cf6; border: 2px solid transparent; cursor: pointer;">
-                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                            class="w-5 h-5 bg-white rounded-full p-0.5" alt="Google">
-                        Initialize Tracking
-                    </button>
-    
-                    <div class="mt-12 grid grid-cols-2 gap-x-4 gap-y-4 w-full text-left border-t border-zinc-800 pt-8 max-w-[320px]"
-                        style="color: #a1a1aa;">
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="check" class="w-3.5 h-3.5 shrink-0" style="color: #8b5cf6;"></i>
-                            <span class="text-[9px] font-bold uppercase tracking-widest">Syllabus Mapping</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="check" class="w-3.5 h-3.5 shrink-0" style="color: #8b5cf6;"></i>
-                            <span class="text-[9px] font-bold uppercase tracking-widest">Deep Work Timer</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="check" class="w-3.5 h-3.5 shrink-0" style="color: #8b5cf6;"></i>
-                            <span class="text-[9px] font-bold uppercase tracking-widest">Mock Analytics</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="check" class="w-3.5 h-3.5 shrink-0" style="color: #8b5cf6;"></i>
-                            <span class="text-[9px] font-bold uppercase tracking-widest">Accountability</span>
-                        </div>
-                    </div>
-                </header>
-    
-                <footer class="w-full p-6 flex items-center justify-between shrink-0 border-t border-zinc-900"
-                    style="opacity: 1 !important; visibility: visible !important;">
-                    <div class="text-[9px] font-bold text-zinc-500 tracking-widest">
+
+                <div class="w-full mt-32 pt-8 pb-12 border-t border-zinc-900 flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div class="flex items-center gap-2 text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
                         © 2026 sval.tech
                     </div>
-                    <div class="flex items-center gap-4">
-                        <a href="privacypolicy.html"
-                            class="text-[9px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-widest">Privacy</a>
-                        <a href="termsandconditions.html"
-                            class="text-[9px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-widest">Terms</a>
-                        <a href="https://discord.gg/mKXPpSY6Dz" target="_blank"
-                            class="text-[9px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-widest">Discord</a>
+                    <div class="flex flex-wrap justify-center items-center gap-6 text-[10px] font-bold uppercase tracking-widest text-zinc-600">
+                        <a href="privacypolicy.html" class="hover:text-zinc-300 transition-colors">Privacy</a>
+                        <a href="termsandconditions.html" class="hover:text-zinc-300 transition-colors">Terms</a>
+                        <a href="https://discord.gg/mKXPpSY6Dz" target="_blank" class="hover:text-zinc-300 transition-colors">Discord</a>
                     </div>
-                </footer>
-    
+                </div>
+
             </div>
         </div>
     </div>
-
     <!-- Loading Overlay -->
     <div id="loading-overlay"
         class="fixed inset-0 z-[100] bg-zinc-50 dark:bg-[#09090b] flex items-center justify-center transition-opacity duration-500">
