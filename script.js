@@ -5003,7 +5003,7 @@ window.renderSquadView = function () {
 
             // Layout WITH Banner
             bannerAndAvatarHtml = `
-            <div class="h-24 w-full ${bannerBgClass} border-b border-zinc-200 dark:border-zinc-800 relative shrink-0">
+            <div class="h-24 w-full rounded-t-[2rem] ${bannerBgClass} border-b border-zinc-200 dark:border-zinc-800 relative shrink-0">
                 ${bannerImageHtml}
                 ${premiumBannerFx}
                 <div class="absolute -bottom-8 left-6 w-[72px] h-[72px] ${shapeClass} border-[3px] ${avatarRing} shadow-sm bg-white dark:bg-[#18181b] z-10 transition-all duration-500 flex items-center justify-center">
