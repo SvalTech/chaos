@@ -539,6 +539,9 @@ function setupListeners(user) {
     onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'studyLogs'), (snap) => {
         state.studyLogs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         if (state.currentView === 'timer') { renderRecentLogs(); updateTimerStats(); renderTimerChart(); }
+        
+        // 🔥 NEW: Instantly update Squad profile when a study log is added/deleted
+        if (typeof window.triggerMetricsSync === 'function') window.triggerMetricsSync();
     });
 
     onSnapshot(doc(db, 'artifacts', appId, 'users', user.uid, 'syllabus', 'progress'), (snap) => {
@@ -548,6 +551,9 @@ function setupListeners(user) {
             if (!state.syllabusData.meta) state.syllabusData.meta = {};
         } else { state.syllabusData = { status: {}, meta: {} }; }
         if (state.currentView === 'syllabus') renderSyllabusView();
+        
+        // 🔥 NEW: Instantly update Squad profile when syllabus progress changes
+        if (typeof window.triggerMetricsSync === 'function') window.triggerMetricsSync();
     });
 
     onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'errorLogs'), (snap) => {
@@ -1111,6 +1117,7 @@ window.toggleTimer = function () {
     lucide.createIcons();
     updateTimerDisplay();
     window.saveTimerState();
+    if (typeof syncCouncilTimerUI === 'function') syncCouncilTimerUI();
 }
 
 window.stopTimer = async function () {
@@ -1151,7 +1158,7 @@ window.stopTimer = async function () {
             return;
         }
     }
-
+    if (typeof syncCouncilTimerUI === 'function') syncCouncilTimerUI();
     await processSessionLog();
 }
 
@@ -1295,6 +1302,11 @@ function updateTimerDisplay() {
     const miniDisplay = document.getElementById('mini-timer-display');
     if (miniDisplay) {
         miniDisplay.innerText = `${h}:${m}:${s}`;
+    }
+
+    const councilDisplay = document.getElementById('council-timer-display');
+    if (councilDisplay) {
+        councilDisplay.innerText = `${h}:${m}:${s}`;
     }
 
     // Real-time "Focused Today" Update
@@ -2685,7 +2697,16 @@ window.toggleTarget = async function (id, status) { try { await updateDoc(doc(db
 window.requestDelete = function (type, id) { itemToDelete = { type, id }; const modal = document.getElementById('confirm-modal'); modal.classList.remove('hidden'); setTimeout(() => modal.classList.remove('opacity-0'), 10); }
 document.getElementById('confirm-delete-btn').onclick = async () => {
     if (!itemToDelete) return; const { type, id } = itemToDelete; let col = '';
-    if (type === 'task') { col = 'tasks'; state.tasks = state.tasks.filter(t => t.id !== id); renderCalendar(); if (state.currentView === 'stats-mocks') renderMockStats(); if (currentDayViewDate && !document.getElementById('day-view-modal').classList.contains('hidden')) openDayView(currentDayViewDate); }
+    if (type === 'task') { 
+        col = 'tasks'; 
+        state.tasks = state.tasks.filter(t => t.id !== id); 
+        renderCalendar(); 
+        if (state.currentView === 'stats-mocks') renderMockStats(); 
+        if (currentDayViewDate && !document.getElementById('day-view-modal').classList.contains('hidden')) openDayView(currentDayViewDate); 
+        
+        // 🔥 NEW: Sync task deletion to squad instantly
+        if (state.settings && state.settings.shareTasks !== false && typeof syncMySocialTasks === 'function') syncMySocialTasks();
+    }
     else if (type === 'target') { col = 'weeklyTargets'; state.targets = state.targets.filter(t => t.id !== id); renderWeeklyView(); }
     else if (type === 'studyLog') { col = 'studyLogs'; state.studyLogs = state.studyLogs.filter(t => t.id !== id); renderRecentLogs(); updateTimerStats(); renderTimerChart(); }
     else if (type === 'errorLog') { col = 'errorLogs'; state.errorLogs = state.errorLogs.filter(t => t.id !== id); renderErrorLogs(); }
@@ -4613,7 +4634,10 @@ function setupSquadListeners(user) {
         if (docSnap.exists()) {
             state.myProfile = docSnap.data();
             // Force a re-render of the friend code check/squad view
-            if (state.currentView === 'squad') renderSquadView();
+            if (state.currentView === 'squad'){
+                 renderSquadView()
+                if (typeof isCouncilMode !== 'undefined' && isCouncilMode) renderCouncilMembers();
+                };
         }
     });
 
@@ -4904,7 +4928,7 @@ window.renderSquadView = function () {
     displayList.push(...sortedSquad);
 
     let finalDisplayList = displayList;
-    if (squadShowOnlyFocusing) {
+    if (window.squadShowOnlyFocusing) {
         finalDisplayList = finalDisplayList.filter(user => user.isStudying || user.isMe);
     }
 
@@ -4954,10 +4978,7 @@ window.renderSquadView = function () {
 
             // Build the display text to include the linked task (Context)
             let focusDisplay = friend.studySubject || 'Studying';
-            // if (friend.studyContext) {
-            //     focusDisplay += ` - ${friend.studyContext}`;
-            // }
-
+            
             // Added truncate and max-width so long task names don't break your card layout
             statusText = `<span class="${isExam ? 'text-purple-600 dark:text-purple-400' : 'text-rose-600 dark:text-rose-400'} truncate block max-w-[140px] sm:max-w-[200px]" title="Focus: ${escapeHtml(focusDisplay)}">Focus: ${escapeHtml(focusDisplay)}</span>`;
         } else if (isIdle) {
@@ -4981,7 +5002,6 @@ window.renderSquadView = function () {
             : `<div class="w-full h-full ${shapeClass} bg-gradient-to-br from-brand-400 to-brand-600 text-white flex items-center justify-center font-black text-2xl shadow-inner">${friend.name.charAt(0)}</div>`;
 
         let premiumBannerFx = '';
-
 
         // 4. CONSTRUCT BANNER HTML (Or remove it entirely)
         if (allowCustomBgs) {
@@ -5039,26 +5059,13 @@ window.renderSquadView = function () {
             `;
         }
 
-        // 6. CARD ASSEMBLY
-
-        // 👉 RESTORED: Define Display Name, Action Buttons, and Task List
+        // 6. TASK LIST GENERATION
         const displayName = escapeHtml(friend.name || 'Student');
-        const friendCodeBadge = friend.code ? `<span class="ml-2 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800/80 px-1.5 py-0.5 rounded md border border-zinc-200 dark:border-zinc-700 tracking-widest cursor-text select-all hover:text-brand-500 transition-colors" title="Friend Code" onclick="navigator.clipboard.writeText('${friend.code}'); showToast('Copied Code!');">#${friend.code}</span>` : '';
-        let actionBtnsHtml = '';
-        if (!friend.isMe) {
-            actionBtnsHtml = `
-                <div class="flex items-center gap-1">
-                    <button onclick="blockFriend('${friend.uid}', '${escapeHtml(friend.name || 'User')}')" title="Block User" class="p-2 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-colors"><i data-lucide="shield-alert" class="w-4 h-4"></i></button>
-                    <button onclick="removeFriend('${friend.uid}', '${escapeHtml(friend.name || 'User')}')" title="Remove Friend" class="p-2 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-colors"><i data-lucide="user-minus" class="w-4 h-4"></i></button>
-                </div>
-            `;
-        }
-
+        
         let tasksHtml = '';
         if (friend.shareTasks && friend.tasks && friend.tasks.length > 0) {
             // Show ALL tasks
             friend.tasks.forEach(t => {
-                // Check if this specific task is the one currently being studied
                 const isCurrentlyStudyingThis = friend.isStudying && friend.studyContext === t.text;
 
                 // 1. Build Subtasks HTML if they exist
@@ -5100,7 +5107,6 @@ window.renderSquadView = function () {
                     `;
                 }
 
-                // 3. Append the subtasks directly below the main task
                 tasksHtml += subtasksHtml;
                 tasksHtml += `</div>`;
             });
@@ -5112,18 +5118,17 @@ window.renderSquadView = function () {
 
         // --- VIP / ROLE CONFIGURATION ---
         const VIP_USERS = {
-            // Added 'isDev' flag to make this specific user supreme
             "KLh2R14NZCZinFvgCm6DtzghkBf2": { role: "DEV", icon: "zap", isDev: true },
         };
 
         const vip = VIP_USERS[friend.uid];
         const isDev = vip && vip.isDev;
 
-        // DEV user overrides everything. Otherwise, use database role, then fallback to standard VIP.
         const activeRole = isDev ? vip.role : (friend.role || (vip ? vip.role : null));
         const activeIcon = isDev ? vip.icon : (friend.roleIcon || (vip ? vip.icon : 'crown'));
 
-        let cardClasses = "glass-card p-0 rounded-[2rem] border relative flex flex-col transition-all duration-500 hover:-translate-y-1 ";
+        // 🔥 NEW: Added interactive hover classes and cursor-pointer for panel opening
+        let cardClasses = "glass-card p-0 rounded-[2rem] border relative flex flex-col transition-all duration-500 hover:-translate-y-1 cursor-pointer group hover:ring-2 hover:ring-brand-500/50 hover:border-brand-500/50 ";
         let devBadge = '';
 
         if (activeRole) {
@@ -5133,7 +5138,6 @@ window.renderSquadView = function () {
             let tooltipHtml = '';
 
             if (isDev) {
-                // 🌟 SPECIAL DEV BADGE (Gradient background, glowing shadow, amber icon)
                 badgeHtml = `
                     <span class="relative inline-flex items-center gap-1 bg-gradient-to-r from-brand-600 to-fuchsia-600 text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border border-white/20 shadow-[0_0_15px_rgba(139,92,246,0.6)] cursor-help">
                         <i data-lucide="${activeIcon}" class="w-3 h-3 text-amber-300 fill-current"></i> ${activeRole}
@@ -5144,7 +5148,6 @@ window.renderSquadView = function () {
                     Developer of ChaosPrep.
                 `;
             } else {
-                // 🛡️ STANDARD BADGE
                 badgeHtml = `
                     <span class="relative inline-flex items-center gap-1 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border border-zinc-700 dark:border-zinc-200 shadow-sm cursor-help">
                         <i data-lucide="${activeIcon}" class="w-3 h-3 text-brand-400 dark:text-brand-600 fill-current"></i> ${activeRole}
@@ -5157,9 +5160,9 @@ window.renderSquadView = function () {
             }
 
             devBadge = `
-                <div class="relative group inline-flex items-center ml-2 shrink-0">
+                <div class="relative group/badge inline-flex items-center ml-2 shrink-0">
                     ${badgeHtml}
-                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 pb-2 w-48 pointer-events-none group-hover:pointer-events-auto opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-y-1 group-hover:translate-y-0 z-[999]">
+                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 pb-2 w-48 pointer-events-none group-hover/badge:pointer-events-auto opacity-0 group-hover/badge:opacity-100 transition-all duration-200 transform translate-y-1 group-hover/badge:translate-y-0 z-[999]">
                         <div class="relative bg-zinc-900 dark:bg-zinc-800 text-white p-3 rounded-2xl text-[10px] text-center shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-zinc-700/50 leading-snug font-bold">
                             ${tooltipHtml}
                             <div class="absolute h-2 w-2 bg-zinc-900 dark:bg-zinc-800 rotate-45 left-1/2 -translate-x-1/2 -bottom-[5px] border-b border-r border-zinc-700/50"></div>
@@ -5173,10 +5176,17 @@ window.renderSquadView = function () {
 
         card.className = cardClasses;
 
+        // 🔥 NEW: Trigger Slide-over panel on click
+        card.onclick = (e) => {
+            // Do not open panel if clicking an internal button (like copy link)
+            if (e.target.closest('button') || e.target.closest('.select-all')) return;
+            if (typeof window.openFriendPanel === 'function') window.openFriendPanel(friend.uid);
+        };
+
         card.innerHTML = `
             ${bannerAndAvatarHtml}
             
-            <div class="${contentPaddingClass} px-6 pb-6 flex flex-col flex-1">
+            <div class="${contentPaddingClass} px-6 pb-6 flex flex-col flex-1 pointer-events-none">
                 <div class="flex justify-between items-start mb-2 gap-2">
                     <div class="min-w-0 flex-1">
                         <h3 class="font-black text-xl text-zinc-900 dark:text-white tracking-tight leading-none mb-2 flex items-center min-w-0">
@@ -5189,10 +5199,13 @@ window.renderSquadView = function () {
                             </div>
                             ${focusedTimeHtml}
                         </div>
-                        
                     </div>
-                    <div class="shrink-0 mt-[-4px]">
-                        ${actionBtnsHtml}
+                    
+                    <!-- NEW Sleek Indicator replacing clunky buttons -->
+                    <div class="shrink-0 mt-2">
+                        <div class="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800/50 flex items-center justify-center text-zinc-400 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </div>
                     </div>
                 </div>
 
@@ -5207,9 +5220,8 @@ window.renderSquadView = function () {
                     </div>
                 </div>` : ''}
 
-                    <div class="flex-1 w-full ">
-
-                ${tasksHtml}
+                <div class="flex-1 w-full ">
+                    ${tasksHtml}
                 </div>
             </div>
         `;
@@ -5257,28 +5269,201 @@ window.renderSquadView = function () {
     if (window.lucide) window.lucide.createIcons();
 }
 
+window.openFriendPanel = function(uid) {
+    const friend = state.squad.find(f => f.uid === uid) || (state.myProfile?.uid === uid ? state.myProfile : null);
+    if (!friend) return;
 
+    // 1. Base Setup
+    const panel = document.getElementById('friend-detail-panel');
+    const backdrop = document.getElementById('friend-panel-backdrop');
+    
+    // Apply their settings
+    const bTheme = friend.bannerTheme || 'default';
+    const shapeClass = friend.avatarShape === 'squircle' ? 'rounded-2xl' : 'rounded-full';
 
+    // 2. Render Header
+    const bannerEl = document.getElementById('fp-banner');
+    if (friend.bannerUrl && isValidImageUrl(friend.bannerUrl)) {
+        bannerEl.innerHTML = `<img src="${escapeHtml(friend.bannerUrl)}" class="w-full h-full object-cover">
+        <button onclick="closeFriendPanel()" class="absolute top-4 right-4 w-8 h-8 bg-black/40 backdrop-blur-md rounded-full text-white flex items-center justify-center transition-colors z-20"><i data-lucide="x" class="w-4 h-4"></i></button>`;
+        bannerEl.className = 'h-32 w-full relative';
+    } else {
+        const bannerStyles = {
+            'default': 'bg-gradient-to-br from-zinc-200 to-zinc-100 dark:from-zinc-800 dark:to-zinc-900',
+            'lavender': 'bg-gradient-to-br from-purple-400 to-brand-500 dark:from-purple-600 dark:to-brand-900',
+            'rose': 'bg-gradient-to-br from-rose-400 to-pink-500 dark:from-rose-600 dark:to-pink-900',
+            'emerald': 'bg-gradient-to-br from-emerald-400 to-teal-500 dark:from-emerald-600 dark:to-teal-900',
+            'sky': 'bg-gradient-to-br from-sky-400 to-blue-500 dark:from-sky-600 dark:to-blue-900'
+        };
+        bannerEl.className = `h-32 w-full relative ${bannerStyles[bTheme] || bannerStyles['default']}`;
+        bannerEl.innerHTML = `<button onclick="closeFriendPanel()" class="absolute top-4 right-4 w-8 h-8 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full text-white flex items-center justify-center transition-colors z-20"><i data-lucide="x" class="w-4 h-4"></i></button>`;
+    }
+
+    const avatarEl = document.getElementById('fp-avatar');
+    avatarEl.className = `absolute -bottom-10 left-6 w-20 h-20 border-4 border-white dark:border-[#09090b] shadow-md bg-white dark:bg-[#18181b] z-10 flex items-center justify-center overflow-hidden ${shapeClass}`;
+    avatarEl.innerHTML = friend.avatar 
+        ? `<img src="${friend.avatar}" class="w-full h-full object-cover">` 
+        : `<div class="w-full h-full bg-gradient-to-br from-brand-400 to-brand-600 text-white flex items-center justify-center font-black text-3xl shadow-inner">${friend.name.charAt(0)}</div>`;
+
+    document.getElementById('fp-name').innerHTML = `${escapeHtml(friend.name)} ${friend.role ? `<span class="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md"><i data-lucide="${friend.roleIcon || 'crown'}" class="w-3 h-3 inline"></i> ${friend.role}</span>` : ''}`;
+    document.getElementById('fp-quote').innerText = friend.profileQuote ? `"${escapeHtml(friend.profileQuote)}"` : '';
+
+    // 3. Render Status
+    const statusEl = document.getElementById('fp-status');
+    if (friend.isStudying) {
+        statusEl.innerHTML = `<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold border border-rose-200 dark:border-rose-500/20"><span class="relative flex h-2 w-2 shrink-0"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span></span> Focusing on ${escapeHtml(friend.studySubject)}</span>`;
+    } else {
+        statusEl.innerHTML = `<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 text-xs font-bold border border-zinc-200 dark:border-zinc-700"><span class="w-2 h-2 rounded-full bg-zinc-400"></span> Not Studying</span>`;
+    }
+
+    // 4. Render Focus Analytics (The segmented bar)
+    const focusBar = document.getElementById('fp-focus-bar');
+    const focusLegend = document.getElementById('fp-focus-legend');
+    const focusEmpty = document.getElementById('fp-focus-empty');
+    const focusContent = document.getElementById('fp-focus-content');
+
+    const subMins = friend.focusedTodayBySubject || {};
+    const totalMins = friend.focusedToday || 0;
+
+    if (totalMins > 0 && Object.keys(subMins).length > 0) {
+        focusEmpty.classList.add('hidden');
+        focusContent.classList.remove('hidden');
+        
+        let barHtml = '';
+        let legendHtml = '';
+        
+        Object.entries(subMins).forEach(([sub, mins]) => {
+            if(mins <= 0) return;
+            const pct = (mins / totalMins) * 100;
+            const color = getSubjectColor(sub).hex;
+            
+            barHtml += `<div style="width: ${pct}%; background-color: ${color};" class="h-full transition-all border-r border-white/20 last:border-0" title="${sub}: ${mins}m"></div>`;
+            
+            const hrs = Math.floor(mins / 60);
+            const m = mins % 60;
+            const timeStr = hrs > 0 ? `${hrs}h ${m}m` : `${m}m`;
+
+            legendHtml += `
+                <div class="flex items-center justify-between p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-800/50 bg-zinc-50 dark:bg-[#18181b]">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="w-2.5 h-2.5 rounded-full shrink-0 shadow-inner" style="background-color: ${color}"></span>
+                        <span class="text-xs font-bold text-zinc-700 dark:text-zinc-300 truncate">${sub}</span>
+                    </div>
+                    <span class="text-xs font-black text-zinc-900 dark:text-white shrink-0">${timeStr}</span>
+                </div>
+            `;
+        });
+        
+        focusBar.innerHTML = barHtml;
+        focusLegend.innerHTML = legendHtml;
+    } else {
+        focusEmpty.classList.remove('hidden');
+        focusContent.classList.add('hidden');
+    }
+
+    // 5. Render Syllabus Analytics
+    const sylContent = document.getElementById('fp-syllabus-content');
+    const sylEmpty = document.getElementById('fp-syllabus-empty');
+    
+    if (friend.syllabusMetrics && friend.syllabusMetrics.overall !== undefined) {
+        sylEmpty.classList.add('hidden');
+        sylContent.classList.remove('hidden');
+
+        let sylHtml = `
+            <div class="flex items-end justify-between mb-4 border-b border-zinc-100 dark:border-zinc-800 pb-4">
+                <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Total Syllabus</span>
+                <span class="text-2xl font-black text-brand-600 dark:text-brand-400 leading-none">${friend.syllabusMetrics.overall}%</span>
+            </div>
+        `;
+
+        if (friend.syllabusMetrics.subjects) {
+            sylHtml += `<div class="space-y-4">`;
+            Object.entries(friend.syllabusMetrics.subjects).forEach(([sub, pct]) => {
+                const color = getSubjectColor(sub).hex;
+                sylHtml += `
+                    <div>
+                        <div class="flex justify-between text-xs font-bold mb-1.5">
+                            <span class="text-zinc-700 dark:text-zinc-300">${sub}</span>
+                            <span class="text-zinc-500">${pct}%</span>
+                        </div>
+                        <div class="w-full h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full transition-all" style="width: ${pct}%; background-color: ${color};"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            sylHtml += `</div>`;
+        }
+        sylContent.innerHTML = sylHtml;
+    } else {
+        sylEmpty.classList.remove('hidden');
+        sylContent.classList.add('hidden');
+    }
+
+    // 6. Setup Action Buttons
+    const actionsBlock = document.getElementById('fp-actions');
+    if (friend.uid === currentUser.uid) {
+        actionsBlock.classList.add('hidden'); // Can't block yourself
+    } else {
+        actionsBlock.classList.remove('hidden');
+        document.getElementById('fp-btn-remove').onclick = () => { closeFriendPanel(); removeFriend(friend.uid, friend.name); };
+        document.getElementById('fp-btn-block').onclick = () => { closeFriendPanel(); blockFriend(friend.uid, friend.name); };
+    }
+
+    if (window.lucide) window.lucide.createIcons();
+
+    // 7. Slide In Animation
+    backdrop.classList.remove('opacity-0', 'pointer-events-none');
+    panel.classList.remove('translate-x-full');
+}
+
+window.closeFriendPanel = function() {
+    const panel = document.getElementById('friend-detail-panel');
+    const backdrop = document.getElementById('friend-panel-backdrop');
+    
+    panel.classList.add('translate-x-full');
+    backdrop.classList.add('opacity-0', 'pointer-events-none');
+}
 // 5. Hooks to update YOUR status automatically 
 let heartbeatInterval;
 window.syncMySocialStatus = async (isStudying, subject) => {
     if (!ENABLE_SQUAD_FEATURE || !currentUser) return;
 
     let taskContext = "";
-    // SECURITY FIX: Only grab the task context if they explicitly allow Task Sharing!
     if (linkedTaskId && isStudying && state.settings.shareTasks !== false) {
         const task = state.tasks.find(t => t.id === linkedTaskId);
         if (task) taskContext = task.text;
     }
 
-    // NEW: Calculate Total Focused Minutes Today (Logged + Actively Running)
+    // Calculate Subject Distribution for today
     const todayStr = getLogicalTodayStr();
     const todayLogs = state.studyLogs.filter(l => l.date === todayStr);
-    let totalMins = todayLogs.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
+    
+    let totalMins = 0;
+    let focusedTodayBySubject = {};
 
-    // Add live ticking seconds if they are currently studying
+    todayLogs.forEach(l => {
+        totalMins += (l.durationMinutes || 0);
+        focusedTodayBySubject[l.subject] = (focusedTodayBySubject[l.subject] || 0) + (l.durationMinutes || 0);
+    });
+
     if (isStudying && typeof timerSeconds !== 'undefined') {
-        totalMins += Math.floor(timerSeconds / 60);
+        const currentSessionMins = Math.floor(timerSeconds / 60);
+        totalMins += currentSessionMins;
+        focusedTodayBySubject[subject] = (focusedTodayBySubject[subject] || 0) + currentSessionMins;
+    }
+
+    // Calculate High-level Syllabus Metrics
+    let syllabusMetrics = { overall: 0, subjects: {} };
+    if (state.syllabusData && Object.keys(state.syllabusData.status || {}).length > 0) {
+        const filteredSyllabus = getFilteredSyllabus();
+        const allChapters = filteredSyllabus.flatMap(s => s.units.flatMap(u => u.chapters));
+        syllabusMetrics.overall = calculateSyllabusStats(allChapters).percent;
+
+        filteredSyllabus.forEach(subj => {
+            const subChapters = subj.units.flatMap(u => u.chapters);
+            syllabusMetrics.subjects[subj.subject] = calculateSyllabusStats(subChapters).percent;
+        });
     }
 
     try {
@@ -5287,10 +5472,28 @@ window.syncMySocialStatus = async (isStudying, subject) => {
             studySubject: isStudying ? subject : null,
             studyContext: isStudying ? taskContext : null,
             timerMode: isStudying ? timerMode : null,
-            focusedToday: totalMins, // <-- Sending to database
+            focusedToday: totalMins,
+            focusedTodayBySubject: focusedTodayBySubject, // 🔥 NEW
+            syllabusMetrics: syllabusMetrics,             // 🔥 NEW
             lastActive: new Date().toISOString()
         });
     } catch (e) { console.warn("Could not sync status", e); }
+}
+
+let metricsSyncTimer = null;
+window.triggerMetricsSync = function() {
+    if (!ENABLE_SQUAD_FEATURE || !currentUser) return;
+    
+    if (metricsSyncTimer) clearTimeout(metricsSyncTimer);
+    
+    // Wait 1.5 seconds after the user stops clicking before pushing to the squad
+    metricsSyncTimer = setTimeout(() => {
+        // Uses the global timer variables so it doesn't accidentally pause an active timer
+        window.syncMySocialStatus(
+            typeof isTimerRunning !== 'undefined' ? isTimerRunning : false, 
+            typeof timerSubject !== 'undefined' ? timerSubject : ""
+        );
+    }, 1500);
 }
 
 // Keep presence updated while app is open
@@ -6767,6 +6970,156 @@ window.completeOnboarding = async function () {
     }
 }
 
+
+// ==========================================
+// SQUAD COUNCIL MODE (AESTHETIC FULLSCREEN)
+// ==========================================
+let isCouncilMode = false;
+
+window.toggleCouncilMode = function() {
+    const overlay = document.getElementById('council-mode-overlay');
+    const sidebar = document.getElementById('desktop-sidebar');
+    const mobileNav = document.getElementById('mobile-bottom-nav');
+    const mobileHeader = document.querySelector('.md\\:hidden.glass');
+    const musicWidget = document.getElementById('music-widget');
+
+    isCouncilMode = !isCouncilMode;
+
+    if (isCouncilMode) {
+        
+
+        // Hide Native UI Elements
+        if (sidebar) sidebar.classList.add('md:-ml-[320px]');
+        if (mobileNav) mobileNav.style.display = 'none';
+        if (mobileHeader) mobileHeader.style.display = 'none';
+        
+        // Elevate Music Widget so it floats above Council Mode
+        if (musicWidget) {
+            musicWidget.style.zIndex = '300';
+            musicWidget.classList.add('!bottom-8', '!right-8'); // Force position
+        }
+
+        // Render & Animate In
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+        
+        setTimeout(() => {
+            overlay.classList.remove('opacity-0');
+            renderCouncilMembers();
+            syncCouncilTimerUI();
+        }, 10);
+
+    } else {
+        // Exit Fullscreen
+        try {
+            if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+        } catch (err) {}
+
+        // Animate Out
+        overlay.classList.add('opacity-0');
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+        }, 700);
+
+        // Restore Native UI Elements
+        if (sidebar) sidebar.classList.remove('md:-ml-[320px]');
+        if (mobileNav) mobileNav.style.display = '';
+        if (mobileHeader) mobileHeader.style.display = '';
+        
+        if (musicWidget) {
+            musicWidget.style.zIndex = '150';
+            musicWidget.classList.remove('!bottom-8', '!right-8');
+        }
+    }
+}
+
+// 📐 Circular Orbit Math & Rendering
+window.renderCouncilMembers = function() {
+    if (!isCouncilMode) return;
+    const container = document.getElementById('council-members');
+    if (!container) return;
+
+    // Gather all members (including self)
+    const members = [...state.squad];
+    if (state.myProfile) members.push({ ...state.myProfile, isMe: true });
+
+    container.innerHTML = '';
+    const total = members.length;
+    if (total === 0) return;
+
+    // Radius adapts to screen size
+    const radius = window.innerWidth < 768 ? (window.innerWidth / 2.5) : 320;
+
+    members.forEach((member, index) => {
+        // 💫 Calculate position on the circle (Starts at top and spreads evenly)
+        const angle = (index / total) * (2 * Math.PI) - (Math.PI / 2);
+        const x = Math.cos(angle) * radius;
+        const y = Math.sin(angle) * radius;
+
+        const isStudying = member.isStudying || false;
+        const ringClass = isStudying ? 'border-brand-500 shadow-[0_0_30px_rgba(139,92,246,0.6)]' : 'border-zinc-800 opacity-60 grayscale-[50%]';
+        const pulseHtml = isStudying ? `<div class="absolute inset-0 rounded-full border-2 border-brand-400 animate-ping opacity-40"></div>` : '';
+        const shapeClass = member.avatarShape === 'squircle' ? 'rounded-2xl' : 'rounded-full';
+        
+        const avatarImg = member.avatar 
+            ? `<img src="${member.avatar}" class="w-full h-full object-cover ${shapeClass}">` 
+            : `<div class="w-full h-full ${shapeClass} bg-gradient-to-br from-zinc-700 to-zinc-900 text-white flex items-center justify-center font-black text-2xl">${member.name.charAt(0)}</div>`;
+
+        const el = document.createElement('div');
+        el.className = 'absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-3 pointer-events-auto transition-all duration-1000 ease-out hover:z-50';
+        
+        // Set exact X/Y offsets from center
+        el.style.marginLeft = `${x}px`;
+        el.style.marginTop = `${y}px`;
+
+        el.innerHTML = `
+            <div class="relative w-16 h-16 md:w-[5.5rem] md:h-[5.5rem] ${shapeClass} border-4 ${ringClass} bg-[#18181b] z-10 transition-transform duration-300 hover:scale-125 cursor-pointer group">
+                ${pulseHtml}
+                ${avatarImg}
+                
+                <!-- Hover Data Tooltip -->
+                <div class="absolute top-full left-1/2 -translate-x-1/2 mt-4 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 w-max z-50">
+                    <div class="bg-black/80 backdrop-blur-xl border border-white/10 text-white px-4 py-2 rounded-2xl text-center shadow-2xl">
+                        <div class="text-xs font-black tracking-tight">${escapeHtml(member.name)}</div>
+                        ${isStudying ? `<div class="text-[10px] text-brand-400 font-bold mt-1 uppercase tracking-widest">${escapeHtml(member.studySubject || 'Focusing')}</div>` : `<div class="text-[10px] text-zinc-500 font-bold mt-1 uppercase tracking-widest">Offline / Idle</div>`}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Click to open their detailed deep-analytics panel!
+        el.onclick = () => { if (!member.isMe && typeof openFriendPanel === 'function') openFriendPanel(member.uid); };
+
+        container.appendChild(el);
+    });
+}
+
+// Sync Controls
+window.syncCouncilTimerUI = function() {
+    const toggleBtn = document.getElementById('btn-council-toggle');
+    const stopBtn = document.getElementById('btn-council-stop');
+    const subjLabel = document.getElementById('council-subject');
+
+    if (toggleBtn) {
+        toggleBtn.innerHTML = isTimerRunning 
+            ? `<i data-lucide="pause" class="w-8 h-8 fill-current"></i>` 
+            : `<i data-lucide="play" class="w-8 h-8 fill-current ml-1"></i>`;
+    }
+    
+    if (stopBtn) {
+        if (!isTimerRunning && timerAccumulatedMs === 0) {
+            stopBtn.classList.add('opacity-50', 'pointer-events-none', 'grayscale');
+        } else {
+            stopBtn.classList.remove('opacity-50', 'pointer-events-none', 'grayscale');
+        }
+    }
+    
+    if (subjLabel) {
+        subjLabel.innerText = timerSubject || 'Focus';
+    }
+    if (window.lucide) lucide.createIcons();
+}
 
 updateLiveStudentCount();
 initAuth(); lucide.createIcons();
