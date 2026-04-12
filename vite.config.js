@@ -14,7 +14,7 @@ export default defineConfig({
                 documentation: resolve(__dirname, 'docs.html'),
                 pp: resolve(__dirname, 'privacypolicy.html'),
                 toc: resolve(__dirname, 'termsandconditions.html'),
-                
+                google: resolve(__dirname, 'google0097fb2ca9512ed8.html')
             }
         }
     },
