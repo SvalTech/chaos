@@ -72,8 +72,23 @@ state = {
     weeklyViewDate: getLogicalToday(),
     timerChartWeekDate: getLogicalToday(),
     currentView: 'calendar',
-    settings: { examType: 'JEE Main', session: 'Apr', targetYear: 2026, targetDate: '2026-04-01', customSubjects: [], subjectColors: {}, theme: 'dark', bgUrl: '', showCountdown: true, dailyQuestionTarget: 50, liteMode: true, dayRolloverHour: 0 },
-    syllabusData: { status: {}, meta: {} }, syllabusOpenStates: {}
+    settings: { 
+        examType: 'JEE Main', 
+        session: 'Apr', 
+        targetYear: 2026, 
+        targetDate: '2026-04-01', 
+        customSubjects: [], 
+        subjectColors: {}, 
+        theme: 'dark', 
+        bgUrl: '', 
+        showCountdown: true, 
+        dailyQuestionTarget: 50, 
+        liteMode: true, 
+        dayRolloverHour: 0,
+        mockCategories: [] // <-- Add this line
+    },
+    syllabusData: { status: {}, meta: {} }, 
+    syllabusOpenStates: {}
 };
 
 
@@ -249,14 +264,21 @@ function getSubjectColor(sub) {
     return colorPalette[c] || colorPalette['teal'];
 }
 
-window.getExamSubjects = function (examType, customSubjects = []) {
+window.getExamSubjects = function (examType, customSubjects = [], includeMockTest = false) {
     let base = [];
     if (examType === 'NEET') base = ['Physics', 'Chemistry', 'Biology'];
     else if (examType === 'JEE Main' || examType === 'JEE Advanced') base = ['Physics', 'Chemistry', 'Maths'];
     else if (examType !== 'Custom') base = ['Physics', 'Chemistry', 'Maths', 'Biology']; // Fallback
 
     // If examType is 'Custom', base is empty. We only return custom subjects.
-    return [...new Set([...base, ...customSubjects])];
+    let allSubjects = [...new Set([...base, ...customSubjects])];
+    
+    // Conditionally add MockTest to the list
+    if (includeMockTest && !allSubjects.includes('MockTest')) {
+        allSubjects.push('MockTest');
+    }
+    
+    return allSubjects;
 }
 
 const syllabusStatusConfig = {
@@ -1046,34 +1068,39 @@ window.playAudioFeedback = function (type) {
 }
 
 
+// --- REPLACEMENT for window.toggleTimer ---
 window.toggleTimer = function () {
     const selector = document.getElementById('timer-task-linker');
     if (selector) linkedTaskId = selector.value || null;
 
     if (isTimerRunning) {
-        // 🔊 Play PAUSE sound
+        // --- This part is for PAUSING, no changes needed here ---
         playAudioFeedback('pause');
-
         timerWorker.postMessage('stop');
         releaseWakeLock();
         timerAccumulatedMs += Date.now() - timerStartMs;
         isTimerRunning = false;
         syncMySocialStatus(false, "");
 
-        document.getElementById('btn-timer-toggle').innerHTML = `<i data-lucide="play" class="w-6 h-6 md:w-7 md:h-7 fill-current"></i>`;
+        document.getElementById('btn-timer-toggle').innerHTML = `<i data-lucide="play" class="w-6 h-6 md:w-7 md-h-7 fill-current"></i>`;
         document.getElementById('btn-timer-stop').disabled = false;
 
         const flowPath = document.getElementById('timer-active-path');
         if (flowPath) flowPath.style.animationPlayState = 'paused';
 
     } else {
-        // 🔊 Play START sound
+        // --- This part is for STARTING ---
         playAudioFeedback('start');
 
+        // 🛑 THE BUG FIX IS HERE 🛑
+        // If the timer is NOT running and the user presses "Start" on a completed custom timer,
+        // we should RESET it first before starting.
         if (timerMode !== 'flow' && Math.floor(timerAccumulatedMs / 1000) >= targetDurationSecs) {
-            resetTimer();
+            // This resets the accumulated time to 0, allowing the timer to start fresh.
+            resetTimer(); 
         }
 
+        // The rest of the "start" logic remains the same
         timerStartMs = Date.now();
         isTimerRunning = true;
         syncMySocialStatus(true, timerSubject);
@@ -1084,7 +1111,6 @@ window.toggleTimer = function () {
         document.getElementById('btn-timer-toggle').innerHTML = `<i data-lucide="pause" class="w-6 h-6 md:w-7 md:h-7 fill-current"></i>`;
         document.getElementById('btn-timer-stop').disabled = false;
 
-        // FIX: Play Flow Path Animation
         const flowPath = document.getElementById('timer-active-path');
         if (flowPath && timerMode === 'flow') {
             flowPath.style.animationPlayState = 'running';
@@ -2166,15 +2192,19 @@ window.renderSubjectColorSettings = function () {
 
     const type = state.settings.examType || 'JEE Main';
     const customs = state.settings.customSubjects || [];
-    const subjects = window.getExamSubjects(type, customs);
+    
+    // ✅ Tell the helper to include MockTest in the color settings list
+    const subjects = window.getExamSubjects(type, customs, true); // true = include MockTest
 
     let html = '';
     subjects.forEach(sub => {
-        const currentColor = state.settings.subjectColors?.[sub] || defaultColorsMap[sub] || 'teal';
+        // ✅ Add a default color for MockTest if none is set
+        const defaultColorMapWithMock = { ...defaultColorsMap, MockTest: 'violet' };
+        const currentColor = state.settings.subjectColors?.[sub] || defaultColorMapWithMock[sub] || 'teal';
+        const icon = sub === 'MockTest' ? '🏆' : `<span class="w-3 h-3 rounded-full shadow-inner" style="background-color: ${colorPalette[currentColor].hex}"></span>`;
 
         let paletteHtml = Object.keys(colorPalette).map(c => {
             const isActive = currentColor === c;
-            // Upgraded premium styling for color swatches
             return `
                 <button onclick="setSubjectColor('${sub}', '${c}')" 
                     class="w-8 h-8 rounded-full border-[3px] flex items-center justify-center transition-all duration-300 ${isActive ? 'scale-110 shadow-md ring-2 ring-offset-2 dark:ring-offset-[#18181b] z-10' : 'border-transparent scale-100 hover:scale-110 opacity-60 hover:opacity-100'}" 
@@ -2187,7 +2217,7 @@ window.renderSubjectColorSettings = function () {
         html += `
             <div class="flex flex-col gap-3 p-5 bg-white dark:bg-[#18181b] rounded-3xl border border-zinc-200/80 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
                 <span class="font-black text-sm text-zinc-900 dark:text-white tracking-tight flex items-center gap-2.5">
-                    <span class="w-3 h-3 rounded-full shadow-inner" style="background-color: ${colorPalette[currentColor].hex}"></span>
+                    ${icon}
                     ${sub}
                 </span>
                 <div class="flex gap-3 flex-wrap">
@@ -2196,11 +2226,9 @@ window.renderSubjectColorSettings = function () {
             </div>`;
     });
 
-    // Use a grid to make them sit beautifully next to each other
     container.innerHTML = `<div class="grid grid-cols-1 xl:grid-cols-2 gap-4">${html}</div>`;
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
-
 window.setSubjectColor = function (sub, colorKey) {
     if (!state.settings.subjectColors) state.settings.subjectColors = {};
     state.settings.subjectColors[sub] = colorKey;
@@ -2470,8 +2498,9 @@ window.initSettingsView = () => {
     setupToggle(state.settings.showSquadBGs, 'squadbgs-knob', 'squadbgs-toggle');
 
     renderSubjectColorSettings();
+    renderMockCategorySettings(); // <-- This line is new
     updateLiteModeToggleUI(state.settings.liteMode);
-}
+};
 
 
 window.updateTaskScore = async function (id, type, value) {
@@ -2731,15 +2760,114 @@ window.openAddMockFromStats = function () {
     }
 };
 window.renderMockStats = function () {
-    const mockTasks = state.tasks.filter(t => t.subject === 'MockTest').sort((a, b) => new Date(a.date) - new Date(b.date));
-    const scored = mockTasks.filter(t => t.marks !== undefined && t.marks !== null && t.marks !== "");
+    // --- NEW: Handle Target Score Saving & Restoration ---
+    const targetInput = document.getElementById('mock-target-input');
+    
+    // Restore from database on first load
+    if (targetInput && !targetInput.dataset.initialized) {
+        targetInput.value = state.settings.mockTargetScore || 200;
+        targetInput.dataset.initialized = 'true';
+    }
+    
+    // Read current value
+    let targetScore = targetInput ? parseInt(targetInput.value) : 200;
+    if (isNaN(targetScore) || targetScore <= 0) targetScore = 200; // Fallback
+    
+    // Save to Firebase if the user changed it
+    if (state.settings.mockTargetScore !== targetScore) {
+        state.settings.mockTargetScore = targetScore;
+        if (currentUser) {
+            updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), { 
+                mockTargetScore: targetScore 
+            }).catch(e => console.warn("Failed to save mock target:", e));
+        }
+    }
 
-    if (scored.length === 0) return;
+    // --- Render and read from the category filter dropdown ---
+    const filterDropdown = document.getElementById('mock-category-filter');
+    const categories = state.settings.mockCategories || [];
+    let filterOptions = '<option value="all">All Tests</option>';
+    categories.forEach(cat => {
+        filterOptions += `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`;
+    });
+    // Preserve selection on re-render
+    const currentFilterValue = filterDropdown ? filterDropdown.value : 'all';
+    if (filterDropdown) {
+        filterDropdown.innerHTML = filterOptions;
+        filterDropdown.value = currentFilterValue;
+    }
+    const selectedCategory = filterDropdown ? filterDropdown.value : 'all';
+
+    let allMockTasks = state.tasks.filter(t => t.subject === 'MockTest').sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    // Filter tasks based on selected category
+    if (selectedCategory !== 'all') {
+        allMockTasks = allMockTasks.filter(t => t.category === selectedCategory);
+    }
+
+    const scored = allMockTasks.filter(t => t.marks !== undefined && t.marks !== null && t.marks !== "");
+
+    // --- SETUP CHART EMPTY STATE UI ---
+    const canvas = document.getElementById('mockChart');
+    const canvasContainer = canvas ? canvas.parentElement : null;
+    let emptyStateEl = document.getElementById('mock-chart-empty');
+    
+    if (canvasContainer && !emptyStateEl) {
+        emptyStateEl = document.createElement('div');
+        emptyStateEl.id = 'mock-chart-empty';
+        emptyStateEl.className = 'absolute inset-0 flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 z-10 bg-zinc-50/50 dark:bg-[#18181b]/50 rounded-[1.5rem] backdrop-blur-sm border-2 border-dashed border-zinc-200 dark:border-zinc-800 m-2 transition-all';
+        emptyStateEl.innerHTML = `
+            <i data-lucide="line-chart" class="w-12 h-12 mb-3 opacity-30"></i>
+            <p class="text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">No Mocks Logged</p>
+            <p class="text-[10px] font-medium mt-1 text-zinc-400">Add a mock score to view your trajectory.</p>
+        `;
+        canvasContainer.appendChild(emptyStateEl);
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    // --- HANDLE ZERO DATA ---
+    if (scored.length === 0) {
+        // Zero out the top stats cards
+        if (document.getElementById('stats-total-tests')) document.getElementById('stats-total-tests').innerText = '0';
+        if (document.getElementById('stats-avg-score')) document.getElementById('stats-avg-score').innerText = '0';
+        if (document.getElementById('stats-max-score')) document.getElementById('stats-max-score').innerText = '0';
+        if (document.getElementById('stats-last-5')) document.getElementById('stats-last-5').innerText = '0';
+        if (document.getElementById('stats-accuracy')) document.getElementById('stats-accuracy').innerText = '0%';
+        
+        // Destroy the chart so it clears the canvas
+        if (mockChartInstance) {
+            mockChartInstance.destroy();
+            mockChartInstance = null;
+        }
+
+        // Show empty states
+        if (emptyStateEl) emptyStateEl.classList.remove('hidden');
+        if (canvas) canvas.style.display = 'none';
+
+        // Update the list at the bottom
+        const historyList = document.getElementById('mock-history-list');
+        if (historyList) {
+            historyList.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-12 text-center bg-white/40 dark:bg-[#18181b]/40 backdrop-blur-md rounded-[2rem] border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
+                    <i data-lucide="trophy" class="w-8 h-8 text-zinc-300 dark:text-zinc-700 mb-3"></i>
+                    <p class="text-sm font-bold text-zinc-500 dark:text-zinc-400">No tests found for this category.</p>
+                </div>`;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        const filterContainer = document.getElementById('chart-filters');
+        if (filterContainer) filterContainer.innerHTML = '';
+        
+        return; 
+    }
+
+    // --- PROCEED IF DATA EXISTS ---
+    if (emptyStateEl) emptyStateEl.classList.add('hidden');
+    if (canvas) canvas.style.display = 'block';
 
     const marks = scored.map(t => parseInt(t.marks));
     const maxMarksArray = scored.map(t => parseInt(t.maxMarks || 300));
 
-    // Global max for graph scaling (accommodates 360 advanced tests)
     const globalMax = Math.max(...maxMarksArray, 300);
     const minScore = Math.min(...marks);
     const maxScore = Math.max(...marks);
@@ -2760,29 +2888,26 @@ window.renderMockStats = function () {
     if (document.getElementById('stats-last-5')) document.getElementById('stats-last-5').innerText = marks.slice(-5).length ? Math.round(marks.slice(-5).reduce((a, b) => a + b, 0) / marks.slice(-5).length) : 0;
     if (document.getElementById('stats-accuracy')) document.getElementById('stats-accuracy').innerText = avgAccuracy + '%';
 
-    // Fetch dynamic Target Score
-    const targetInput = document.getElementById('mock-target-input');
-    const targetScore = targetInput ? parseInt(targetInput.value) : 200;
+    // The targetData array maps the loaded targetScore across all data points
     const targetData = scored.map(() => targetScore);
 
-    const ctx = document.getElementById('mockChart');
+    const ctx = canvas;
     if (mockChartInstance) mockChartInstance.destroy();
 
-    // Dynamically color highlight the Lowest and Highest scores for data points
     const pointColors = marks.map(m => {
-        if (m === maxScore) return '#10b981'; // Emerald for Highest
-        if (m === minScore) return '#f43f5e'; // Rose for Lowest
-        return '#7c3aed'; // Brand Purple default
+        if (m === maxScore) return '#10b981'; // Emerald
+        if (m === minScore) return '#f43f5e'; // Rose
+        return '#7c3aed'; // Brand Purple
     });
 
     const datasets = [];
 
-    // Layer 1: Target Line (Dashed)
+    // Layer 1: Target Line
     datasets.push({
         type: 'line',
         label: 'Target Score',
         data: targetData,
-        borderColor: '#f59e0b', // Amber
+        borderColor: '#f59e0b',
         borderWidth: 2,
         borderDash: [6, 6],
         pointRadius: 0,
@@ -2790,25 +2915,25 @@ window.renderMockStats = function () {
         order: 1
     });
 
-    // Layer 2: Obtained Score (Foreground Line)
+    // Layer 2: Obtained Score
     datasets.push({
         type: 'line',
         label: 'Obtained Score',
         data: marks,
-        borderColor: '#7c3aed', // Brand Purple line
+        borderColor: '#7c3aed',
         borderWidth: 3,
         backgroundColor: state.settings.theme === 'dark' ? 'rgba(124, 58, 237, 0.1)' : 'rgba(124, 58, 237, 0.05)',
-        fill: true, // Creates a subtle gradient area under the line
-        pointBackgroundColor: pointColors, // Applies the Min/Max highlights to the dots
+        fill: true, 
+        pointBackgroundColor: pointColors, 
         pointBorderColor: state.settings.theme === 'dark' ? '#18181b' : '#ffffff',
         pointBorderWidth: 2,
         pointRadius: 5,
         pointHoverRadius: 7,
-        tension: 0.3, // Smooth curve
+        tension: 0.3,
         order: 2
     });
 
-    // Layer 3: Max Marks boundary (Background Area) - Visualizes varying exam types
+    // Layer 3: Max Marks boundary
     datasets.push({
         type: 'line',
         label: 'Max Marks Boundary',
@@ -2822,21 +2947,28 @@ window.renderMockStats = function () {
         order: 3
     });
 
-    // Subject Tracking (Dynamically tied to user's set colors!)
-    const physicsData = scored.map(t => t.subjectMarks?.Physics || null);
-    const chemData = scored.map(t => t.subjectMarks?.Chemistry || null);
-    const mathsData = scored.map(t => t.subjectMarks?.Maths || null);
-    const bioData = scored.map(t => t.subjectMarks?.Biology || null);
+    const examType = state.settings.examType;
+    const activeSubjects = window.getExamSubjects(examType, state.settings.customSubjects);
 
-    const subjectConfig = [
-        { label: 'Physics', data: physicsData, color: getSubjectColor('Physics').hex },
-        { label: 'Chemistry', data: chemData, color: getSubjectColor('Chemistry').hex },
-        { label: 'Maths', data: mathsData, color: getSubjectColor('Maths').hex },
-        { label: 'Biology', data: bioData, color: getSubjectColor('Biology').hex }
-    ];
+    // Collect any subjects that exist in historical mock data (in case you changed exam types)
+    const allSubjectsToRender = new Set(activeSubjects);
+    scored.forEach(t => {
+        if (t.subjectMarks) {
+            Object.keys(t.subjectMarks).forEach(sub => allSubjectsToRender.add(sub));
+        }
+    });
+
+    const subjectConfig = Array.from(allSubjectsToRender).map(sub => {
+        return {
+            label: sub,
+            data: scored.map(t => t.subjectMarks?.[sub] !== undefined ? t.subjectMarks[sub] : null),
+            color: getSubjectColor(sub).hex
+        };
+    });
 
     subjectConfig.forEach(sub => {
-        if (sub.data.some(d => d !== null)) {
+        // Show the toggle button if it belongs to their active exam OR if they have historical data for it
+        if (activeSubjects.includes(sub.label) || sub.data.some(d => d !== null)) {
             datasets.push({
                 type: 'line',
                 label: sub.label,
@@ -2890,7 +3022,6 @@ window.renderMockStats = function () {
                             if (label) { label += ': '; }
                             if (context.parsed.y !== null) { label += context.parsed.y; }
 
-                            // Dynamically calculate and append accuracy to the tooltip
                             if (context.dataset.label === 'Obtained Score') {
                                 const test = scored[context.dataIndex];
                                 if (test.attempted && test.correct) {
@@ -2924,45 +3055,45 @@ window.renderMockStats = function () {
         }
     });
 
-    // Re-render Subject Filters correctly ignoring the core layers
     const filterContainer = document.getElementById('chart-filters');
-    filterContainer.innerHTML = '';
-    datasets.forEach((ds, index) => {
-        if (['Target Score', 'Obtained Score', 'Max Marks Boundary'].includes(ds.label)) return;
+    if (filterContainer) {
+        filterContainer.innerHTML = '';
+        datasets.forEach((ds, index) => {
+            if (['Target Score', 'Obtained Score', 'Max Marks Boundary'].includes(ds.label)) return;
 
-        const btn = document.createElement('button');
-        const color = ds.borderColor;
-        btn.className = `px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-2 select-none shadow-sm`;
+            const btn = document.createElement('button');
+            const color = ds.borderColor;
+            btn.className = `px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-2 select-none shadow-sm`;
 
-        const updateBtnStyle = () => {
-            const isVisible = mockChartInstance.isDatasetVisible(index);
-            if (isVisible) {
-                btn.style.backgroundColor = color;
-                btn.style.borderColor = color;
-                btn.style.color = '#fff';
-                btn.style.opacity = '1';
-            } else {
-                btn.style.backgroundColor = 'transparent';
-                btn.style.borderColor = state.settings.theme === 'dark' ? '#27272a' : '#e4e4e7';
-                btn.style.color = state.settings.theme === 'dark' ? '#71717a' : '#a1a1aa';
-                btn.style.opacity = '0.8';
-            }
-            btn.innerHTML = `<span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${isVisible ? '#fff' : color}; border: 2px solid ${isVisible ? '#fff' : color}"></span> <span class="truncate">${ds.label}</span>`;
-        };
-        btn.onclick = () => {
-            mockChartInstance.setDatasetVisibility(index, !mockChartInstance.isDatasetVisible(index));
-            mockChartInstance.update();
+            const updateBtnStyle = () => {
+                const isVisible = mockChartInstance.isDatasetVisible(index);
+                if (isVisible) {
+                    btn.style.backgroundColor = color;
+                    btn.style.borderColor = color;
+                    btn.style.color = '#fff';
+                    btn.style.opacity = '1';
+                } else {
+                    btn.style.backgroundColor = 'transparent';
+                    btn.style.borderColor = state.settings.theme === 'dark' ? '#27272a' : '#e4e4e7';
+                    btn.style.color = state.settings.theme === 'dark' ? '#71717a' : '#a1a1aa';
+                    btn.style.opacity = '0.8';
+                }
+                btn.innerHTML = `<span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${isVisible ? '#fff' : color}; border: 2px solid ${isVisible ? '#fff' : color}"></span> <span class="truncate">${ds.label}</span>`;
+            };
+            btn.onclick = () => {
+                mockChartInstance.setDatasetVisibility(index, !mockChartInstance.isDatasetVisible(index));
+                mockChartInstance.update();
+                updateBtnStyle();
+            };
             updateBtnStyle();
-        };
-        updateBtnStyle();
-        filterContainer.appendChild(btn);
-    });
+            filterContainer.appendChild(btn);
+        });
+    }
 
-    // --- Render History Cards ---
     const list = document.getElementById('mock-history-list');
     let historyHtml = '';
 
-    [...mockTasks].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((t, index) => {
+    [...allMockTasks].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((t, index) => {
         const marksVal = t.marks !== undefined && t.marks !== null ? t.marks : '--';
         const maxVal = t.maxMarks || 300;
         let breakdownHtml = '';
@@ -2970,24 +3101,30 @@ window.renderMockStats = function () {
         if (t.subjectMarks) {
             breakdownHtml = '<div class="flex flex-wrap gap-2 mt-3">';
             Object.entries(t.subjectMarks).forEach(([sub, score]) => {
-                // Dynamically pull from your color palette system instead of hardcoding
                 const colorObj = getSubjectColor(sub);
                 const colorClass = state.settings.theme === 'dark' ? colorObj.dark : colorObj.light;
-
                 breakdownHtml += `<span class="text-[10px] font-black px-2.5 py-1 rounded-lg border ${colorClass} uppercase tracking-wider">${sub.substring(0, 3)}: ${score}</span>`;
             });
             breakdownHtml += '</div>';
         }
 
+        let categoryBadge = '';
+        if (t.category) {
+            categoryBadge = `<span class="text-[9px] font-bold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-md border border-zinc-200 dark:border-zinc-700">${escapeHtml(t.category)}</span>`;
+        }
+
         historyHtml += `
             <div class="stagger-item flex flex-col p-5 md:p-6 bg-white dark:bg-[#18181b] rounded-3xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm gap-4 relative overflow-hidden group hover:-translate-y-1 transition-transform" style="animation-delay: ${index * 60}ms">
                 <div class="flex justify-between items-start w-full relative z-10">
-                    <div class="flex-1">
-                        <div class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 mb-1 uppercase tracking-widest">${formatDate(t.date)}</div>
-                        <div class="font-black text-lg text-zinc-900 dark:text-white tracking-tight">${t.text || 'Mock Test'}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+                             <span class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">${formatDate(t.date)}</span>
+                             ${categoryBadge}
+                        </div>
+                        <div class="font-black text-lg text-zinc-900 dark:text-white tracking-tight truncate">${t.text || 'Mock Test'}</div>
                         ${breakdownHtml}
                     </div>
-                    <div class="flex flex-col items-end gap-2">
+                    <div class="flex flex-col items-end gap-2 shrink-0 ml-4">
                         <div class="flex items-baseline gap-0.5">
                             <span class="text-3xl font-black text-brand-600 dark:text-brand-400 tracking-tighter">${marksVal}</span>
                             <span class="text-sm font-bold text-zinc-400">/${maxVal}</span>
@@ -3004,15 +3141,103 @@ window.renderMockStats = function () {
                 </div>
             </div>`;
     });
-    list.innerHTML = historyHtml;
+    
+    if (list) list.innerHTML = historyHtml;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+window.renderMockCategorySettings = function() {
+    const list = document.getElementById('mock-categories-list');
+    const categories = state.settings.mockCategories || [];
+    if (!list) return;
+
+    list.innerHTML = '';
+    if (categories.length === 0) {
+        list.innerHTML = `<p class="text-xs text-zinc-400 italic text-center py-4 bg-zinc-50 dark:bg-zinc-900 rounded-xl">No categories added yet.</p>`;
+        return;
+    }
+
+    categories.forEach(cat => {
+        const el = document.createElement('div');
+        el.className = "flex justify-between items-center p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 group";
+        el.innerHTML = `
+            <span class="text-sm font-bold text-zinc-700 dark:text-zinc-200 pl-2 tracking-tight">${escapeHtml(cat)}</span>
+            <button onclick="deleteMockCategory('${escapeHtml(cat)}')" class="p-2 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors" title="Remove">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>`;
+        list.appendChild(el);
+    });
     lucide.createIcons();
 }
+
+window.addMockCategory = async function() {
+    const input = document.getElementById('mock-category-input');
+    const category = input.value.trim();
+    if (!category) return;
+
+    if (!state.settings.mockCategories) {
+        state.settings.mockCategories = [];
+    }
+
+    if (state.settings.mockCategories.map(c => c.toLowerCase()).includes(category.toLowerCase())) {
+        showToast("Category already exists.");
+        return;
+    }
+
+    state.settings.mockCategories.push(category);
+    renderMockCategorySettings();
+    input.value = '';
+
+    try {
+        await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), {
+            mockCategories: arrayUnion(category)
+        });
+        showToast(`'${category}' added!`);
+    } catch (e) {
+        console.error("Error adding category:", e);
+        // Rollback state on failure
+        state.settings.mockCategories = state.settings.mockCategories.filter(c => c !== category);
+        renderMockCategorySettings();
+    }
+}
+
+window.deleteMockCategory = async function(category) {
+    if (!state.settings.mockCategories) return;
+
+    const originalCategories = [...state.settings.mockCategories];
+    state.settings.mockCategories = state.settings.mockCategories.filter(c => c !== category);
+    renderMockCategorySettings();
+
+    try {
+        await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), {
+            mockCategories: arrayRemove(category)
+        });
+        showToast(`'${category}' removed.`);
+    } catch (e) {
+        console.error("Error deleting category:", e);
+        // Rollback state on failure
+        state.settings.mockCategories = originalCategories;
+        renderMockCategorySettings();
+    }
+}
+
+
 
 window.openEditMockModal = function (id) {
     const task = state.tasks.find(t => t.id === id);
     if (!task) return;
     document.getElementById('edit-mock-id').value = id;
     document.getElementById('edit-mock-title').innerText = task.text || 'Mock Test';
+
+    // *** NEW: POPULATE AND SET CATEGORY ***
+    const categorySelect = document.getElementById('edit-mock-category');
+    const categories = state.settings.mockCategories || [];
+    let categoryOptions = '<option value="">Uncategorized</option>';
+    categories.forEach(cat => {
+        categoryOptions += `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`;
+    });
+    categorySelect.innerHTML = categoryOptions;
+    categorySelect.value = task.category || "";
+    // *** END NEW SECTION ***
 
     const container = document.getElementById('edit-mock-inputs');
     const type = state.settings.examType;
@@ -3079,9 +3304,11 @@ window.saveMockBreakdown = async function () {
     const maxInput = document.getElementById('edit-mock-max');
     const attemptedInput = document.getElementById('edit-mock-attempted');
     const correctInput = document.getElementById('edit-mock-correct');
+    const categorySelect = document.getElementById('edit-mock-category');
 
     const finalMarks = (totalInput && totalInput.value !== '') ? parseInt(totalInput.value) : null;
     const finalMax = (maxInput && maxInput.value !== '') ? parseInt(maxInput.value) : 300;
+    const finalCategory = categorySelect ? categorySelect.value : null;
 
     // Parse accuracy logic
     const finalAttempted = (attemptedInput && attemptedInput.value !== '') ? parseInt(attemptedInput.value) : null;
@@ -3094,6 +3321,7 @@ window.saveMockBreakdown = async function () {
             maxMarks: finalMax,
             attempted: finalAttempted,
             correct: finalCorrect,
+            category: finalCategory,
             completed: finalMarks !== null
         });
         showToast('Score Updated');
@@ -3132,15 +3360,31 @@ window.switchView = function (view) {
     }
 
     // Update Nav buttons
-    ['calendar', 'weekly', 'stats', 'syllabus', 'timer', 'squad'].forEach(v => {
+    // ✅ ADD 'info' to the lists
+    const navButtons = ['calendar', 'weekly', 'stats', 'syllabus', 'timer', 'squad', 'info']; 
+    
+    navButtons.forEach(v => {
         const btn = document.getElementById(`nav-desktop-${v}`);
         if (!btn) return;
-        if (v === navHighlight) { btn.classList.add('bg-white', 'dark:bg-zinc-800', 'shadow-sm', 'text-brand-600', 'dark:text-brand-400'); btn.classList.remove('text-zinc-500', 'dark:text-zinc-400', 'hover:bg-zinc-200/50', 'dark:hover:bg-zinc-800/50'); }
-        else { btn.classList.remove('bg-white', 'dark:bg-zinc-800', 'shadow-sm', 'text-brand-600', 'dark:text-brand-400'); btn.classList.add('text-zinc-500', 'dark:text-zinc-400', 'hover:bg-zinc-200/50', 'dark:hover:bg-zinc-800/50'); }
+        if (v === navHighlight) { 
+            btn.classList.add('bg-white', 'dark:bg-zinc-800', 'shadow-sm', 'text-brand-600', 'dark:text-brand-400'); 
+            btn.classList.remove('text-zinc-500', 'dark:text-zinc-400', 'hover:bg-zinc-200/50', 'dark:hover:bg-zinc-800/50'); 
+        } else { 
+            btn.classList.remove('bg-white', 'dark:bg-zinc-800', 'shadow-sm', 'text-brand-600', 'dark:text-brand-400'); 
+            btn.classList.add('text-zinc-500', 'dark:text-zinc-400', 'hover:bg-zinc-200/50', 'dark:hover:bg-zinc-800/50'); 
+        }
     });
-    ['calendar', 'weekly', 'stats', 'syllabus', 'timer', 'squad'].forEach(v => {
+    navButtons.forEach(v => {
         const btn = document.getElementById(`nav-mobile-${v}`);
-        if (btn) { if (v === navHighlight) { btn.classList.remove('text-zinc-400', 'dark:text-zinc-500'); btn.classList.add('text-brand-600', 'dark:text-brand-400'); } else { btn.classList.add('text-zinc-400', 'dark:text-zinc-500'); btn.classList.remove('text-brand-600', 'dark:text-brand-400'); } }
+        if (btn) { 
+            if (v === navHighlight) { 
+                btn.classList.remove('text-zinc-400', 'dark:text-zinc-500'); 
+                btn.classList.add('text-brand-600', 'dark:text-brand-400'); 
+            } else { 
+                btn.classList.add('text-zinc-400', 'dark:text-zinc-500'); 
+                btn.classList.remove('text-brand-600', 'dark:text-brand-400'); 
+            } 
+        }
     });
 
     // Render logic
@@ -3153,10 +3397,12 @@ window.switchView = function (view) {
     if (view === 'squad') renderSquadView();
     if (view === 'timer') { updateSubjectSelectors(); updateTimerTaskSelector(); updateTimerStats(); renderRecentLogs(); renderTimerChart(); }
     if (view === 'settings') initSettingsView();
+    
+    // ✅ ADD this line to fetch the changelog when the info page is opened
+    if (view === 'info') fetchChangelog();
 
     if (typeof updateMiniTimerVisibility === 'function') updateMiniTimerVisibility();
 }
-
 
 window.openAddTaskModal = function () { updateSubjectSelectors(); const modal = document.getElementById('add-task-modal'); modal.classList.remove('hidden'); setTimeout(() => { modal.classList.remove('opacity-0'); modal.querySelector('.mobile-sheet').classList.add('open'); }, 10); }
 window.closeAddTaskModal = function () { const modal = document.getElementById('add-task-modal'); modal.querySelector('.mobile-sheet').classList.remove('open'); modal.classList.add('opacity-0'); setTimeout(() => modal.classList.add('hidden'), 400); }
@@ -3165,11 +3411,29 @@ window.renderMockSubjectFields = function (containerId, suffix) {
     const container = document.getElementById(containerId);
     const type = state.settings.examType;
     const subjects = window.getExamSubjects(type, state.settings.customSubjects);
+    const categories = state.settings.mockCategories || [];
+
+    let categoryOptions = '<option value="">Uncategorized</option>';
+    categories.forEach(cat => {
+        categoryOptions += `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`;
+    });
 
     let html = `
         <div class="flex p-1 bg-white/50 dark:bg-zinc-950/50 rounded-xl mb-4 border border-fuchsia-200/50 dark:border-fuchsia-900/30">
             <button type="button" id="mock-tab-schedule${suffix}" onclick="switchMockAddMode('schedule', '${suffix}')" class="flex-1 py-1.5 text-[11px] font-bold rounded-lg bg-white dark:bg-zinc-800 text-fuchsia-700 dark:text-fuchsia-300 shadow-sm transition-all">Schedule Mock</button>
             <button type="button" id="mock-tab-log${suffix}" onclick="switchMockAddMode('log', '${suffix}')" class="flex-1 py-1.5 text-[11px] font-bold rounded-lg text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-all bg-transparent">Log Results</button>
+        </div>
+        
+        <div class="mb-4">
+            <!-- MODIFIED: Added a flex container to hold the label and the new button -->
+            <div class="flex justify-between items-center mb-1.5">
+                <label class="block text-[10px] font-bold text-fuchsia-600/70 dark:text-fuchsia-400/70 uppercase tracking-widest">Category</label>
+                <!-- NEW: "Manage" button that links to settings -->
+                <button type="button" onclick="switchView('settings')" class="text-[10px] font-bold text-brand-600 dark:text-brand-400 hover:underline">+ Manage Categories</button>
+            </div>
+            <select id="task-mock-category${suffix}" class="w-full bg-white dark:bg-zinc-800 border border-fuchsia-200/50 dark:border-fuchsia-900/50 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-bold focus:ring-2 focus:ring-fuchsia-500 shadow-inner-light dark:shadow-inner-dark appearance-none">
+                ${categoryOptions}
+            </select>
         </div>
 
         <div id="mock-log-inputs${suffix}" class="hidden animate-slide-up">
@@ -3227,24 +3491,36 @@ window.calculateMockTotal = function (suffix) { const inputs = document.querySel
 
 function updateSubjectSelectors() {
     const type = state.settings.examType;
-    const subjects = window.getExamSubjects(type, state.settings.customSubjects);
+    const customs = state.settings.customSubjects || [];
 
-    const fullSubjects = [...subjects, 'MockTest'];
+    // --- Add/Edit Task Form Subject Selectors (No "MockTest" button here) ---
+    const formSubjects = window.getExamSubjects(type, customs, false); // false = do NOT include MockTest
+    const fullFormSubjects = [...formSubjects, 'MockTest']; // We manually add the special radio button
+
     const renderRadios = (containerId, formSuffix) => {
-        const container = document.getElementById(containerId); if (!container) return;
+        const container = document.getElementById(containerId); 
+        if (!container) return;
+
+        // 🚨 THE FIX: Remember the currently selected radio button before wiping the HTML
+        const currentChecked = container.querySelector('input[name="subject"]:checked')?.value;
+        const selectedValue = (currentChecked && fullFormSubjects.includes(currentChecked)) ? currentChecked : fullFormSubjects[0];
+
         let html = '';
-        fullSubjects.forEach((sub, i) => {
+        fullFormSubjects.forEach((sub, i) => {
             const isMock = sub === 'MockTest';
             const colorInfo = getSubjectColor(sub);
             const style = isMock ? 'bg-fuchsia-50/50 text-fuchsia-700 border-fuchsia-200/50 dark:bg-fuchsia-900/10 dark:text-fuchsia-300 dark:border-fuchsia-900/50' : 'bg-white text-zinc-600 border-zinc-200 dark:bg-[#18181b] dark:text-zinc-300 dark:border-zinc-800';
             const padding = formSuffix === '-mobile' ? 'py-3.5 rounded-2xl' : 'py-2.5 rounded-xl';
 
-            // Creates a color dot based on the customized user palette
             const colorDot = isMock ? '' : `<span class="w-2.5 h-2.5 rounded-full inline-block shrink-0 shadow-sm" style="background-color: ${colorInfo.hex}"></span>`;
             const labelText = isMock ? '🏆 Mock' : sub;
 
-            html += `<label class="cursor-pointer"><input type="radio" name="subject" value="${sub}" class="peer sr-only" ${i === 0 ? 'checked' : ''}><div class="flex items-center justify-center gap-1.5 px-2 ${padding} text-xs font-bold border transition-all hover:scale-[1.02] peer-checked:ring-2 peer-checked:ring-offset-2 dark:peer-checked:ring-offset-[#09090b] shadow-sm ${style}" style="--tw-ring-color: ${isMock ? '#d946ef' : colorInfo.hex}">${colorDot} <span class="truncate">${labelText}</span></div></label>`;
-        }); container.innerHTML = html;
+            // Apply 'checked' only to the remembered value
+            const isChecked = (sub === selectedValue) ? 'checked' : '';
+
+            html += `<label class="cursor-pointer"><input type="radio" name="subject" value="${sub}" class="peer sr-only" ${isChecked}><div class="flex items-center justify-center gap-1.5 px-2 ${padding} text-xs font-bold border transition-all hover:scale-[1.02] peer-checked:ring-2 peer-checked:ring-offset-2 dark:peer-checked:ring-offset-[#09090b] shadow-sm ${style}" style="--tw-ring-color: ${isMock ? '#d946ef' : colorInfo.hex}">${colorDot} <span class="truncate">${labelText}</span></div></label>`;
+        }); 
+        container.innerHTML = html;
 
         container.querySelectorAll('input').forEach(radio => {
             radio.addEventListener('change', (e) => {
@@ -3257,36 +3533,69 @@ function updateSubjectSelectors() {
                     renderMockSubjectFields(mockContainerId, formSuffix);
                 } else {
                     mockFields.classList.add('hidden');
-
-                    // FIX: Reset the main button text back to default when leaving Mock mode
                     const submitBtn = document.getElementById(`btn-add-task${formSuffix}`);
                     if (submitBtn) {
                         const btnSpan = submitBtn.querySelector('span');
                         if (btnSpan) btnSpan.innerText = "Add to Plan";
                     }
                 }
-
-                // 💥 TRIGGER ANIMATION HERE 💥
                 window.spawnFloatingIcons(e.target.nextElementSibling, e.target.value);
             });
         });
 
+        // 🚨 THE FIX: Ensure the Mock Fields stay visible if MockTest was already selected
+        const mockContainerId = formSuffix === '-mobile' ? 'mock-fields-container-mobile' : 'mock-fields-container';
+        const mockFields = document.getElementById(mockContainerId);
+        if (mockFields) {
+            if (selectedValue === 'MockTest') {
+                mockFields.classList.remove('hidden');
+                
+                // Gently update the categories dropdown without wiping the scores you entered
+                const categorySelect = document.getElementById(`task-mock-category${formSuffix}`);
+                if (categorySelect) {
+                    const currentCatVal = categorySelect.value;
+                    const categories = state.settings.mockCategories || [];
+                    let categoryOptions = '<option value="">Uncategorized</option>';
+                    categories.forEach(cat => {
+                        categoryOptions += `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`;
+                    });
+                    categorySelect.innerHTML = categoryOptions;
+                    categorySelect.value = currentCatVal;
+                } else {
+                    // If it hasn't been rendered yet at all, do a full render
+                    renderMockSubjectFields(mockContainerId, formSuffix);
+                }
+
+            } else {
+                mockFields.classList.add('hidden');
+            }
+        }
     };
 
-    renderRadios('subject-selector-mobile', '-mobile'); renderRadios('subject-selector', '');
+    renderRadios('subject-selector-mobile', '-mobile'); 
+    renderRadios('subject-selector', '');
 
+    // --- Timer Subject Selector ---
     const timerContainer = document.getElementById('timer-subject-selector');
     if (timerContainer) {
-        if (!subjects.includes(timerSubject)) timerSubject = subjects[0];
+        // Tell the helper to include MockTest in the list for the timer
+        const timerSubjects = window.getExamSubjects(type, customs, true); 
+
+        if (!timerSubjects.includes(timerSubject)) timerSubject = timerSubjects[0];
+        
         let timerHtml = '';
-        subjects.forEach((sub) => {
+        timerSubjects.forEach((sub) => {
             const colorInfo = getSubjectColor(sub);
             const isActive = timerSubject === sub;
             const activeClass = isActive ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 border-transparent shadow-md' : 'bg-white dark:bg-[#18181b] text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 border-zinc-200 dark:border-zinc-800';
-            timerHtml += `<button onclick="setTimerSubject('${sub}')" data-sub="${sub}" class="timer-subject-pill flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl border text-[10px] md:text-xs font-bold transition-all ${activeClass}"><span class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full" style="background-color: ${colorInfo.hex}"></span>${sub}</button>`;
-        }); timerContainer.innerHTML = timerHtml;
+            const icon = sub === 'MockTest' ? '🏆' : `<span class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full" style="background-color: ${colorInfo.hex}"></span>`;
+
+            timerHtml += `<button onclick="setTimerSubject('${sub}')" data-sub="${sub}" class="timer-subject-pill flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl border text-[10px] md:text-xs font-bold transition-all ${activeClass}">${icon}${sub}</button>`;
+        }); 
+        timerContainer.innerHTML = timerHtml;
     }
 }
+
 
 document.getElementById('add-task-form-mobile').addEventListener('submit', async (e) => { e.preventDefault(); await handleTaskSubmit('mobile'); });
 document.getElementById('add-task-form').addEventListener('submit', async (e) => { e.preventDefault(); await handleTaskSubmit('desktop'); });
@@ -3322,6 +3631,12 @@ async function handleTaskSubmit(mode) {
 
     if (subject === 'MockTest') {
         const currentMockMode = window[`mockMode${suffix}`] || 'schedule';
+
+        // Get category regardless of mode
+        const categorySelect = document.getElementById(`task-mock-category${suffix}`);
+        if (categorySelect && categorySelect.value) {
+            newTask.category = categorySelect.value;
+        }
 
         if (currentMockMode === 'log') {
             const marksId = `task-marks${suffix}`;
@@ -3381,7 +3696,6 @@ async function handleTaskSubmit(mode) {
         setTimeout(() => document.getElementById('task-input').focus(), 50);
     }
 }
-
 window.changeMonth = function (d) {
     state.viewDate.setMonth(state.viewDate.getMonth() + d);
 
@@ -6142,7 +6456,8 @@ window.saveTimerState = function () {
         timerAccumulatedMs: currentTotalMs, // Save everything as a static number
         timerMode,
         timerSubject,
-        linkedTaskId
+        linkedTaskId,
+        targetDurationSecs // <-- NEW: Explicitly save the custom target duration
     };
     localStorage.setItem('chaosprep_timer_state', JSON.stringify(stateToSave));
 };
@@ -6160,7 +6475,9 @@ window.restoreTimerState = function () {
         timerSubject = parsed.timerSubject || 'Physics';
         linkedTaskId = parsed.linkedTaskId || null;
         timerAccumulatedMs = parsed.timerAccumulatedMs || 0;
-        targetDurationSecs = (timerMode === 'exam') ? 3 * 60 * 60 : 0;
+        
+        // NEW: Restore the saved target duration (default to 0 if it somehow failed)
+        targetDurationSecs = parsed.targetDurationSecs || 0;
 
         isTimerRunning = false;
         timerStartMs = 0;
@@ -6169,7 +6486,8 @@ window.restoreTimerState = function () {
         const flowPath = document.getElementById('timer-active-path'); // Use the new path!
         const label = document.getElementById('timer-mode-label');
 
-        ['flow', 'exam'].forEach(m => {
+        // FIX: Replaced 'exam' with 'custom' in the loop
+        ['flow', 'custom'].forEach(m => {
             const btn = document.getElementById(`btn-mode-${m}`);
             if (btn) {
                 btn.className = (m === timerMode)
@@ -6179,18 +6497,24 @@ window.restoreTimerState = function () {
         });
 
         if (timerMode === 'flow') {
-            targetDurationSecs = 0;
+            targetDurationSecs = 0; // Force to 0 for safety
             if (svgRing) svgRing.classList.add('hidden');
             if (flowPath) {
                 flowPath.classList.remove('hidden'); // Show traveling border
                 flowPath.style.animationPlayState = 'paused'; // FIX: Force pause on initial app load
             }
             if (label) label.innerText = "Flow State";
-        } else if (timerMode === 'exam') {
-            targetDurationSecs = 3 * 60 * 60; // 3 hours
-            if (svgRing) svgRing.classList.remove('hidden');
+            
+        } else if (timerMode === 'custom') { // FIX: Changed 'exam' to 'custom'
+            // Keep the restored targetDurationSecs
+            if (svgRing) {
+                svgRing.classList.remove('hidden');
+                // Set the dasharray immediately so it doesn't glitch to full ring
+                const perimeter = svgRing.getTotalLength ? svgRing.getTotalLength() : 880;
+                svgRing.style.strokeDasharray = `${perimeter} ${perimeter}`;
+            }
             if (flowPath) flowPath.classList.add('hidden'); // Hide traveling border
-            if (label) label.innerText = "Exam Simulator";
+            if (label) label.innerText = `Custom: ${Math.floor(targetDurationSecs / 60)}m Target`;
         }
 
         setTimerSubject(timerSubject);
@@ -6612,15 +6936,17 @@ async function fetchAndInitBanner() {
 const GIST_URL = 'https://gist.githubusercontent.com/svalordev/5783159ab47a4430afe6d0ab0732e8e0/raw/CHANGELOG.md';
 
 async function fetchChangelog() {
-    const contentDiv = document.getElementById('changelog-content');
+    const contentDiv = document.getElementById('info-changelog-content');
+    if (!contentDiv) return;
 
     try {
-        // Fetch raw markdown from the Gist
+        // Fetch raw markdown from the Gist, with cache-busting
         const response = await fetch(`${GIST_URL}?t=${new Date().getTime()}`);
-
         if (!response.ok) throw new Error('Failed to fetch changelog');
 
         const markdown = await response.text();
+        
+        // Use marked.js to convert Markdown to HTML
         const htmlContent = marked.parse(markdown);
         contentDiv.innerHTML = htmlContent;
 
@@ -6629,7 +6955,7 @@ async function fetchChangelog() {
         contentDiv.innerHTML = `
             <div class="text-center text-zinc-400 py-8">
                 <i data-lucide="wifi-off" class="w-12 h-12 mx-auto mb-3 opacity-50 text-zinc-500"></i>
-                <p class="font-medium text-white mb-1">Couldn't load updates</p>
+                <p class="font-medium text-zinc-800 dark:text-zinc-200 mb-1">Couldn't load updates</p>
                 <p class="text-sm">Please check your connection and try again.</p>
             </div>
         `;
@@ -6637,44 +6963,6 @@ async function fetchChangelog() {
     }
 }
 
-window.openChangelog = function () {
-    const modal = document.getElementById('changelog-modal');
-    const container = document.getElementById('changelog-container');
-
-    // Remove hidden class to render block, then animate opacity/scale
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-
-    // Tiny timeout to allow DOM to update before triggering transition
-    setTimeout(() => {
-        modal.classList.remove('opacity-0');
-        container.classList.remove('scale-95');
-    }, 10);
-
-    fetchChangelog();
-}
-
-window.closeChangelog = function () {
-    const modal = document.getElementById('changelog-modal');
-    const container = document.getElementById('changelog-container');
-
-    // Animate out
-    modal.classList.add('opacity-0');
-    container.classList.add('scale-95');
-
-    // Wait for transition to finish before hiding completely
-    setTimeout(() => {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-
-        // Reset content back to loading spinner for next open
-        document.getElementById('changelog-content').innerHTML = `
-            <div class="flex justify-center items-center h-32">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
-            </div>
-        `;
-    }, 300);
-}
 
 // Close modal when clicking outside the container
 document.getElementById('changelog-modal')?.addEventListener('click', function (e) {

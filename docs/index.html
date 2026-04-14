@@ -26,8 +26,8 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script type="module" crossorigin src="./assets/main-DwR8kxBT.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/main-CVqP30Lj.css">
+  <script type="module" crossorigin src="./assets/main-8v_zesKH.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/main-D0I6alfn.css">
 <script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TCK0S6VC58"></script>
 <script>
@@ -260,9 +260,9 @@
                         class="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/50 rounded-xl transition-colors">
                         <i data-lucide="settings" class="w-[18px] h-[18px]"></i>
                     </button>
-                    <button onclick="openChangelog()"
-                        class="w-full flex items-center gap-3 px-3 py-2 text-zinc-400 hover:text-white hover:bg-zinc-800/50 rounded-xl transition-all group">
-                        <i data-lucide="file-clock" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
+                    <button onclick="switchView('info')" id="nav-desktop-info"
+                        class="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/50 rounded-xl transition-colors">
+                        <i data-lucide="info" class="w-[18px] h-[18px]"></i>
                     </button>
                     <button onclick="toggleSidebar()"
                         class="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/50 rounded-xl transition-colors"
@@ -470,9 +470,9 @@
                         class="text-[10px] font-black uppercase tracking-wide text-zinc-700 dark:text-zinc-300">--
                         days</span>
                 </div>
-                <button onclick="openChangelog()"
-                    class="flex items-center gap-3 px-3 py-2 text-zinc-400 hover:text-white hover:bg-zinc-800/50 rounded-xl transition-all group">
-                    <i data-lucide="file-clock" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
+                <button onclick="switchView('info')"
+                    class="w-8 h-8 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded-full text-zinc-600 dark:text-zinc-300 active:scale-95 transition-transform">
+                    <i data-lucide="info" class="w-4 h-4"></i>
                 </button>
 
                 <!-- <button onclick="openSupportModal()"
@@ -889,17 +889,20 @@
                 <div class="glass-card p-5 md:p-8 rounded-[2rem] mb-10">
                     <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                         <h3 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Performance Trajectory</h3>
-        
-                        <div class="flex items-center gap-4">
-                            <div
-                                class="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 rounded-xl px-3 py-2 shadow-inner border border-zinc-200/50 dark:border-zinc-700/50">
-                                <label
-                                    class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1"><i
-                                        data-lucide="crosshair" class="w-3 h-3"></i> Target</label>
-                                <input type="number" id="mock-target-input" value="200" onchange="renderMockStats()"
-                                    class="w-14 bg-transparent text-sm font-black text-brand-600 dark:text-brand-400 outline-none text-right">
+                        
+                        <div class="flex flex-col md:flex-row items-start md:items-center gap-4">
+                            <select id="mock-category-filter" onchange="renderMockStats()" class="w-full md:w-auto bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/50 dark:border-zinc-700/50 rounded-xl px-3 py-2 text-xs font-bold text-zinc-700 dark:text-zinc-300 outline-none focus:ring-2 focus:ring-brand-500 shadow-inner appearance-none">
+                                <option value="all">All Tests</option>
+                                <!-- Categories populated by JS -->
+                            </select>
+                            
+                            <div class="flex items-center gap-4">
+                                <div class="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 rounded-xl px-3 py-2 shadow-inner border border-zinc-200/50 dark:border-zinc-700/50">
+                                    <label class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1"><i data-lucide="crosshair" class="w-3 h-3"></i> Target</label>
+                                    <input type="number" id="mock-target-input" value="200" onchange="renderMockStats()" class="w-14 bg-transparent text-sm font-black text-brand-600 dark:text-brand-400 outline-none text-right">
+                                </div>
+                                <div id="chart-filters" class="flex flex-wrap gap-2"></div>
                             </div>
-                            <div id="chart-filters" class="flex flex-wrap gap-2"></div>
                         </div>
                     </div>
                     <div class="relative h-96 md:h-[500px] w-full">
@@ -1386,6 +1389,21 @@
                             </button>
                         </div>
                     </div>
+
+                    <div class="glass-card p-6 md:p-8 rounded-[2.5rem] flex flex-col gap-6">
+                        <div class="flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-800 pb-4">
+                            <i data-lucide="tags" class="w-5 h-5 text-zinc-400"></i>
+                            <h3 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Mock Test Categories</h3>
+                        </div>
+                        <p class="text-xs text-zinc-500 -mt-4">Organize your tests (e.g., Full Syllabus, Part Test).</p>
+                        <div class="flex gap-2">
+                            <input type="text" id="mock-category-input" placeholder="New category name..." class="flex-1 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500/30 outline-none dark:text-white font-medium shadow-inner-light dark:shadow-inner-dark">
+                            <button onclick="addMockCategory()" class="px-5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold rounded-xl shadow-md transition-all active:scale-95">Add</button>
+                        </div>
+                        <div id="mock-categories-list" class="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar pr-2">
+                            <!-- Categories will be rendered here -->
+                        </div>
+                    </div>
         
                     <div class="glass-card p-6 md:p-8 rounded-[2.5rem] lg:col-span-2 flex flex-col gap-6">
                         <div class="flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-800 pb-4">
@@ -1505,6 +1523,61 @@
                     </div>
         
                 </div>
+            </div>
+        </div>
+
+        <!-- VIEW: Info Page -->
+        <div id="view-container-info" class="view-section hidden flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar no-scrollbar relative">
+            <div class="max-w-4xl mx-auto pb-32 mt-2">
+
+                <div class="flex items-center justify-between mb-10 px-2">
+                    <h2 class="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tighter flex items-center gap-3">
+                        <i data-lucide="info" class="w-8 h-8 text-brand-500"></i> About
+                    </h2>
+                </div>
+
+                <!-- Branding & Links Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+                    <!-- sval.tech Card -->
+                    <a href="https://sval.tech" target="_blank" class="group glass-card p-6 rounded-[2rem] flex items-center gap-5 relative overflow-hidden hover:-translate-y-1 transition-transform">
+                        <div class="absolute -right-10 -top-10 w-32 h-32 bg-brand-500/5 rounded-full blur-2xl group-hover:bg-brand-500/10 transition-colors"></div>
+                        <img src="logo.png" alt="sval.tech Logo" class="w-16 h-16 rounded-2xl shadow-lg object-contain shrink-0 group-hover:scale-105 transition-transform">
+                        <div class="relative z-10">
+                            <div class="text-lg font-black text-zinc-900 dark:text-white leading-tight">ChaosPrep</div>
+                            <div class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">by sval.tech</div>
+                        </div>
+                        <i data-lucide="arrow-up-right" class="w-4 h-4 text-zinc-300 dark:text-zinc-600 ml-auto shrink-0 group-hover:text-brand-500 transition-colors"></i>
+                    </a>
+
+                    <!-- AlphaJEE Card -->
+                    <a href="https://alphajee.online" target="_blank" class="group glass-card p-6 rounded-[2rem] flex items-center gap-5 relative overflow-hidden hover:-translate-y-1 transition-transform">
+                        <div class="absolute -right-10 -top-10 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-colors"></div>
+                        <div class="w-16 h-16 rounded-2xl bg-white p-2 shadow-lg flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                            <img src="https://jtestify.alphajee.online/alphajee.png" alt="AlphaJEE Logo" class="w-full h-full object-contain">
+                        </div>
+                        <div class="relative z-10">
+                            <div class="text-lg font-black text-zinc-900 dark:text-white leading-tight">AlphaJEE</div>
+                            <div class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Official Partner</div>
+                        </div>
+                        <i data-lucide="arrow-up-right" class="w-4 h-4 text-zinc-300 dark:text-zinc-600 ml-auto shrink-0 group-hover:text-blue-500 transition-colors"></i>
+                    </a>
+                </div>
+
+                <!-- Changelog Section -->
+                <div class="flex items-center gap-3 mb-6 px-2">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-zinc-400"></i>
+                    <h3 class="text-xl font-black text-zinc-900 dark:text-white tracking-tight">Latest Updates</h3>
+                </div>
+                
+                <div class="glass-card p-6 md:p-8 rounded-[2rem]">
+                    <div id="info-changelog-content" class="prose prose-sm dark:prose-invert max-w-none prose-h2:text-xl prose-h2:font-black prose-h3:font-bold prose-a:text-brand-500 prose-a:font-semibold hover:prose-a:underline prose-strong:text-zinc-800 dark:prose-strong:text-zinc-200">
+                        <!-- Loading spinner -->
+                        <div class="flex justify-center items-center h-48">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </main>
@@ -1768,6 +1841,17 @@
             </div>
             <p class="text-xs font-bold text-zinc-400 mb-6 uppercase tracking-widest truncate" id="edit-mock-title">
                 Update subject marks</p>
+
+            <div class="mb-5">
+                <!-- MODIFIED: Added flex container and button -->
+                <div class="flex justify-between items-center mb-1.5">
+                    <label class="block text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Category</label>
+                    <button type="button" onclick="closeEditMockModal(); switchView('settings')" class="text-[10px] font-bold text-brand-600 dark:text-brand-400 hover:underline">+ Manage</button>
+                </div>
+                <select id="edit-mock-category" class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800 rounded-xl px-4 py-3.5 text-sm outline-none dark:text-white font-bold focus:ring-2 focus:ring-brand-500 shadow-inner-light dark:shadow-inner-dark appearance-none">
+                    <!-- Options populated by JS -->
+                </select>
+            </div>
             <input type="hidden" id="edit-mock-id">
     
             <div id="edit-mock-inputs" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5"></div>
@@ -2261,32 +2345,6 @@
             <button id="save-profile-btn" onclick="saveProfileSettings()"
                 class="w-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold py-3.5 rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center">Save
                 Profile</button>
-        </div>
-    </div>
-</div>
-
-<div id="changelog-modal"
-    class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm items-center justify-center p-4 opacity-0 transition-opacity duration-300">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl transform scale-95 transition-transform duration-300"
-        id="changelog-container">
-
-        <div class="flex items-center justify-between p-5 border-b border-zinc-800 shrink-0">
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-brand-500/20 text-brand-400 rounded-lg">
-                    <i data-lucide="sparkles" class="w-5 h-5"></i>
-                </div>
-                <h2 class="text-xl font-bold text-white">What's New</h2>
-            </div>
-            <button onclick="closeChangelog()"
-                class="p-2 text-zinc-400 hover:text-white bg-zinc-800/50 rounded-lg hover:bg-zinc-700 transition-colors">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
-        </div>
-
-        <div id="changelog-content" class="p-6 overflow-y-auto custom-scrollbar text-zinc-300 space-y-4 text-sm">
-            <div class="flex justify-center items-center h-32">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
-            </div>
         </div>
     </div>
 </div>
