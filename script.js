@@ -74,9 +74,9 @@ state = {
     currentView: 'calendar',
     settings: { 
         examType: 'JEE Main', 
-        session: 'Apr', 
-        targetYear: 2026, 
-        targetDate: '2026-04-01', 
+        session: 'Jan', 
+        targetYear: 2027, 
+        targetDate: '2027-01-21', 
         customSubjects: [], 
         subjectColors: {}, 
         theme: 'dark', 
@@ -85,7 +85,7 @@ state = {
         dailyQuestionTarget: 50, 
         liteMode: true, 
         dayRolloverHour: 0,
-        mockCategories: [] // <-- Add this line
+        mockCategories: [] 
     },
     syllabusData: { status: {}, meta: {} }, 
     syllabusOpenStates: {}
@@ -6666,51 +6666,74 @@ window.saveProfileSettings = async () => {
 // --- SPACIOUS SCROLLING FOOTER INJECTOR ---
 function injectGlobalFooters() {
     const globalFooterHTML = `
-    <div class="w-full flex flex-col items-center gap-4 mt-12 mb-6 px-4">
-        <footer class="shrink-0 w-auto max-w-full bg-white/60 dark:bg-[#09090b]/60 backdrop-blur-xl border border-zinc-200/80 dark:border-zinc-800/80 px-4 py-2.5 rounded-full flex flex-row items-center gap-4 sm:gap-6 z-40 shadow-md dark:shadow-floating-dark transition-all">
-            
-            <div class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 tracking-widest whitespace-nowrap">
-                © sval.tech 2026
+    <div class="w-full flex flex-col items-center mt-12 mb-32 md:mb-8 px-4 md:px-8 max-w-6xl mx-auto">
+        <footer class="w-full bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-2xl border border-zinc-200/80 dark:border-zinc-800/80 px-6 py-8 md:py-6 rounded-[2rem] md:rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-6 shadow-md hover:shadow-lg transition-all duration-300">
+
+            <div class="flex flex-col items-center md:items-start gap-1.5 shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <img src="logo.png" alt="ChaosPrep" class="w-6 h-6 rounded-lg shadow-sm grayscale opacity-70">
+                    <span class="text-sm font-black text-zinc-800 dark:text-zinc-200 tracking-tight">ChaosPrep</span>
+                </div>
+                <div class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 tracking-widest uppercase">
+                    © 2026 sval.tech
+                </div>
             </div>
 
-            <div class="flex items-center gap-4 sm:gap-5">
-                <a href="mailto:support@sval.tech" class="text-[10px] font-bold text-zinc-500 hover:text-brand-500 dark:hover:text-brand-400 transition-colors uppercase tracking-widest flex items-center gap-1.5">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
-                        <path d="M1.5 8.67v8.58a3 3 0 003 3h15a3 3 0 003-3V8.67l-8.928 5.493a3 3 0 01-3.144 0L1.5 8.67z" />
-                        <path d="M22.5 6.908V6.75a3 3 0 00-3-3h-15a3 3 0 00-3 3v.158l9.714 5.978a1.5 1.5 0 001.572 0L22.5 6.908z" />
-                    </svg>
-                    <span class="hidden sm:inline">Support</span>
-                </a>
+            <div class="flex flex-col items-center gap-4 w-full border-y md:border-y-0 md:border-x border-zinc-200/50 dark:border-zinc-800/50 py-5 md:py-0 md:px-6">
+                <div class="flex flex-wrap justify-center items-center gap-4 sm:gap-6 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                    <a href="mailto:support@sval.tech" class="hover:text-brand-500 dark:hover:text-brand-400 transition-colors flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                            <path d="M1.5 8.67v8.58a3 3 0 003 3h15a3 3 0 003-3V8.67l-8.928 5.493a3 3 0 01-3.144 0L1.5 8.67z" />
+                            <path d="M22.5 6.908V6.75a3 3 0 00-3-3h-15a3 3 0 00-3 3v.158l9.714 5.978a1.5 1.5 0 001.572 0L22.5 6.908z" />
+                        </svg>
+                        Support
+                    </a>
+                    <a href="https://discord.gg/mKXPpSY6Dz" target="_blank" rel="noopener noreferrer" class="hover:text-[#5865F2] transition-colors flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                            <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/>
+                        </svg>
+                        Discord
+                    </a>
+                    <a href="https://github.com/svalordev" target="_blank" rel="noopener noreferrer" class="hover:text-zinc-900 dark:hover:text-white transition-colors flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                            <path d="M12 0C5.37 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.6.113.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                        GitHub
+                    </a>
+                </div>
+                
+                <div class="flex flex-wrap justify-center items-center gap-3 sm:gap-4 text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mt-1 md:mt-0">
+                    <a href="privacypolicy.html" class="hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">Privacy Policy</a>
+                    <span class="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700 hidden sm:block"></span>
+                    <a href="termsandconditions.html" class="hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">Terms & Conditions</a>
+                </div>
+            </div>
 
-                <a href="https://discord.gg/mKXPpSY6Dz" target="_blank" class="text-[10px] font-bold text-zinc-500 hover:text-[#5865F2] dark:hover:text-[#5865F2] transition-colors uppercase tracking-widest flex items-center gap-1.5">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
-                        <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/>
-                    </svg>
-                    <span class="hidden sm:inline">Discord</span>
-                </a>
-
-                <a href="https://github.com/svalordev" target="_blank" class="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors uppercase tracking-widest flex items-center gap-1.5">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
-                        <path d="M12 0C5.37 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.6.113.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
-                    </svg>
-                    <span class="hidden sm:inline">GitHub</span>
+            <div class="flex flex-col items-center md:items-end gap-2 shrink-0">
+                <span class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Partnered With</span>
+                <a href="https://alphajee.online" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2.5 group/brand bg-zinc-50 dark:bg-zinc-800/50 px-3 py-1.5 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 hover:bg-white dark:hover:bg-zinc-800 hover:border-blue-200 dark:hover:border-blue-900/50 transition-all duration-300 hover:scale-105 shadow-sm">
+                    <div class="w-6 h-6 flex items-center justify-center bg-white rounded-md shadow-sm p-1">
+                        <img src="https://jtestify.alphajee.online/alphajee.png" alt="AlphaJEE" class="w-full h-full object-contain filter grayscale opacity-70 group-hover/brand:grayscale-0 group-hover/brand:opacity-100 transition-all duration-300">
+                    </div>
+                    <span class="text-xs font-black text-zinc-600 dark:text-zinc-300 group-hover/brand:text-blue-500 transition-colors tracking-tight">AlphaJEE</span>
                 </a>
             </div>
+
         </footer>
     </div>
     `;
 
+    // Target all scrollable containers inside your view sections
     const scrollableViews = document.querySelectorAll(
-        '#calendar-scroll-area, #view-container-weekly > .overflow-y-auto, #view-container-timer > .overflow-y-auto, #view-container-stats-mocks, #view-container-stats-errors, #view-container-stats-questions, #view-container-syllabus > .overflow-y-auto, #view-container-squad > .overflow-y-auto'
+        '#calendar-scroll-area, #view-container-weekly > .overflow-y-auto, #view-container-timer > .overflow-y-auto, #view-container-stats-mocks, #view-container-stats-errors, #view-container-stats-questions, #view-container-syllabus > .overflow-y-auto, #view-container-squad > .overflow-y-auto, #view-container-settings, #view-container-info'
     );
+    
     scrollableViews.forEach(view => {
+        // Prevent duplicate footers if function runs multiple times
         if (!view.querySelector('footer')) {
             view.insertAdjacentHTML('beforeend', globalFooterHTML);
         }
     });
-    if (window.lucide) {
-        window.lucide.createIcons();
-    }
 }
 
 // Run the injector when the DOM is ready
