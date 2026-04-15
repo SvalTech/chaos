@@ -6,9 +6,9 @@ import{initializeApp as Mt}from"https://www.gstatic.com/firebasejs/11.6.1/fireba
                     </span>
                     <span class="text-[10px] font-bold uppercase tracking-widest text-brand-300 drop-shadow-md z-10">Squad Invite Pending</span>
                 `,d.classList.remove("bg-zinc-950/80","border-zinc-800/80"),d.classList.add("bg-brand-950/40","border-brand-500/50","shadow-[0_0_30px_rgba(139,92,246,0.25)]"))}const a=document.querySelector("#login-screen h1");a&&(a.innerHTML=`
-                Your squad is <br class="hidden md:block">
+                You have been <br class="hidden md:block">
                 <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 via-brand-500 to-fuchsia-500 animate-pulse relative">
-                    waiting.
+                    invited.
                     <svg class="absolute w-full h-3 -bottom-1 left-0 text-brand-500 opacity-60" viewBox="0 0 100 10" preserveAspectRatio="none"><path d="M0 5 Q 50 10 100 5" stroke="currentColor" stroke-width="4" fill="transparent"/></svg>
                 </span>
             `);const o=document.querySelector("#login-screen p.max-w-2xl");o&&(o.innerHTML=`You've been invited to a private accountability squad. <strong class="text-white drop-shadow-md">Sign in to accept your invite</strong>, sync your targets, and start winning together.`);const s=document.querySelectorAll('#login-screen button[onclick="signInWithGoogle()"]');if(s.length>1){const d=s[1];d.className="opacity-0 animate-reveal delay-200 relative overflow-hidden rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-black text-sm py-4 px-8 flex items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-[0_0_40px_-10px_rgba(139,92,246,0.6)] border border-brand-400/50",d.innerHTML=`
@@ -291,7 +291,7 @@ Did you finish it?`,"Session Complete",!1,"Mark as Done")&&await toggleTask(O,!1
                 <div class="w-[72px] h-[72px] ${de} border-[3px] ${A} shadow-sm bg-white dark:bg-[#18181b] z-10 transition-all duration-500 flex items-center justify-center relative">
                     ${ae}
                 </div>
-            </div>`,L="pt-4";const ze=s.profileQuote?`<p class="text-xs text-zinc-500 dark:text-zinc-400 italic mb-3 leading-snug">"${escapeHtml(s.profileQuote)}"</p>`:"";let he="";if(s.focusedToday&&s.focusedToday>0){const v=Math.floor(s.focusedToday/60),P=s.focusedToday%60;he=`
+            </div>`,L="pt-4";const ze=s.profileQuote?`<p class="text-xs text-zinc-500 dark:text-zinc-400 mb-3 leading-snug">${escapeHtml(s.profileQuote)}</p>`:"";let he="";if(s.focusedToday&&s.focusedToday>0){const v=Math.floor(s.focusedToday/60),P=s.focusedToday%60;he=`
                 <div class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 bg-white dark:bg-[#18181b] px-2.5 py-1.5 rounded-lg border border-zinc-200/80 dark:border-zinc-800 shadow-sm" title="Total Focus Time Today">
                     <i data-lucide="timer" class="w-3 h-3 text-brand-500"></i> ${v>0?P>0?`${v}h ${P}m`:`${v}h`:`${P}m`}
                 </div>

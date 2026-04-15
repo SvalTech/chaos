@@ -321,9 +321,9 @@ window.checkPendingInvitesUI = function () {
         const heroTitle = document.querySelector('#login-screen h1');
         if (heroTitle) {
             heroTitle.innerHTML = `
-                Your squad is <br class="hidden md:block">
+                You have been <br class="hidden md:block">
                 <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 via-brand-500 to-fuchsia-500 animate-pulse relative">
-                    waiting.
+                    invited.
                     <svg class="absolute w-full h-3 -bottom-1 left-0 text-brand-500 opacity-60" viewBox="0 0 100 10" preserveAspectRatio="none"><path d="M0 5 Q 50 10 100 5" stroke="currentColor" stroke-width="4" fill="transparent"/></svg>
                 </span>
             `;
@@ -5337,7 +5337,7 @@ window.renderSquadView = function () {
         }
 
         // 5. PROFILE QUOTE
-        const quoteHtml = friend.profileQuote ? `<p class="text-xs text-zinc-500 dark:text-zinc-400 italic mb-3 leading-snug">"${escapeHtml(friend.profileQuote)}"</p>` : '';
+        const quoteHtml = friend.profileQuote ? `<p class="text-xs text-zinc-500 dark:text-zinc-400 mb-3 leading-snug">${escapeHtml(friend.profileQuote)}</p>` : '';
 
         // 5.5 FOCUSED TODAY BADGE
         let focusedTimeHtml = '';

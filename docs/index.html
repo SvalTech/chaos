@@ -26,7 +26,7 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script type="module" crossorigin src="./assets/main-8v_zesKH.js"></script>
+  <script type="module" crossorigin src="./assets/main-DUJMQg4j.js"></script>
   <link rel="stylesheet" crossorigin href="./assets/main-D0I6alfn.css">
 <script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TCK0S6VC58"></script>
@@ -1564,11 +1564,23 @@
                 </div>
 
                 <!-- Changelog Section -->
-                <div class="flex items-center gap-3 mb-6 px-2">
-                    <i data-lucide="sparkles" class="w-5 h-5 text-zinc-400"></i>
+                <div class="flex items-center gap-3 mb-4 px-2">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-brand-500"></i>
                     <h3 class="text-xl font-black text-zinc-900 dark:text-white tracking-tight">Latest Updates</h3>
                 </div>
-                
+
+                <!-- Notice added here -->
+                <div class="glass-card p-6 md:p-8 rounded-[2rem] p-4 mb-6 flex items-start gap-3">
+                    <i data-lucide="refresh-cw" class="w-5 h-5 text-brand-500 mt-0.5 shrink-0"></i>
+                    <div class="text-xs text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed">
+                        <strong class="text-zinc-900 dark:text-zinc-200">Not seeing the newest features?</strong><br>
+                        Force a refresh to clear your cache: 
+                        <kbd class="font-mono bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 rounded-md text-[10px] shadow-sm ml-1">Ctrl+Shift+R</kbd> (Windows) or 
+                        <kbd class="font-mono bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 rounded-md text-[10px] shadow-sm ml-1">Cmd+Shift+R</kbd> (Mac). 
+                        <span class="block mt-1 opacity-80">On Mobile/PWA: Force-close the app or clear browser cache.</span>
+                    </div>
+                </div>
+
                 <div class="glass-card p-6 md:p-8 rounded-[2rem]">
                     <div id="info-changelog-content" class="prose prose-sm dark:prose-invert max-w-none prose-h2:text-xl prose-h2:font-black prose-h3:font-bold prose-a:text-brand-500 prose-a:font-semibold hover:prose-a:underline prose-strong:text-zinc-800 dark:prose-strong:text-zinc-200">
                         <!-- Loading spinner -->
