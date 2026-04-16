@@ -2607,12 +2607,9 @@ window.renderCalendar = function () {
 
     for (let i = 1; i <= daysInMonth; i++) {
         const date = new Date(year, month, i); const dateStr = getLocalISODate(date); const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-        // Sort tasks by custom order field to persist drag-and-drop
         const tasks = state.tasks.filter(t => t.date === dateStr).sort((a, b) => {
-            // Default missing orders to 9999 so they fall to the bottom safely
             const orderA = typeof a.order === 'number' ? a.order : 9999;
             const orderB = typeof b.order === 'number' ? b.order : 9999;
-
             if (orderA !== orderB) return orderA - orderB;
             return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
         });
@@ -2635,7 +2632,11 @@ window.renderCalendar = function () {
             tasks.forEach(t => {
                 const styleClass = t.completed ? 'line-through opacity-40 grayscale' : '';
                 const colors = getSubjectColor(t.subject); const colorClass = state.settings.theme === 'dark' ? colors.dark : colors.light;
-                taskListHTML += `<div data-id="${t.id}" draggable="true" ondragstart="handleDragStart(event, '${t.id}')" class="task-item text-xs font-bold flex items-center gap-2 px-2.5 py-2 rounded-xl border transition-all shadow-sm ${colorClass} ${styleClass}"><i data-lucide="grip-vertical" class="w-3 h-3 opacity-30 shrink-0 pointer-events-none"></i><span class="truncate pointer-events-none flex-1 tracking-tight">${t.text}</span></div>`;
+                
+                // NEW: Apply selection state classes dynamically
+                const selectClass = window.selectedTaskIds && window.selectedTaskIds.has(t.id) ? 'task-selected' : '';
+                
+                taskListHTML += `<div data-id="${t.id}" draggable="true" ondragstart="handleDragStart(event, '${t.id}')" class="task-item text-xs font-bold flex items-center gap-2 px-2.5 py-2 rounded-xl border transition-all shadow-sm ${colorClass} ${styleClass} ${selectClass}"><i data-lucide="grip-vertical" class="w-3 h-3 opacity-30 shrink-0 pointer-events-none"></i><span class="truncate pointer-events-none flex-1 tracking-tight">${t.text}</span></div>`;
             });
             taskListHTML += '</div>';
         }
@@ -2657,9 +2658,8 @@ window.renderCalendar = function () {
                 `;
         grid.appendChild(card);
     }
-    lucide.createIcons();
+    if(window.lucide) lucide.createIcons();
 
-    // Auto-scroll to today on initial load for mobile
     if (!hasScrolledToToday && window.innerWidth < 768) {
         setTimeout(() => {
             const card = document.getElementById('today-card');
@@ -6197,8 +6197,113 @@ window.escapeHtml = function (unsafe) {
 let activeCtxTaskId = null;
 window.copiedTaskData = null;
 
+// ==========================================
+// LASSO & MULTI-SELECT ENGINE
+// ==========================================
+window.selectedTaskIds = new Set();
+window.copiedTasks = [];
+
+let isLassoing = false;
+let lassoStartX = 0;
+let lassoStartY = 0;
+let lassoBox = null;
+
+// Handle Mouse Down (Start Lasso or Clear Selection)
+document.addEventListener('mousedown', (e) => {
+    if (e.button !== 0 || state.currentView !== 'calendar') return;
+    
+    const taskItem = e.target.closest('.task-item');
+    const isModifierKey = e.shiftKey || e.metaKey || e.ctrlKey;
+
+    // If clicking a task with a modifier key, toggle its selection
+    if (taskItem && isModifierKey) {
+        e.preventDefault();
+        const taskId = taskItem.dataset.id;
+        if (window.selectedTaskIds.has(taskId)) {
+            window.selectedTaskIds.delete(taskId);
+            taskItem.classList.remove('task-selected');
+        } else {
+            window.selectedTaskIds.add(taskId);
+            taskItem.classList.add('task-selected');
+        }
+        return;
+    }
+
+    // If clicking a task WITHOUT modifier, ignore (let native drag/drop or normal click work)
+    if (taskItem) return;
+
+    // If clicking empty space on calendar WITHOUT modifier, clear selections
+    const grid = document.getElementById('calendar-grid');
+    if (grid && grid.contains(e.target) && !isModifierKey) {
+        window.selectedTaskIds.clear();
+        document.querySelectorAll('.task-item').forEach(el => el.classList.remove('task-selected'));
+    }
+
+    // Start Lasso Box if clicking empty space in the calendar grid
+    if (grid && grid.contains(e.target)) {
+        isLassoing = true;
+        lassoStartX = e.clientX;
+        lassoStartY = e.clientY;
+        
+        lassoBox = document.createElement('div');
+        lassoBox.className = 'lasso-box';
+        document.body.appendChild(lassoBox);
+        e.preventDefault(); // Prevent text selection while dragging
+    }
+});
+
+// Handle Mouse Move (Draw Lasso & Select Intersections)
+document.addEventListener('mousemove', (e) => {
+    if (!isLassoing || !lassoBox) return;
+
+    const currentX = e.clientX;
+    const currentY = e.clientY;
+    const width = Math.abs(currentX - lassoStartX);
+    const height = Math.abs(currentY - lassoStartY);
+    const left = Math.min(currentX, lassoStartX);
+    const top = Math.min(currentY, lassoStartY);
+
+    lassoBox.style.left = left + 'px';
+    lassoBox.style.top = top + 'px';
+    lassoBox.style.width = width + 'px';
+    lassoBox.style.height = height + 'px';
+
+    const lassoRect = lassoBox.getBoundingClientRect();
+    
+    // Check intersections with all visible tasks
+    document.querySelectorAll('.task-item').forEach(taskEl => {
+        const taskRect = taskEl.getBoundingClientRect();
+        const intersects = !(
+            taskRect.right < lassoRect.left ||
+            taskRect.left > lassoRect.right ||
+            taskRect.bottom < lassoRect.top ||
+            taskRect.top > lassoRect.bottom
+        );
+
+        const taskId = taskEl.dataset.id;
+        
+        if (intersects) {
+            window.selectedTaskIds.add(taskId);
+            taskEl.classList.add('task-selected');
+        } else if (!e.shiftKey && !e.metaKey && !e.ctrlKey) {
+            // Only unselect if no modifier keys are held
+            window.selectedTaskIds.delete(taskId);
+            taskEl.classList.remove('task-selected');
+        }
+    });
+});
+
+// Handle Mouse Up (End Lasso)
+document.addEventListener('mouseup', () => {
+    isLassoing = false;
+    if (lassoBox) {
+        lassoBox.remove();
+        lassoBox = null;
+    }
+});
+
 // Listen for right clicks on tasks
-// Listen for right clicks on tasks
+// Replace your existing context menu listener with this:
 document.addEventListener('contextmenu', (e) => {
     if (state.currentView !== 'calendar') return;
 
@@ -6206,60 +6311,76 @@ document.addEventListener('contextmenu', (e) => {
     const dayCard = e.target.closest('.day-card');
     const ctxMenu = document.getElementById('task-context-menu');
 
+    // SCENARIO 1: Right clicking a task
     if (taskItem) {
         e.preventDefault();
-        activeCtxTaskId = taskItem.dataset.id;
+        const taskId = taskItem.dataset.id;
 
-        const task = state.tasks.find(t => t.id === activeCtxTaskId);
-        if (task) {
-            // Get the day of the week (e.g., "Monday", "Tuesday")
-            const dayName = new Date(task.date).toLocaleDateString('en-US', { weekday: 'long' });
-            const weeklyTextSpan = document.getElementById('ctx-btn-repeat-weekly-text');
-            if (weeklyTextSpan) {
-                weeklyTextSpan.textContent = `Every ${dayName} (1 Month)`;
-            }
+        // If the right-clicked task is NOT in the selection, clear selection and select ONLY this task
+        if (!window.selectedTaskIds.has(taskId)) {
+            window.selectedTaskIds.clear();
+            document.querySelectorAll('.task-item').forEach(el => el.classList.remove('task-selected'));
+            window.selectedTaskIds.add(taskId);
+            taskItem.classList.add('task-selected');
         }
 
-        // 1. Unhide briefly to let the browser calculate its actual height
+        const count = window.selectedTaskIds.size;
+        const numText = count > 1 ? ` ${count} Tasks` : ' Task';
+
+        // Dynamically build the menu HTML
+        ctxMenu.innerHTML = `
+            <button onclick="ctxAction('toggle-done')" class="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-3 transition-colors"><i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i> Toggle Status (${count})</button>
+            ${count === 1 ? `<button onclick="ctxAction('edit-task')" class="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-3 transition-colors"><i data-lucide="edit-3" class="w-4 h-4 text-zinc-400"></i> Edit Task</button>` : ''}
+            
+            <div class="h-px bg-zinc-100 dark:bg-zinc-800/50 my-1.5 mx-3"></div>
+            <div class="px-4 py-1 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Move${numText}</div>
+            
+            <button onclick="ctxAction('move-today')" class="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-3 transition-colors"><i data-lucide="calendar-check" class="w-4 h-4 text-brand-500"></i> Move to Today</button>
+            <button onclick="ctxAction('move-tomorrow')" class="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-3 transition-colors"><i data-lucide="arrow-right-circle" class="w-4 h-4 text-brand-500"></i> Move to Tomorrow</button>
+            <button onclick="ctxAction('push-week')" class="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-3 transition-colors"><i data-lucide="calendar-days" class="w-4 h-4 text-brand-500"></i> Push to Next Week</button>
+
+            <div class="h-px bg-zinc-100 dark:bg-zinc-800/50 my-1.5 mx-3"></div>
+            <div class="px-4 py-1 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Clipboard</div>
+            
+            <button onclick="ctxAction('copy')" class="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-3 transition-colors"><i data-lucide="copy" class="w-4 h-4 text-zinc-400"></i> Copy${numText}</button>
+            <button onclick="ctxAction('duplicate')" class="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-3 transition-colors"><i data-lucide="copy-plus" class="w-4 h-4 text-zinc-400"></i> Duplicate Here</button>
+
+            <div class="h-px bg-zinc-100 dark:bg-zinc-800/50 my-1.5 mx-3"></div>
+            <button onclick="ctxAction('delete')" class="w-full text-left px-4 py-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-600 dark:text-rose-400 flex items-center gap-3 transition-colors"><i data-lucide="trash-2" class="w-4 h-4 text-rose-500"></i> Delete${numText}</button>
+        `;
+        if(window.lucide) lucide.createIcons({ root: ctxMenu });
+
+        // Position the menu
         ctxMenu.classList.remove('hidden');
-        const menuWidth = ctxMenu.offsetWidth;
-        const menuHeight = ctxMenu.offsetHeight;
+        let x = e.clientX; let y = e.clientY;
+        if (x + ctxMenu.offsetWidth > window.innerWidth) x = window.innerWidth - ctxMenu.offsetWidth - 10;
+        if (y + ctxMenu.offsetHeight > window.innerHeight) y = Math.max(10, e.clientY - ctxMenu.offsetHeight);
 
-        let x = e.clientX;
-        let y = e.clientY;
-
-        // 2. Prevent clipping on the right side
-        if (x + menuWidth > window.innerWidth) {
-            x = window.innerWidth - menuWidth - 10;
-        }
-
-        // 3. Prevent clipping on the bottom (Flip upwards if needed)
-        if (y + menuHeight > window.innerHeight) {
-            y = e.clientY - menuHeight; // Open upwards from cursor
-
-            // If the screen is super tiny and it goes off the top too, pin it 10px from the top
-            if (y < 10) {
-                y = 10;
-            }
-        }
-
-        ctxMenu.style.left = `${x}px`;
-        ctxMenu.style.top = `${y}px`;
-
-        // Small delay for the pop-in animation
-        setTimeout(() => {
-            ctxMenu.classList.remove('opacity-0', 'scale-95');
-            ctxMenu.classList.add('opacity-100', 'scale-100');
-        }, 10);
+        ctxMenu.style.left = `${x}px`; ctxMenu.style.top = `${y}px`;
+        setTimeout(() => { ctxMenu.classList.remove('opacity-0', 'scale-95'); ctxMenu.classList.add('opacity-100', 'scale-100'); }, 10);
     }
-    // Paste logic: If right-clicking empty space on a day card while holding a copied task
-    else if (dayCard && window.copiedTaskData) {
+    // SCENARIO 2: Right clicking an empty day card while holding copied tasks
+    else if (dayCard && window.copiedTasks && window.copiedTasks.length > 0) {
         e.preventDefault();
         const dateStr = dayCard.querySelector('button[onclick^="event.stopPropagation"]').getAttribute('onclick').match(/'([^']+)'/)[1];
-        if (dateStr) ctxPasteTask(dateStr);
+        
+        ctxMenu.innerHTML = `
+            <div class="px-4 py-1 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Actions</div>
+            <button onclick="ctxPasteTask('${dateStr}')" class="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-3 transition-colors"><i data-lucide="clipboard-paste" class="w-4 h-4 text-brand-500"></i> Paste ${window.copiedTasks.length} Task(s) Here</button>
+            <div class="h-px bg-zinc-100 dark:bg-zinc-800/50 my-1.5 mx-3"></div>
+            <button onclick="window.copiedTasks = []; showToast('Clipboard Cleared'); document.getElementById('task-context-menu').classList.add('hidden')" class="w-full text-left px-4 py-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-600 dark:text-rose-400 flex items-center gap-3 transition-colors"><i data-lucide="x-circle" class="w-4 h-4 text-rose-500"></i> Clear Clipboard</button>
+        `;
+        if(window.lucide) lucide.createIcons({ root: ctxMenu });
+
+        ctxMenu.classList.remove('hidden');
+        let x = e.clientX; let y = e.clientY;
+        if (x + ctxMenu.offsetWidth > window.innerWidth) x = window.innerWidth - ctxMenu.offsetWidth - 10;
+        if (y + ctxMenu.offsetHeight > window.innerHeight) y = Math.max(10, e.clientY - ctxMenu.offsetHeight);
+
+        ctxMenu.style.left = `${x}px`; ctxMenu.style.top = `${y}px`;
+        setTimeout(() => { ctxMenu.classList.remove('opacity-0', 'scale-95'); ctxMenu.classList.add('opacity-100', 'scale-100'); }, 10);
     }
 });
-
 // Hide context menu if the user scrolls the page (Standard OS behavior)
 window.addEventListener('scroll', () => {
     const menu = document.getElementById('task-context-menu');
@@ -6280,116 +6401,100 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Core Context Menu Actions
-// Core Context Menu Actions
 window.ctxAction = async function (action) {
-    if (!activeCtxTaskId || !currentUser) return;
+    if (!window.selectedTaskIds || window.selectedTaskIds.size === 0 || !currentUser) return;
 
-    // Close menu immediately for a responsive feel
+    // Hide Menu immediately for perceived speed
     const menu = document.getElementById('task-context-menu');
     menu.classList.add('opacity-0', 'scale-95');
     setTimeout(() => menu.classList.add('hidden'), 200);
 
-    const task = state.tasks.find(t => t.id === activeCtxTaskId);
-    if (!task) return;
+    const ids = Array.from(window.selectedTaskIds);
+    const tasksToProcess = state.tasks.filter(t => ids.includes(t.id));
+    if (tasksToProcess.length === 0) return;
 
-    // Helper to extract clean task data (removes ID so Firestore can make a new one)
-    const { id, ...cleanTaskData } = task;
-    const taskRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', activeCtxTaskId);
-
-    try {
-        // --- QUICK ACTIONS ---
-        if (action === 'toggle-done') {
-            await updateDoc(taskRef, { completed: !task.completed });
-            showToast(task.completed ? "Marked as pending" : "Marked as completed!");
-        }
-        else if (action === 'edit-task') {
-            window.openEditTaskModal(activeCtxTaskId);
-            return; // We return early because the modal handles the save internally
-        }
-        // --- TIME TRAVEL (MOVE) ---
-        else if (action === 'move-today') {
-            await updateDoc(taskRef, { date: getLocalISODate(new Date()) });
-            showToast("Moved to Today");
-        }
-        else if (action === 'move-tomorrow') {
-            const tmrw = new Date(); tmrw.setDate(tmrw.getDate() + 1);
-            await updateDoc(taskRef, { date: getLocalISODate(tmrw) });
-            showToast("Moved to Tomorrow");
-        }
-        else if (action === 'push-week') {
-            const nextWk = new Date(task.date); nextWk.setDate(nextWk.getDate() + 7);
-            await updateDoc(taskRef, { date: getLocalISODate(nextWk) });
-            showToast("Pushed to Next Week");
-        }
-        // --- SCHEDULING (REPEAT) ---
-        // ... [Inside window.ctxAction] ...
-
-        else if (action === 'repeat-daily') {
-            const batch = writeBatch(db);
-            for (let i = 1; i <= 7; i++) {
-                let d = new Date(task.date);
-                d.setDate(d.getDate() + i);
-                const ref = doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks'));
-                batch.set(ref, { ...cleanTaskData, completed: false, date: getLocalISODate(d), createdAt: new Date().toISOString() });
-            }
-            await batch.commit();
-            showToast("Repeating daily for a week!");
-        }
-        else if (action === 'repeat-weekly') {
-            const batch = writeBatch(db);
-            // Get the day name for the success toast
-            const dayName = new Date(task.date).toLocaleDateString('en-US', { weekday: 'long' });
-
-            // Loop 4 times, adding 7, 14, 21, and 28 days
-            for (let i = 1; i <= 4; i++) {
-                let d = new Date(task.date);
-                d.setDate(d.getDate() + (i * 7));
-                const ref = doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks'));
-                batch.set(ref, { ...cleanTaskData, completed: false, date: getLocalISODate(d), createdAt: new Date().toISOString() });
-            }
-            await batch.commit();
-            showToast(`Scheduled for the next 4 ${dayName}s!`);
-        }
-        // --- CLIPBOARD ---
-        else if (action === 'copy') {
-            window.copiedTaskData = { ...cleanTaskData, completed: false };
-            showToast("Task Copied! Right-click any day to paste.");
-        }
-        else if (action === 'duplicate') {
-            const newTask = { ...cleanTaskData, completed: false, createdAt: new Date().toISOString(), order: 999 };
-            await setDoc(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks')), newTask);
-            showToast("Duplicated");
-        }
-        // --- DANGER ---
-        else if (action === 'delete') {
-            await deleteDoc(taskRef);
-            showToast("Task deleted");
-        }
-    } catch (e) {
-        console.error("Context Action Error:", e);
-        showToast("Action failed");
+    // Solo Actions
+    if (action === 'edit-task') {
+        window.openEditTaskModal(ids[0]);
+        return;
     }
 
-    // Refresh icons since we modified DOM (optional safeguard)
-    setTimeout(() => lucide.createIcons(), 50);
+    // Copy to Clipboard Memory
+    if (action === 'copy') {
+        window.copiedTasks = tasksToProcess.map(t => {
+            const { id, ...clean } = t;
+            return { ...clean, completed: false };
+        });
+        showToast(`Copied ${window.copiedTasks.length} task(s)! Right click a day card to paste.`);
+        return;
+    }
+
+    // Batch Actions
+    const batch = writeBatch(db);
+
+    tasksToProcess.forEach(task => {
+        const { id, ...cleanTaskData } = task;
+        const taskRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', id);
+
+        if (action === 'toggle-done') {
+            batch.update(taskRef, { completed: !task.completed });
+        } else if (action === 'move-today') {
+            batch.update(taskRef, { date: getLogicalTodayStr() });
+        } else if (action === 'move-tomorrow') {
+            const tmrw = getLogicalToday(); tmrw.setDate(tmrw.getDate() + 1);
+            batch.update(taskRef, { date: getLocalISODate(tmrw) });
+        } else if (action === 'push-week') {
+            const nextWk = new Date(task.date); nextWk.setDate(nextWk.getDate() + 7);
+            batch.update(taskRef, { date: getLocalISODate(nextWk) });
+        } else if (action === 'delete') {
+            batch.delete(taskRef);
+        } else if (action === 'duplicate') {
+            const newRef = doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks'));
+            batch.set(newRef, { ...cleanTaskData, completed: false, createdAt: new Date().toISOString(), order: 999 });
+        }
+    });
+
+    try {
+        await batch.commit();
+        showToast(`Processed ${tasksToProcess.length} task(s).`);
+        
+        // Clear selection if we deleted them
+        if (action === 'delete') {
+            window.selectedTaskIds.clear();
+        }
+    } catch (e) {
+        console.error("Batch error", e);
+        showToast("Failed to process tasks.");
+    }
 };
 
 window.ctxPasteTask = async function (dateStr) {
-    if (!window.copiedTaskData || !currentUser) return;
+    if (!window.copiedTasks || window.copiedTasks.length === 0 || !currentUser) return;
 
-    try {
-        const newTask = {
-            ...window.copiedTaskData,
+    // Hide Menu
+    const menu = document.getElementById('task-context-menu');
+    menu.classList.add('opacity-0', 'scale-95');
+    setTimeout(() => menu.classList.add('hidden'), 200);
+
+    const batch = writeBatch(db);
+    
+    window.copiedTasks.forEach((taskData, idx) => {
+        const newRef = doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks'));
+        batch.set(newRef, {
+            ...taskData,
             date: dateStr,
             completed: false,
             createdAt: new Date().toISOString(),
-            order: 999
-        };
-        await setDoc(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks')), newTask);
-        showToast("Task Pasted");
+            order: 999 + idx // Ensures they drop to the bottom of the list
+        });
+    });
+
+    try {
+        await batch.commit();
+        showToast(`Pasted ${window.copiedTasks.length} task(s)`);
     } catch (e) {
         console.error("Paste Error:", e);
+        showToast("Paste failed");
     }
 };
 
