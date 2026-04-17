@@ -3145,8 +3145,9 @@ window.renderMockStats = function () {
     if (list) list.innerHTML = historyHtml;
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
+
 window.renderMockCategorySettings = function() {
-    const list = document.getElementById('mock-categories-list');
+    const list = document.getElementById('mock-categories-modal-list');
     const categories = state.settings.mockCategories || [];
     if (!list) return;
 
@@ -3166,11 +3167,11 @@ window.renderMockCategorySettings = function() {
             </button>`;
         list.appendChild(el);
     });
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 window.addMockCategory = async function() {
-    const input = document.getElementById('mock-category-input');
+    const input = document.getElementById('mock-category-modal-input');
     const category = input.value.trim();
     if (!category) return;
 
@@ -3200,6 +3201,27 @@ window.addMockCategory = async function() {
     }
 }
 
+window.openMockCategoryModal = () => {
+    document.getElementById('mock-category-modal-input').value = '';
+    const modal = document.getElementById('mock-category-modal');
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        document.getElementById('mock-category-modal-input').focus();
+    }, 10);
+    renderMockCategorySettings();
+}
+
+window.closeMockCategoryModal = () => {
+    const modal = document.getElementById('mock-category-modal');
+    modal.classList.add('opacity-0');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
+    
+    // Refresh stats view data if they switch back to it
+    if (state.currentView === 'stats-mocks') renderMockStats();
+}
 window.deleteMockCategory = async function(category) {
     if (!state.settings.mockCategories) return;
 
@@ -3429,7 +3451,7 @@ window.renderMockSubjectFields = function (containerId, suffix) {
             <div class="flex justify-between items-center mb-1.5">
                 <label class="block text-[10px] font-bold text-fuchsia-600/70 dark:text-fuchsia-400/70 uppercase tracking-widest">Category</label>
                 <!-- NEW: "Manage" button that links to settings -->
-                <button type="button" onclick="switchView('settings')" class="text-[10px] font-bold text-brand-600 dark:text-brand-400 hover:underline">+ Manage Categories</button>
+                <button type="button" onclick="openMockCategoryModal()" class="text-[10px] font-bold text-brand-600 dark:text-brand-400 hover:underline">+ Manage Categories</button>
             </div>
             <select id="task-mock-category${suffix}" class="w-full bg-white dark:bg-zinc-800 border border-fuchsia-200/50 dark:border-fuchsia-900/50 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-bold focus:ring-2 focus:ring-fuchsia-500 shadow-inner-light dark:shadow-inner-dark appearance-none">
                 ${categoryOptions}
