@@ -1,45 +1,87 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="description" content="An exam tracker for JEE & NEET aspirants. Track tasks, mocks, and progress.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <title>ChaosPrep | Ultimate Tracker for JEE, NEET & Competitive Exams</title>
+    <meta name="description" content="Maximize your scores in JEE, NEET, and other competitive exams with ChaosPrep. Track tasks, analyze mock tests, and conquer your syllabus with the ultimate study planner.">
+    <meta name="keywords" content="JEE tracker, NEET study planner, competitive exam tracker, CUET planner, UPSC study tracker, mock test analyzer, exam preparation, study tracker, ChaosPrep, sval.tech">
+    <meta name="author" content="sval.tech">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://sval.tech/chaos/">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://sval.tech/chaos/">
+    <meta property="og:title" content="ChaosPrep | Ultimate Tracker for JEE, NEET & Competitive Exams">
+    <meta property="og:description" content="Track daily tasks, mock test scores, and syllabus progress. The all-in-one preparation planner for JEE, NEET, and competitive exam aspirants.">
+    <meta property="og:image" content="https://sval.tech/chaos/og-image.jpg"> 
+    <meta property="og:site_name" content="ChaosPrep">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://sval.tech/chaos/">
+    <meta name="twitter:title" content="ChaosPrep | Ultimate Tracker for JEE, NEET & Competitive Exams">
+    <meta name="twitter:description" content="Track daily tasks, mock test scores, and syllabus progress. The all-in-one preparation planner for JEE, NEET, and competitive exam aspirants.">
+    <meta name="twitter:image" content="https://sval.tech/chaos/og-image.jpg"> 
+    
     <meta name="theme-color" content="#7c3aed">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
+    <meta name="apple-mobile-web-app-title" content="ChaosPrep">
+    
     <link rel="manifest" href="manifest.json">
-    <!-- Emoji Favicon -->
     <link rel="icon" href="favicon.ico">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png"> 
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
-        rel="stylesheet">
+    <link rel="preconnect" href="https://www.googletagmanager.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
 
-    <title>ChaosPrep - sval.tech</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "ChaosPrep",
+      "operatingSystem": "Web, Android, iOS",
+      "applicationCategory": "EducationalApplication",
+      "url": "https://sval.tech/chaos/",
+      "author": {
+        "@type": "Organization",
+        "name": "sval.tech",
+        "url": "https://sval.tech/"
+      },
+      "description": "An advanced exam tracker and study planner designed for JEE, NEET, and other competitive exam aspirants to track tasks, mock tests, and syllabus progress.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "INR"
+      }
+    }
+    </script>
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TCK0S6VC58"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'G-TCK0S6VC58');
+    </script>
+
+    <script defer src="https://unpkg.com/lucide@latest"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>  
+  
   <script type="module" crossorigin src="./assets/main-D4V7ceoG.js"></script>
   <link rel="stylesheet" crossorigin href="./assets/main-dcYW6HVd.css">
 <script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-TCK0S6VC58"></script>
-<script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag() { dataLayer.push(arguments); }
-    gtag('js', new Date());
-
-    gtag('config', 'G-TCK0S6VC58');
-</script>
-
-<body
-    class="h-screen flex flex-col md:flex-row overflow-hidden text-zinc-800 bg-zinc-50 dark:bg-[#09090b] dark:text-zinc-100 transition-colors duration-500 selection:bg-brand-500 selection:text-white">
+<body class="h-screen flex flex-col md:flex-row overflow-hidden text-zinc-800 bg-zinc-50 dark:bg-[#09090b] dark:text-zinc-100 transition-colors duration-500 selection:bg-brand-500 selection:text-white">
 
 
     <div id="app-background" class="fixed inset-0 z-[-1] pointer-events-none">
