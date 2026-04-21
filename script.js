@@ -509,6 +509,17 @@ function setupListeners(user) {
         (snap) => {
             if (snap.exists()) {
                 state.settings = { ...state.settings, ...snap.data() };
+                if (state.settings.examType === 'NEET') {
+                    const correctDate = `${state.settings.targetYear || new Date().getFullYear()}-05-03`;
+                    // If their saved date doesn't match the correct 3rd May date, update it
+                    if (state.settings.targetDate !== correctDate) {
+                        state.settings.targetDate = correctDate;
+                        // Silently patch the database in the background
+                        updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'config'), {
+                            targetDate: correctDate
+                        }).catch(e => console.error("NEET date auto-correction failed", e));
+                    }
+                }
                 if (state.settings.showCountdown === undefined) state.settings.showCountdown = true;
                 applyTheme(state.settings.theme);
                 applyAccentTheme(state.settings.accentTheme || 'default');
@@ -2374,7 +2385,7 @@ window.updateTargetDateConfig = function () {
             date = (state.settings.session === 'Jan') ? `${year}-01-22` : `${year}-04-04`;
         }
     }
-    else if (state.settings.examType === 'NEET') date = `${year}-05-05`;
+    else if (state.settings.examType === 'NEET') date = `${year}-05-03`;
     else if (state.settings.examType === 'JEE Advanced') date = `${year}-05-17`;
     else if (state.settings.examType === 'Custom') {
         const customInputEl = document.getElementById('settings-custom-date');
