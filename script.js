@@ -4561,10 +4561,25 @@ function getAllStations() {
     return [...defaultStations, ...custom];
 }
 
-function extractYouTubeId(url) {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
+function extractYouTubeInfo(url) {
+    let videoId = null;
+    let listId = null;
+
+    // Extract video ID
+    const vidRegExp = /(?:youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*)/;
+    const vidMatch = url.match(vidRegExp);
+    if (vidMatch && vidMatch[1].length === 11) {
+        videoId = vidMatch[1];
+    }
+
+    // Extract list ID (Playlist)
+    const listRegExp = /[?&]list=([^#\&\?]+)/;
+    const listMatch = url.match(listRegExp);
+    if (listMatch && listMatch[1]) {
+        listId = listMatch[1];
+    }
+
+    return { videoId, listId };
 }
 
 window.toggleMusicWidget = function () {
@@ -4606,29 +4621,53 @@ window.toggleMusic = function () {
     if (typeof lucide !== 'undefined') lucide.createIcons();
 };
 
-window.playSpecificStation = function (videoId, stationName) {
-    currentStationId = videoId;
+window.playSpecificStation = function (videoId, stationName, listId = null) {
+    currentStationId = videoId || '';
+    window.currentListId = listId;
+
     document.getElementById('station-name').innerText = stationName;
-    localStorage.setItem('chaosprep_last_station', videoId);
+    localStorage.setItem('chaosprep_last_station', currentStationId);
+    localStorage.setItem('chaosprep_last_list', listId || '');
 
     renderStationList(); // Instantly update UI
 
     if (!isMusicPlayerReady || !musicPlayer) {
-        document.getElementById('track-status').innerText = "Buffering...";
+        const trackStatus = document.getElementById('track-status');
+        if (trackStatus) trackStatus.innerText = "Buffering...";
         return;
     }
-    musicPlayer.loadVideoById(videoId);
+
+    // Load Playlist vs Video safely
+    if (listId) {
+        musicPlayer.loadPlaylist({
+            list: listId,
+            listType: 'playlist',
+            index: 0,
+            suggestedQuality: 'small'
+        });
+        
+        const controls = document.getElementById('playlist-controls');
+        if (controls) controls.classList.remove('hidden');
+        
+    } else if (currentStationId) { // Ensure videoId actually exists before calling
+        musicPlayer.loadVideoById(currentStationId);
+        
+        const controls = document.getElementById('playlist-controls');
+        if (controls) controls.classList.add('hidden');
+    }
 }
 
 function initYouTubePlayer() {
-    // Bulletproof check to ensure YouTube engine is strictly loaded ONLY once
     if (document.getElementById('yt-api-script') || window.YT) return;
 
     const savedId = localStorage.getItem('chaosprep_last_station');
+    const savedList = localStorage.getItem('chaosprep_last_list');
     const allStats = getAllStations();
-    const startingStation = allStats.find(s => s.id === savedId) || allStats[0];
-
-    currentStationId = startingStation.id;
+    
+    const startingStation = allStats.find(s => s.id === savedId || (savedList && s.listId === savedList)) || allStats[0];
+    
+    currentStationId = startingStation.id || '';
+    window.currentListId = startingStation.listId || null;
 
     const stationNameEl = document.getElementById('station-name');
     if (stationNameEl) stationNameEl.innerText = startingStation.name;
@@ -4637,6 +4676,7 @@ function initYouTubePlayer() {
     tag.id = 'yt-api-script';
     tag.src = "https://www.youtube.com/iframe_api";
     const firstScriptTag = document.getElementsByTagName('script')[0];
+    
     if (firstScriptTag && firstScriptTag.parentNode) {
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
     } else {
@@ -4652,19 +4692,41 @@ setTimeout(() => {
 }, 1000);
 
 window.onYouTubeIframeAPIReady = function () {
-    musicPlayer = new YT.Player('yt-player-container', {
-        height: '0', width: '0',
-        videoId: currentStationId,
-        playerVars: {
-            'playsinline': 1,
-            'controls': 0,
-            'disablekb': 1,
-            'fs': 0,
-            'origin': window.location.origin, // <--- Fixes the postMessage console spam
-            'widget_referrer': window.location.href
-        },
-        events: { 'onReady': onPlayerReady, 'onStateChange': onPlayerStateChange }
-    });
+    const playerVars = {
+        'playsinline': 1,
+        'controls': 0,
+        'disablekb': 1,
+        'fs': 0,
+        'origin': window.location.origin,
+        'widget_referrer': window.location.href
+    };
+
+    if (window.currentListId) {
+        playerVars.listType = 'playlist';
+        playerVars.list = window.currentListId;
+    }
+
+    // Build the config object dynamically
+    const playerConfig = {
+        height: '0',
+        width: '0',
+        playerVars: playerVars,
+        events: {
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange
+        }
+    };
+
+    // CRITICAL FIX: Only pass videoId if it actually exists. 
+    // If it's a pure playlist, YouTube will handle it via playerVars.
+    if (currentStationId && currentStationId.trim() !== '') {
+        playerConfig.videoId = currentStationId;
+    } else if (!window.currentListId) {
+        // Ultimate failsafe: If somehow both are empty, load a default to prevent a crash
+        playerConfig.videoId = 'jfKfPfyJRdk'; // Lofi Girl stream
+    }
+
+    musicPlayer = new YT.Player('yt-player-container', playerConfig);
 };
 
 function onPlayerReady(event) {
@@ -4751,23 +4813,22 @@ function onPlayerStateChange(event) {
 window.renderStationList = function () {
     const container = document.getElementById('station-list-container');
     if (!container) return;
-
     container.innerHTML = '';
+    
     const allStations = getAllStations();
 
     allStations.forEach(station => {
-        const isActive = station.id === currentStationId;
-        const activeClass = isActive
-            ? 'bg-brand-50 border-brand-200 text-brand-700 dark:bg-brand-500/10 dark:border-brand-500/30 dark:text-brand-400 shadow-sm'
-            : 'bg-white border-transparent text-zinc-600 hover:bg-zinc-100 dark:bg-[#18181b] dark:text-zinc-300 dark:hover:bg-zinc-800';
+        const isActive = (station.id === currentStationId && currentStationId) || 
+                         (station.listId && station.listId === window.currentListId);
 
+        const activeClass = isActive ? 'bg-brand-50 border-brand-200 text-brand-700 dark:bg-brand-500/10 dark:border-brand-500/30 dark:text-brand-400 shadow-sm' : 'bg-white border-transparent text-zinc-600 hover:bg-zinc-100 dark:bg-[#18181b] dark:text-zinc-300 dark:hover:bg-zinc-800';
         const iconClass = isActive ? 'text-brand-500' : 'text-zinc-400';
-
+        
         const el = document.createElement('div');
         el.className = `flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer group ${activeClass}`;
 
         let leftHTML = `
-            <div class="flex items-center gap-3 flex-1 min-w-0" onclick="playSpecificStation('${station.id}', '${station.name.replace(/'/g, "\\'")}')">
+            <div class="flex items-center gap-3 flex-1 min-w-0" onclick="playSpecificStation('${station.id || ''}', '${station.name.replace(/'/g, "\\'")}', ${station.listId ? `'${station.listId}'` : 'null'})">
                 <i data-lucide="${isActive ? 'radio-receiver' : 'disc'}" class="w-4 h-4 shrink-0 ${iconClass}"></i>
                 <span class="text-sm font-bold truncate">${station.name}</span>
             </div>
@@ -4776,12 +4837,12 @@ window.renderStationList = function () {
         let rightHTML = '';
         if (!station.isDefault) {
             rightHTML = `
-                <button onclick="deleteCustomStream('${station.id}')" class="opacity-0 group-hover:opacity-100 p-1.5 text-zinc-400 hover:text-rose-500 transition-all rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20">
+                <button onclick="deleteCustomStream('${station.id || ''}', '${station.listId || ''}')" class="opacity-0 group-hover:opacity-100 p-1.5 text-zinc-400 hover:text-rose-500 transition-all rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20">
                     <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                 </button>
             `;
         } else if (isActive) {
-            rightHTML = `<i data-lucide="volume-2" class="w-4 h-4 text-brand-500 mr-1 animate-pulse"></i>`;
+            rightHTML = `<i data-lucide="volume-2" class="w-4 h-4 text-brand-500 animate-pulse"></i>`;
         }
 
         el.innerHTML = leftHTML + rightHTML;
@@ -4789,6 +4850,13 @@ window.renderStationList = function () {
     });
 
     if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    // Toggle playlist controls dynamically
+    const controls = document.getElementById('playlist-controls');
+    if (controls) {
+        if (window.currentListId) controls.classList.remove('hidden');
+        else controls.classList.add('hidden');
+    }
 }
 
 window.setMusicVolume = function (val) {
@@ -4801,33 +4869,43 @@ window.setMusicVolume = function (val) {
 }
 
 window.addCustomStream = async function () {
-    if (!currentUser) { showToast("Must be logged in to save streams"); return; }
-
+    if (!currentUser) return;
     const input = document.getElementById('custom-stream-url');
     const url = input.value.trim();
     if (!url) return;
 
-    const videoId = extractYouTubeId(url);
-    if (!videoId) { showToast("Invalid YouTube URL"); return; }
+    const { videoId, listId } = extractYouTubeInfo(url);
+    if (!videoId && !listId) {
+        showToast("Invalid YouTube URL");
+        return;
+    }
 
-    const customName = await window.customPrompt("Give this stream a name:", "My Custom Focus", "Add Stream");
+    const finalId = videoId || ''; 
+    const customName = await customPrompt("Enter a name for this stream:", "My Focus Mix", "Save Stream", "e.g., Chill Beats");
+    
     if (!customName || customName.trim() === "") return;
-
     if (!state.settings.customStations) state.settings.customStations = [];
-    if (state.settings.customStations.some(s => s.id === videoId)) {
+    
+    // Prevent duplicate entries
+    if (state.settings.customStations.some(s => s.id === finalId && s.listId === listId)) {
         showToast("Stream already exists!");
         return;
     }
 
-    state.settings.customStations.push({ id: videoId, name: customName.trim(), isDefault: false });
+    const newStation = { 
+        id: finalId, 
+        listId: listId || null, 
+        name: customName.trim(), 
+        isDefault: false 
+    };
+
+    state.settings.customStations.push(newStation);
 
     try {
-        await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), {
-            customStations: state.settings.customStations
-        });
+        await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), { customStations: state.settings.customStations });
         input.value = '';
         renderStationList();
-        playSpecificStation(videoId, customName.trim());
+        playSpecificStation(newStation.id, newStation.name, newStation.listId);
         showToast("Stream Added!");
     } catch (e) {
         console.error(e);
@@ -4835,20 +4913,49 @@ window.addCustomStream = async function () {
     }
 }
 
-window.deleteCustomStream = async function (videoId) {
+window.deleteCustomStream = async function (videoId, listId) {
     if (!currentUser) return;
-    state.settings.customStations = state.settings.customStations.filter(s => s.id !== videoId);
+
+    // Normalize inputs to prevent 'null' vs empty string '' mismatches
+    const targetVid = videoId || '';
+    const targetList = listId || '';
+
+    // Filter out the exact stream by safely comparing string values
+    state.settings.customStations = state.settings.customStations.filter(s => {
+        const currentVid = s.id || '';
+        const currentList = s.listId || '';
+        return !(currentVid === targetVid && currentList === targetList);
+    });
 
     try {
-        await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), {
-            customStations: state.settings.customStations
-        });
-        renderStationList();
-        if (currentStationId === videoId) {
-            playSpecificStation(defaultStations[0].id, defaultStations[0].name);
+        await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), { customStations: state.settings.customStations });
+        
+        renderStationList(); // Update the UI instantly
+        
+        // If they deleted what's currently playing, reset to the first default station
+        if ((currentStationId || '') === targetVid && (window.currentListId || '') === targetList) {
+            if (typeof defaultStations !== 'undefined' && defaultStations.length > 0) {
+                playSpecificStation(defaultStations[0].id, defaultStations[0].name, defaultStations[0].listId);
+            }
         }
+        
         showToast("Stream Removed");
-    } catch (e) { console.error(e); }
+    } catch (e) {
+        console.error("Error deleting stream:", e);
+        showToast("Failed to remove stream");
+    }
+}
+
+window.playNextVideo = function() {
+    if (musicPlayer && typeof musicPlayer.nextVideo === 'function') {
+        musicPlayer.nextVideo();
+    }
+}
+
+window.playPrevVideo = function() {
+    if (musicPlayer && typeof musicPlayer.previousVideo === 'function') {
+        musicPlayer.previousVideo();
+    }
 }
 
 // ==========================================

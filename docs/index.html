@@ -85,7 +85,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-  <script type="module" crossorigin src="./assets/main-CMfhHqYx.js"></script>
+  <script type="module" crossorigin src="./assets/main-DhJf6WbS.js"></script>
   <link rel="stylesheet" crossorigin href="./assets/main-M6Z51LjS.css">
 <script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
 
@@ -1861,9 +1861,16 @@
                         class="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer outline-none transition-all"
                         style="accent-color: #7c3aed;" draggable="false">
                     <i data-lucide="volume-2" class="w-3.5 h-3.5 text-zinc-400 shrink-0" draggable="false"></i>
-                    <button id="btn-music-loop" onclick="toggleMusicLoop()"
-                        class="p-1.5 ml-1 text-brand-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors shrink-0"
-                        title="Toggle Loop">
+                    <div id="playlist-controls" class="hidden flex items-center gap-0.5 mr-1">
+                        <button onclick="playPrevVideo()" class="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors" title="Previous Track">
+                            <i data-lucide="skip-back" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="playNextVideo()" class="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors" title="Next Track">
+                            <i data-lucide="skip-forward" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+
+                    <button id="btn-music-loop" onclick="toggleMusicLoop()" class="p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800" title="Toggle Loop">
                         <i data-lucide="repeat" class="w-4 h-4"></i>
                     </button>
                 </div>
