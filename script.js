@@ -753,14 +753,12 @@ document.addEventListener('DOMContentLoaded', () => {
 window.renderAdvancedAnalytics = function () {
     // --- Heatmap (Contribution Graph) ---
     const heatmapContainer = document.getElementById('heatmap-container');
-    const monthContainer = document.getElementById('heatmap-months');
 
-    if (heatmapContainer && monthContainer) {
+    if (heatmapContainer) {
         heatmapContainer.innerHTML = '';
-        monthContainer.innerHTML = '';
 
         const today = getLogicalToday();
-        const weeksToTrack = 26; // Increased to ~6 months to beautifully fill the card width
+        const weeksToTrack = 26; // ~6 months to beautifully fill the card width
         const daysToTrack = weeksToTrack * 7;
 
         // Find the start date (aligned to Sunday)
@@ -772,23 +770,20 @@ window.renderAdvancedAnalytics = function () {
 
         const cols = [];
         let currentCol = [];
-        let monthLabelsHtml = '';
+        let monthLabelForCol = null;
 
         let currentDate = new Date(startDate);
         const endOfToday = new Date(today);
         endOfToday.setHours(23, 59, 59, 999);
 
-        let colIndex = 0;
         let lastMonthPrinted = -1;
 
         while (currentDate <= endOfToday) {
             const dateStr = getLocalISODate(currentDate);
 
-            // Add month label (Ensures it only prints once per month without overlapping)
+            // Set the label string for the specific column
             if (currentDate.getMonth() !== lastMonthPrinted && currentDate.getDate() <= 14) {
-                const monthName = currentDate.toLocaleDateString('en-US', { month: 'short' });
-                // 14px width + 6px gap = 20px per column
-                monthLabelsHtml += `<span class="absolute whitespace-nowrap" style="left: ${colIndex * 20}px">${monthName}</span>`;
+                monthLabelForCol = currentDate.toLocaleDateString('en-US', { month: 'short' });
                 lastMonthPrinted = currentDate.getMonth();
             }
 
@@ -802,7 +797,7 @@ window.renderAdvancedAnalytics = function () {
                 let intensityClass = 'bg-zinc-100 dark:bg-zinc-800/50 border-zinc-200/50 dark:border-zinc-700/50';
                 if (totalMins > 0 && totalMins < 60) intensityClass = 'bg-brand-200 dark:bg-brand-900/40 border-brand-300/30 dark:border-brand-800/50';
                 else if (totalMins >= 60 && totalMins < 180) intensityClass = 'bg-brand-400 dark:bg-brand-700/60 border-brand-500/50 dark:border-brand-600/50';
-                else if (totalMins >= 180) intensityClass = 'bg-brand-500 dark:bg-brand-500 border-brand-600 dark:border-brand-400 shadow-[0_0_8px_rgba(139,92,246,0.3)]';
+                else if (totalMins >= 180) intensityClass = 'bg-brand-500 border-brand-600 dark:border-brand-400 shadow-[0_0_8px_rgba(139,92,246,0.3)]';
 
                 const tooltipText = `${Math.floor(totalMins / 60)}h ${totalMins % 60}m on ${currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
 
@@ -813,9 +808,13 @@ window.renderAdvancedAnalytics = function () {
 
             // If we just finished a Saturday (6), push the column
             if (currentDate.getDay() === 0) {
-                cols.push(`<div class="flex flex-col gap-[6px] relative">${currentCol.join('')}</div>`);
+                let monthHtml = '';
+                if (monthLabelForCol) {
+                    monthHtml = `<span class="absolute -top-6 left-0 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest whitespace-nowrap">${monthLabelForCol}</span>`;
+                    monthLabelForCol = null;
+                }
+                cols.push(`<div class="flex flex-col gap-[6px] relative">${monthHtml}${currentCol.join('')}</div>`);
                 currentCol = [];
-                colIndex++;
             }
         }
 
@@ -825,17 +824,21 @@ window.renderAdvancedAnalytics = function () {
             while (currentCol.length < 7) {
                 currentCol.push(`<div class="w-[14px] h-[14px]"></div>`);
             }
-            cols.push(`<div class="flex flex-col gap-[6px] relative">${currentCol.join('')}</div>`);
+            let monthHtml = '';
+            if (monthLabelForCol) {
+                monthHtml = `<span class="absolute -top-6 left-0 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest whitespace-nowrap">${monthLabelForCol}</span>`;
+                monthLabelForCol = null;
+            }
+            cols.push(`<div class="flex flex-col gap-[6px] relative">${monthHtml}${currentCol.join('')}</div>`);
         }
 
         heatmapContainer.innerHTML = cols.join('');
-        monthContainer.innerHTML = monthLabelsHtml;
 
         // Initialize Custom Tooltip Listeners (only once)
         if (!heatmapContainer.dataset.tooltipInit) {
             let tooltip = document.getElementById('heatmap-tooltip');
 
-            // 🚨 THE FIX: Move tooltip to the absolute root of the document (body) 
+            // Move tooltip to the absolute root of the document (body) 
             // This prevents parent CSS transforms from messing up the coordinates!
             if (tooltip && tooltip.parentNode !== document.body) {
                 document.body.appendChild(tooltip);
@@ -860,7 +863,7 @@ window.renderAdvancedAnalytics = function () {
                     }
                 });
 
-                // Extra touch: instantly hide tooltip if the user scrolls the heatmap horizontally
+                // Instantly hide tooltip if the user scrolls the heatmap horizontally
                 heatmapContainer.parentElement.addEventListener('scroll', () => {
                     tooltip.classList.add('opacity-0');
                 });
@@ -1450,30 +1453,96 @@ window.setTimerSubject = function (sub) {
     window.saveTimerState();
 }
 
+function formatMinsToText(totalMins) {
+    if (!totalMins) return '0m';
+    const hrs = Math.floor(totalMins / 60);
+    const mins = totalMins % 60;
+    return hrs > 0 ? (mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`) : `${mins}m`;
+}
+
 window.updateTimerStats = function () {
-    // 1. FIX: Use the exact same logical date string used when saving logs
     const todayStr = getLogicalTodayStr();
     const todayLogs = state.studyLogs.filter(l => l.date === todayStr);
-    let totalMins = todayLogs.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
+    let totalMinsToday = todayLogs.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
 
-    // 2. LIVE UPDATE: Add currently running session time so it ticks up dynamically
+    // Live Ticking session time
     if (typeof isTimerRunning !== 'undefined' && isTimerRunning) {
-        totalMins += Math.floor(timerSeconds / 60);
+        totalMinsToday += Math.floor(timerSeconds / 60);
     }
 
-    // 3. Format beautifully
-    let displayTime = `${totalMins}m`;
-    if (totalMins >= 60) {
-        const hrs = Math.floor(totalMins / 60);
-        const mins = totalMins % 60;
-        displayTime = mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
-    }
+    // 1. Update Today Total
     const el = document.getElementById('today-total');
-    if (el) el.innerText = displayTime;
+    if (el) el.innerText = formatMinsToText(totalMinsToday);
 
-    // --- ORIGINAL STREAK LOGIC ---
-    const dates = [...new Set(state.studyLogs.map(l => l.date))].sort().reverse();
+    // --- NEW: ADVANCED METRICS ENGINE ---
+    
+    // Calculate Active Run Time across all loops
+    let activeTimeOverall = 0;
+    if (typeof isTimerRunning !== 'undefined' && isTimerRunning) {
+        activeTimeOverall = Math.floor(timerSeconds / 60);
+    }
 
+    // 2. 7-Day Average Calculation
+    const now = getLogicalToday();
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(now.getDate() - 6);
+    
+    const last7Logs = state.studyLogs.filter(l => {
+        const logDate = new Date(l.date);
+        return logDate >= sevenDaysAgo && logDate <= now;
+    });
+    
+    let sum7 = last7Logs.reduce((a, b) => a + (b.durationMinutes || 0), 0);
+    sum7 += activeTimeOverall; // Factor in the live session
+    
+    const avg7 = Math.round(sum7 / 7);
+    const avgEl = document.getElementById('stat-avg-7d');
+    if (avgEl) avgEl.innerText = formatMinsToText(avg7);
+
+    // 3. All-Time Record Day
+    const dailyTotals = {};
+    state.studyLogs.forEach(l => {
+        dailyTotals[l.date] = (dailyTotals[l.date] || 0) + (l.durationMinutes || 0);
+    });
+    dailyTotals[todayStr] = (dailyTotals[todayStr] || 0) + activeTimeOverall;
+
+    let bestDayMins = 0;
+    for (const date in dailyTotals) {
+        if (dailyTotals[date] > bestDayMins) bestDayMins = dailyTotals[date];
+    }
+    const bestDayEl = document.getElementById('stat-best-day');
+    if (bestDayEl) bestDayEl.innerText = formatMinsToText(bestDayMins);
+
+    // 4. Deep Insights: Peak Focus Time
+    const todCounts = { 'Morning (5a-12p)': 0, 'Afternoon (12p-5p)': 0, 'Evening (5p-9p)': 0, 'Night (9p-5a)': 0 };
+    state.studyLogs.forEach(l => {
+        const hr = new Date(l.timestamp).getHours();
+        const mins = l.durationMinutes || 0;
+        if (hr >= 5 && hr < 12) todCounts['Morning (5a-12p)'] += mins;
+        else if (hr >= 12 && hr < 17) todCounts['Afternoon (12p-5p)'] += mins;
+        else if (hr >= 17 && hr < 21) todCounts['Evening (5p-9p)'] += mins;
+        else todCounts['Night (9p-5a)'] += mins;
+    });
+    
+    const highestTodMins = Math.max(...Object.values(todCounts));
+    const bestTod = Object.keys(todCounts).find(key => todCounts[key] === highestTodMins);
+    const todEl = document.getElementById('insight-tod');
+    if (todEl) todEl.innerText = highestTodMins > 0 ? bestTod : 'N/A';
+
+    // 5. Deep Insights: Most Productive Day of Week
+    const dowCounts = [0, 0, 0, 0, 0, 0, 0]; // Sun-Sat
+    state.studyLogs.forEach(l => {
+        const day = new Date(l.date).getDay();
+        dowCounts[day] += l.durationMinutes || 0;
+    });
+    const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const highestDowMins = Math.max(...dowCounts);
+    const bestDowIdx = dowCounts.indexOf(highestDowMins);
+    const dowEl = document.getElementById('insight-dow');
+    if (dowEl) dowEl.innerText = highestDowMins > 0 ? daysOfWeek[bestDowIdx] : 'N/A';
+
+    // --- STREAK LOGIC ---
+    const dates = [...new Set(Object.keys(dailyTotals))].sort().reverse();
     let streak = 0;
     let checkDate = getLogicalToday();
     const checkStr = getLocalISODate(checkDate);
@@ -1483,7 +1552,7 @@ window.updateTimerStats = function () {
     const yesterdayStr = getLocalISODate(yesterday);
 
     if (dates.includes(checkStr)) { /* active today */ }
-    else if (dates.includes(yesterdayStr)) { checkDate = yesterday; /* streak preserved from yesterday */ }
+    else if (dates.includes(yesterdayStr)) { checkDate = yesterday; /* maintained */ }
     else { streak = 0; }
 
     if (streak === 0 && (dates.includes(checkStr) || dates.includes(yesterdayStr))) {
@@ -1504,6 +1573,7 @@ window.updateTimerStats = function () {
     const streakEl = document.getElementById('streak-count');
     if (streakEl) streakEl.innerText = streak;
 
+    // Trigger heatmap/pie updates
     window.renderAdvancedAnalytics();
 }
 
@@ -1519,25 +1589,75 @@ window.renderTimerChart = function () {
     if (timerChartInstance) timerChartInstance.destroy();
 
     const startOfWeek = getStartOfWeek(state.timerChartWeekDate);
-    const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate() + 6);
+    const endOfWeek = new Date(startOfWeek); 
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-    // Set label
     const now = getLogicalToday();
     const currentWeekStart = getStartOfWeek(now);
-    if (startOfWeek.getTime() === currentWeekStart.getTime()) {
-        document.getElementById('timer-chart-week-label').innerText = "This Week";
-    } else {
-        document.getElementById('timer-chart-week-label').innerText = `${startOfWeek.getDate()} ${startOfWeek.toLocaleString('default', { month: 'short' })} - ${endOfWeek.getDate()} ${endOfWeek.toLocaleString('default', { month: 'short' })}`;
+    const labelEl = document.getElementById('timer-chart-week-label');
+    if (labelEl) {
+        if (startOfWeek.getTime() === currentWeekStart.getTime()) {
+            labelEl.innerText = "This Week";
+        } else {
+            labelEl.innerText = `${startOfWeek.getDate()} ${startOfWeek.toLocaleString('default', { month: 'short' })} - ${endOfWeek.getDate()} ${endOfWeek.toLocaleString('default', { month: 'short' })}`;
+        }
     }
 
     const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const data = [0, 0, 0, 0, 0, 0, 0];
-
+    
+    // Collect all logs for the viewed week
+    const weekLogs = [];
     for (let i = 0; i < 7; i++) {
         const d = new Date(startOfWeek); d.setDate(startOfWeek.getDate() + i);
         const dStr = getLocalISODate(d);
-        const logs = state.studyLogs.filter(l => l.date === dStr);
-        data[i] = logs.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0) / 60; // Convert to hours
+        weekLogs.push(...state.studyLogs.filter(l => l.date === dStr));
+    }
+
+    // Include the currently running active timer if "This Week" is being viewed
+    const todayStr = getLogicalTodayStr();
+    if (typeof isTimerRunning !== 'undefined' && isTimerRunning) {
+        let isTodayInWeek = false;
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(startOfWeek); d.setDate(startOfWeek.getDate() + i);
+            if (getLocalISODate(d) === todayStr) isTodayInWeek = true;
+        }
+        if (isTodayInWeek) {
+            weekLogs.push({ subject: timerSubject, durationMinutes: Math.floor(timerSeconds / 60), date: todayStr });
+        }
+    }
+
+    // Extract Unique Subjects
+    const subjectsThisWeek = [...new Set(weekLogs.map(l => l.subject))];
+    const datasets = [];
+
+    subjectsThisWeek.forEach(sub => {
+        const data = [0, 0, 0, 0, 0, 0, 0];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(startOfWeek); d.setDate(startOfWeek.getDate() + i);
+            const dStr = getLocalISODate(d);
+            const daySubLogs = weekLogs.filter(l => l.date === dStr && l.subject === sub);
+            data[i] = daySubLogs.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0) / 60; // In Hours
+        }
+        
+        datasets.push({
+            label: sub,
+            data: data,
+            backgroundColor: getSubjectColor(sub).hex,
+            borderRadius: 6,
+            barPercentage: 0.6,
+            stacked: true // Magic required for stacking
+        });
+    });
+
+    // Fallback if no data exists at all
+    if (datasets.length === 0) {
+        datasets.push({
+            label: 'No Data',
+            data: [0, 0, 0, 0, 0, 0, 0],
+            backgroundColor: '#7c3aed',
+            borderRadius: 6,
+            barPercentage: 0.6
+        });
     }
 
     const gridColor = state.settings.theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
@@ -1545,16 +1665,36 @@ window.renderTimerChart = function () {
 
     timerChartInstance = new Chart(ctx, {
         type: 'bar',
-        data: { labels: labels, datasets: [{ data: data, backgroundColor: '#7c3aed', borderRadius: 6, barPercentage: 0.6 }] },
+        data: { labels: labels, datasets: datasets },
         options: {
-            responsive: true, maintainAspectRatio: false,
+            responsive: true, 
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
             plugins: {
                 legend: { display: false },
-                tooltip: { backgroundColor: state.settings.theme === 'dark' ? '#18181b' : '#ffffff', titleColor: state.settings.theme === 'dark' ? '#fff' : '#000', bodyColor: state.settings.theme === 'dark' ? '#a1a1aa' : '#52525b', borderColor: state.settings.theme === 'dark' ? '#27272a' : '#e4e4e7', borderWidth: 1, padding: 12, cornerRadius: 12, displayColors: false, callbacks: { label: function (context) { return context.parsed.y.toFixed(1) + ' hrs'; } } }
+                tooltip: { 
+                    backgroundColor: state.settings.theme === 'dark' ? '#18181b' : '#ffffff', 
+                    titleColor: state.settings.theme === 'dark' ? '#fff' : '#000', 
+                    bodyColor: state.settings.theme === 'dark' ? '#a1a1aa' : '#52525b', 
+                    borderColor: state.settings.theme === 'dark' ? '#27272a' : '#e4e4e7', 
+                    borderWidth: 1, padding: 12, cornerRadius: 12, displayColors: true, usePointStyle: true, boxPadding: 6,
+                    callbacks: { 
+                        label: function (context) { return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + ' hrs'; } 
+                    } 
+                }
             },
             scales: {
-                y: { beginAtZero: true, grid: { display: true, color: gridColor, drawBorder: false }, ticks: { font: { size: 10, family: 'Inter', weight: '600' }, color: textColor, callback: function (val) { return val + 'h'; } } },
-                x: { grid: { display: false, drawBorder: false }, ticks: { font: { size: 10, family: 'Inter', weight: '600' }, color: textColor } }
+                y: { 
+                    stacked: true, 
+                    beginAtZero: true, 
+                    grid: { display: true, color: gridColor, drawBorder: false }, 
+                    ticks: { font: { size: 10, family: 'Inter', weight: '600' }, color: textColor, callback: function (val) { return val + 'h'; } } 
+                },
+                x: { 
+                    stacked: true, 
+                    grid: { display: false, drawBorder: false }, 
+                    ticks: { font: { size: 10, family: 'Inter', weight: '600' }, color: textColor } 
+                }
             }
         }
     });
@@ -7323,6 +7463,42 @@ window.completeOnboarding = async function () {
     }
 }
 
+const APP_VERSION = "1.0.4"; 
 
+
+// 2. Add this function to your setupListeners() 
+function listenForSystemUpdates() {
+    onSnapshot(doc(db, 'artifacts', appId, 'config', 'banner'), async (snap) => {
+        if (snap.exists()) {
+            
+            // Reading the version string (e.g., "1.0.4")
+            const liveVersion = snap.data().version;
+            
+            // Trigger if the database version doesn't match the client
+            if (liveVersion && liveVersion !== APP_VERSION) {
+                
+                const wantsUpdate = await customConfirm(
+                    "A new version of ChaosPrep is available! Update now to get the latest features and bug fixes.", 
+                    "Update Available", 
+                    false, 
+                    "Update Now"
+                );
+                
+                if (wantsUpdate) {
+                    // Wipe all local Cache API storage to prevent PWA stickiness
+                    if ('caches' in window) {
+                        const cacheNames = await caches.keys();
+                        await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    }
+                    
+                    // Force a clean reload from the server
+                    window.location.reload(true);
+                }
+            }
+        }
+    });
+}
+
+listenForSystemUpdates();
 updateLiveStudentCount();
 initAuth(); lucide.createIcons();
