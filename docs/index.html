@@ -85,8 +85,8 @@
     <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-  <script type="module" crossorigin src="./assets/main-CLvYkhJr.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/main-DnXnGj2y.css">
+  <script type="module" crossorigin src="./assets/main-Bq5nilRQ.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/main-BL-23Nzr.css">
 <script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
 
 <body
@@ -395,7 +395,8 @@
             <img src="logo.png" alt="Loading Logo"
                 class="w-16 h-16 rounded-2xl shadow-glow animate-pulse-slow object-contain">
             <div class="flex flex-col items-center gap-2">
-                <div class="text-2xl font-black text-zinc-900 dark:text-white tracking-tighter">ChaosPrep</div>            </div>
+                <div class="text-2xl font-black text-zinc-900 dark:text-white tracking-tighter">ChaosPrep</div>
+            </div>
             <div class="spinner w-6 h-6 border-brand-500 border-t-transparent mt-2"></div>
         </div>
     </div>
@@ -405,10 +406,10 @@
         class="hidden md:flex w-[320px] bg-white/80 dark:bg-[#18181b]/90 backdrop-blur-2xl border-r border-zinc-200/50 dark:border-zinc-800/50 flex-col shrink-0 z-[50] relative h-full transition-all duration-300 shadow-floating"
         id="desktop-sidebar">
         <div class="p-6 shrink-0">
-            <div class="flex items-center justify-between gap-2 mb-8">
+            <div class="flex items-center justify-between gap-2 mb-4">
                 <div class="flex items-center gap-2.5 min-w-0">
-                    <img src="logo.png" alt="ChaosPrep Logo"
-                        class="w-9 h-9 rounded-xl shadow-lg shadow-brand-500/30 object-contain shrink-0">
+                    <!-- <img src="logo.png" alt="ChaosPrep Logo"
+                        class="w-9 h-9 rounded-xl shadow-lg shadow-brand-500/30 object-contain shrink-0"> -->
                     <div class="flex flex-col min-w-0">
                         <span
                             class="text-xl font-black text-zinc-900 dark:text-white tracking-tighter leading-none truncate">ChaosPrep</span>
@@ -420,6 +421,10 @@
                     <button onclick="switchView('settings')"
                         class="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/50 rounded-xl transition-colors">
                         <i data-lucide="settings" class="w-[18px] h-[18px]"></i>
+                    </button>
+                    <button onclick="openSupportModal()" id="support-icon-btn"
+                        class="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/50 rounded-xl transition-colors">
+                        <i data-lucide="heart" class="w-[18px] h-[18px]"></i>
                     </button>
                     <button onclick="switchView('info')" id="nav-desktop-info"
                         class="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/50 rounded-xl transition-colors">
@@ -636,10 +641,10 @@
                     <i data-lucide="info" class="w-4 h-4"></i>
                 </button>
 
-                <!-- <button onclick="openSupportModal()"
+                <button onclick="openSupportModal()"
                     class="w-8 h-8 flex items-center justify-center bg-rose-50 dark:bg-rose-900/20 rounded-full text-rose-500 active:scale-95 transition-transform">
                     <i data-lucide="heart" class="w-4 h-4"></i>
-                </button> -->
+                </button>
                 <button onclick="switchView('settings')"
                     class="w-8 h-8 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded-full text-zinc-600 dark:text-zinc-300 active:scale-95 transition-transform">
                     <i data-lucide="settings" class="w-4 h-4"></i>
@@ -872,48 +877,81 @@
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-                        
+
                         <!-- LEFT COLUMN: Primary Metrics & Graphs -->
                         <div class="lg:col-span-2 flex flex-col gap-6 md:gap-8">
-                            
+
                             <!-- 4 Mini Stat Cards -->
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div class="glass-card p-5 rounded-[2rem] flex flex-col items-center justify-center text-center relative overflow-hidden group border-t-2 border-t-orange-500">
-                                    <div class="absolute -right-4 -top-4 w-16 h-16 bg-orange-500/10 rounded-full blur-xl group-hover:bg-orange-500/20 transition-all"></div>
+                                <div
+                                    class="glass-card p-5 rounded-[2rem] flex flex-col items-center justify-center text-center relative overflow-hidden group border-t-2 border-t-orange-500">
+                                    <div
+                                        class="absolute -right-4 -top-4 w-16 h-16 bg-orange-500/10 rounded-full blur-xl group-hover:bg-orange-500/20 transition-all">
+                                    </div>
                                     <i data-lucide="flame" class="w-6 h-6 text-orange-500 mb-2 relative z-10"></i>
-                                    <div class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5 relative z-10">Study Streak</div>
-                                    <div class="text-2xl font-black text-zinc-900 dark:text-white leading-none relative z-10">
-                                        <span id="streak-count">0</span> <span class="text-[10px] font-bold text-zinc-400">Days</span>
+                                    <div
+                                        class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5 relative z-10">
+                                        Study Streak</div>
+                                    <div
+                                        class="text-2xl font-black text-zinc-900 dark:text-white leading-none relative z-10">
+                                        <span id="streak-count">0</span> <span
+                                            class="text-[10px] font-bold text-zinc-400">Days</span>
                                     </div>
                                 </div>
-                                <div class="glass-card p-5 rounded-[2rem] flex flex-col items-center justify-center text-center relative overflow-hidden group border-t-2 border-t-brand-500">
-                                    <div class="absolute -right-4 -top-4 w-16 h-16 bg-brand-500/10 rounded-full blur-xl group-hover:bg-brand-500/20 transition-all"></div>
+                                <div
+                                    class="glass-card p-5 rounded-[2rem] flex flex-col items-center justify-center text-center relative overflow-hidden group border-t-2 border-t-brand-500">
+                                    <div
+                                        class="absolute -right-4 -top-4 w-16 h-16 bg-brand-500/10 rounded-full blur-xl group-hover:bg-brand-500/20 transition-all">
+                                    </div>
                                     <i data-lucide="clock" class="w-6 h-6 text-brand-500 mb-2 relative z-10"></i>
-                                    <div class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5 relative z-10">Focused Today</div>
-                                    <div class="text-2xl font-black text-zinc-900 dark:text-white leading-none relative z-10" id="today-total">0m</div>
+                                    <div
+                                        class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5 relative z-10">
+                                        Focused Today</div>
+                                    <div class="text-2xl font-black text-zinc-900 dark:text-white leading-none relative z-10"
+                                        id="today-total">0m</div>
                                 </div>
-                                <div class="glass-card p-5 rounded-[2rem] flex flex-col items-center justify-center text-center relative overflow-hidden group border-t-2 border-t-blue-500">
-                                    <div class="absolute -right-4 -top-4 w-16 h-16 bg-blue-500/10 rounded-full blur-xl group-hover:bg-blue-500/20 transition-all"></div>
+                                <div
+                                    class="glass-card p-5 rounded-[2rem] flex flex-col items-center justify-center text-center relative overflow-hidden group border-t-2 border-t-blue-500">
+                                    <div
+                                        class="absolute -right-4 -top-4 w-16 h-16 bg-blue-500/10 rounded-full blur-xl group-hover:bg-blue-500/20 transition-all">
+                                    </div>
                                     <i data-lucide="activity" class="w-6 h-6 text-blue-500 mb-2 relative z-10"></i>
-                                    <div class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5 relative z-10">7-Day Avg</div>
-                                    <div class="text-2xl font-black text-zinc-900 dark:text-white leading-none relative z-10" id="stat-avg-7d">0m</div>
+                                    <div
+                                        class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5 relative z-10">
+                                        7-Day Avg</div>
+                                    <div class="text-2xl font-black text-zinc-900 dark:text-white leading-none relative z-10"
+                                        id="stat-avg-7d">0m</div>
                                 </div>
-                                <div class="glass-card p-5 rounded-[2rem] flex flex-col items-center justify-center text-center relative overflow-hidden group border-t-2 border-t-emerald-500">
-                                    <div class="absolute -right-4 -top-4 w-16 h-16 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition-all"></div>
+                                <div
+                                    class="glass-card p-5 rounded-[2rem] flex flex-col items-center justify-center text-center relative overflow-hidden group border-t-2 border-t-emerald-500">
+                                    <div
+                                        class="absolute -right-4 -top-4 w-16 h-16 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition-all">
+                                    </div>
                                     <i data-lucide="trophy" class="w-6 h-6 text-emerald-500 mb-2 relative z-10"></i>
-                                    <div class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5 relative z-10">Record Day</div>
-                                    <div class="text-2xl font-black text-zinc-900 dark:text-white leading-none relative z-10" id="stat-best-day">0m</div>
+                                    <div
+                                        class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5 relative z-10">
+                                        Record Day</div>
+                                    <div class="text-2xl font-black text-zinc-900 dark:text-white leading-none relative z-10"
+                                        id="stat-best-day">0m</div>
                                 </div>
                             </div>
 
                             <!-- Stacked Study Trends Chart -->
                             <div class="glass-card p-6 md:p-8 rounded-[2.5rem] flex-1 flex flex-col">
                                 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
-                                    <h3 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Study Trends</h3>
-                                    <div class="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 rounded-xl p-1 shadow-inner-light dark:shadow-inner-dark border border-zinc-200/50 dark:border-zinc-700/50 self-start sm:self-auto">
-                                        <button onclick="changeTimerChartWeek(-1)" class="p-1.5 text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-[#27272a] rounded-lg transition-all shadow-sm"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
-                                        <span id="timer-chart-week-label" class="text-[10px] font-bold text-zinc-600 dark:text-zinc-300 w-24 text-center tracking-widest uppercase">This Week</span>
-                                        <button onclick="changeTimerChartWeek(1)" class="p-1.5 text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-[#27272a] rounded-lg transition-all shadow-sm"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                                    <h3 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Study
+                                        Trends</h3>
+                                    <div
+                                        class="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 rounded-xl p-1 shadow-inner-light dark:shadow-inner-dark border border-zinc-200/50 dark:border-zinc-700/50 self-start sm:self-auto">
+                                        <button onclick="changeTimerChartWeek(-1)"
+                                            class="p-1.5 text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-[#27272a] rounded-lg transition-all shadow-sm"><i
+                                                data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                                        <span id="timer-chart-week-label"
+                                            class="text-[10px] font-bold text-zinc-600 dark:text-zinc-300 w-24 text-center tracking-widest uppercase">This
+                                            Week</span>
+                                        <button onclick="changeTimerChartWeek(1)"
+                                            class="p-1.5 text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-[#27272a] rounded-lg transition-all shadow-sm"><i
+                                                data-lucide="chevron-right" class="w-4 h-4"></i></button>
                                     </div>
                                 </div>
                                 <div class="relative flex-1 w-full min-h-[220px]">
@@ -923,24 +961,34 @@
 
                             <!-- Heatmap -->
                             <div class="glass-card p-6 md:p-8 rounded-[2.5rem] flex flex-col overflow-hidden relative">
-                                <div id="heatmap-tooltip" class="fixed z-[9999] pointer-events-none opacity-0 transition-opacity duration-200 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-floating whitespace-nowrap transform -translate-x-1/2 -translate-y-full" style="margin-top: -8px;"></div>
+                                <div id="heatmap-tooltip"
+                                    class="fixed z-[9999] pointer-events-none opacity-0 transition-opacity duration-200 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-floating whitespace-nowrap transform -translate-x-1/2 -translate-y-full"
+                                    style="margin-top: -8px;"></div>
                                 <div class="mb-6 flex justify-between items-center">
                                     <div>
-                                        <h3 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Study Activity</h3>
-                                        <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Last 6 Months</p>
+                                        <h3 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight">
+                                            Study Activity</h3>
+                                        <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">
+                                            Last 6 Months</p>
                                     </div>
                                 </div>
                                 <div class="flex-1 w-full overflow-x-auto custom-scrollbar pb-4 pt-2">
                                     <div class="flex flex-col gap-2 relative w-full min-w-max justify-end">
-                                        <div id="heatmap-container" class="flex gap-[6px] justify-start md:justify-end"></div>
+                                        <div id="heatmap-container" class="flex gap-[6px] justify-start md:justify-end">
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="flex items-center gap-2 mt-4 text-[10px] font-bold text-zinc-400 justify-end uppercase tracking-widest pt-5 border-t border-zinc-100 dark:border-zinc-800/50">
+                                <div
+                                    class="flex items-center gap-2 mt-4 text-[10px] font-bold text-zinc-400 justify-end uppercase tracking-widest pt-5 border-t border-zinc-100 dark:border-zinc-800/50">
                                     <span>Less</span>
-                                    <span class="w-[14px] h-[14px] rounded-[4px] bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/50"></span>
-                                    <span class="w-[14px] h-[14px] rounded-[4px] bg-brand-200 dark:bg-brand-900/40 border border-brand-300/30 dark:border-brand-800/50"></span>
-                                    <span class="w-[14px] h-[14px] rounded-[4px] bg-brand-400 dark:bg-brand-700/60 border border-brand-500/50 dark:border-brand-600/50"></span>
-                                    <span class="w-[14px] h-[14px] rounded-[4px] bg-brand-500 border border-brand-600 dark:border-brand-400 shadow-[0_0_8px_rgba(139,92,246,0.3)]"></span>
+                                    <span
+                                        class="w-[14px] h-[14px] rounded-[4px] bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/50"></span>
+                                    <span
+                                        class="w-[14px] h-[14px] rounded-[4px] bg-brand-200 dark:bg-brand-900/40 border border-brand-300/30 dark:border-brand-800/50"></span>
+                                    <span
+                                        class="w-[14px] h-[14px] rounded-[4px] bg-brand-400 dark:bg-brand-700/60 border border-brand-500/50 dark:border-brand-600/50"></span>
+                                    <span
+                                        class="w-[14px] h-[14px] rounded-[4px] bg-brand-500 border border-brand-600 dark:border-brand-400 shadow-[0_0_8px_rgba(139,92,246,0.3)]"></span>
                                     <span>More</span>
                                 </div>
                             </div>
@@ -948,39 +996,56 @@
 
                         <!-- RIGHT COLUMN: Insights, Breakdowns & Logs -->
                         <div class="lg:col-span-1 flex flex-col gap-6 md:gap-8">
-                            
+
                             <!-- Session Logs -->
                             <div class="glass-card p-6 md:p-8 rounded-[2.5rem] flex flex-col flex-1">
                                 <div class="flex items-center justify-between mb-5">
-                                    <h3 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Today's Sessions</h3>
-                                    <button onclick="openManualLogModal()" class="text-[10px] font-bold text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1 border border-brand-100 dark:border-brand-900/30 uppercase tracking-widest">
+                                    <h3 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Today's
+                                        Sessions</h3>
+                                    <button onclick="openManualLogModal()"
+                                        class="text-[10px] font-bold text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1 border border-brand-100 dark:border-brand-900/30 uppercase tracking-widest">
                                         <i data-lucide="plus" class="w-3 h-3"></i> Manual
                                     </button>
                                 </div>
-                                <div id="timer-logs-list" class="space-y-3 overflow-y-auto pr-2 pb-4 custom-scrollbar min-h-[200px] max-h-[400px]"></div>
+                                <div id="timer-logs-list"
+                                    class="space-y-3 overflow-y-auto pr-2 pb-4 custom-scrollbar min-h-[200px] max-h-[400px]">
+                                </div>
                             </div>
 
                             <!-- Deep Insights (NEW) -->
-                            <div class="glass-card p-6 md:p-8 rounded-[2.5rem] flex flex-col border-t-2 border-t-fuchsia-500 relative overflow-hidden group">
-                                <div class="absolute -right-10 -top-10 w-32 h-32 bg-fuchsia-500/10 rounded-full blur-3xl group-hover:bg-fuchsia-500/20 transition-all pointer-events-none"></div>
-                                <h3 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight mb-5 relative z-10">Deep Insights</h3>
+                            <div
+                                class="glass-card p-6 md:p-8 rounded-[2.5rem] flex flex-col border-t-2 border-t-fuchsia-500 relative overflow-hidden group">
+                                <div
+                                    class="absolute -right-10 -top-10 w-32 h-32 bg-fuchsia-500/10 rounded-full blur-3xl group-hover:bg-fuchsia-500/20 transition-all pointer-events-none">
+                                </div>
+                                <h3
+                                    class="text-lg font-black text-zinc-900 dark:text-white tracking-tight mb-5 relative z-10">
+                                    Deep Insights</h3>
                                 <div class="space-y-4 relative z-10">
-                                    <div class="flex items-center gap-4 p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/50">
-                                        <div class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/20 text-blue-500 flex items-center justify-center shrink-0 shadow-inner">
+                                    <div
+                                        class="flex items-center gap-4 p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/50">
+                                        <div
+                                            class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/20 text-blue-500 flex items-center justify-center shrink-0 shadow-inner">
                                             <i data-lucide="sun" class="w-5 h-5"></i>
                                         </div>
                                         <div>
-                                            <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Peak Focus Time</p>
-                                            <p class="text-sm font-black text-zinc-900 dark:text-white mt-0.5" id="insight-tod">--</p>
+                                            <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                                                Peak Focus Time</p>
+                                            <p class="text-sm font-black text-zinc-900 dark:text-white mt-0.5"
+                                                id="insight-tod">--</p>
                                         </div>
                                     </div>
-                                    <div class="flex items-center gap-4 p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/50">
-                                        <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0 shadow-inner">
+                                    <div
+                                        class="flex items-center gap-4 p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/50">
+                                        <div
+                                            class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0 shadow-inner">
                                             <i data-lucide="calendar-check" class="w-5 h-5"></i>
                                         </div>
                                         <div>
-                                            <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Most Productive Day</p>
-                                            <p class="text-sm font-black text-zinc-900 dark:text-white mt-0.5" id="insight-dow">--</p>
+                                            <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                                                Most Productive Day</p>
+                                            <p class="text-sm font-black text-zinc-900 dark:text-white mt-0.5"
+                                                id="insight-dow">--</p>
                                         </div>
                                     </div>
                                 </div>
@@ -988,16 +1053,18 @@
 
                             <!-- Subject Pie Chart -->
                             <div class="glass-card p-6 md:p-8 rounded-[2.5rem] flex flex-col">
-                                <h3 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight mb-4">Subject Breakdown</h3>
+                                <h3 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight mb-4">Subject
+                                    Breakdown</h3>
                                 <div class="relative w-full flex-1 min-h-[220px] flex items-center justify-center">
-                                    <div id="pie-empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 hidden z-10">
+                                    <div id="pie-empty-state"
+                                        class="absolute inset-0 flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 hidden z-10">
                                         <i data-lucide="pie-chart" class="w-10 h-10 mb-3 opacity-20"></i>
                                         <span class="text-[10px] font-bold uppercase tracking-widest">No Data Yet</span>
                                     </div>
                                     <canvas id="subjectPieChart"></canvas>
                                 </div>
                             </div>
-                            
+
                         </div>
                     </div>
 
@@ -1573,7 +1640,7 @@
                         </div>
                     </div>
 
-                
+
 
                     <div class="glass-card p-6 md:p-8 rounded-[2.5rem] lg:col-span-2 flex flex-col gap-6">
                         <div class="flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-800 pb-4">
@@ -1842,15 +1909,21 @@
                         style="accent-color: #7c3aed;" draggable="false">
                     <i data-lucide="volume-2" class="w-3.5 h-3.5 text-zinc-400 shrink-0" draggable="false"></i>
                     <div id="playlist-controls" class="hidden flex items-center gap-0.5 mr-1">
-                        <button onclick="playPrevVideo()" class="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors" title="Previous Track">
+                        <button onclick="playPrevVideo()"
+                            class="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                            title="Previous Track">
                             <i data-lucide="skip-back" class="w-4 h-4"></i>
                         </button>
-                        <button onclick="playNextVideo()" class="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors" title="Next Track">
+                        <button onclick="playNextVideo()"
+                            class="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                            title="Next Track">
                             <i data-lucide="skip-forward" class="w-4 h-4"></i>
                         </button>
                     </div>
 
-                    <button id="btn-music-loop" onclick="toggleMusicLoop()" class="p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800" title="Toggle Loop">
+                    <button id="btn-music-loop" onclick="toggleMusicLoop()"
+                        class="p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                        title="Toggle Loop">
                         <i data-lucide="repeat" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -2071,7 +2144,7 @@
 
     <!-- Toast -->
     <div id="toast"
-        class="fixed top-safe mt-4 md:mt-0 md:top-auto md:bottom-28 left-1/2 md:left-auto md:right-8 transform -translate-x-1/2 md:translate-x-0 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-bold px-6 py-3.5 rounded-full shadow-floating opacity-0 translate-y-[-20px] md:translate-y-4 transition-all duration-400 pointer-events-none flex items-center gap-3 z-[150] min-w-max border border-zinc-800 dark:border-zinc-200">
+        class="fixed top-safe mt-4 md:mt-0 md:top-auto md:bottom-28 left-1/2 md:left-auto md:right-8 transform -translate-x-1/2 md:translate-x-0 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-bold px-6 py-3.5 rounded-full shadow-floating opacity-0 translate-y-[-20px] md:translate-y-4 transition-all duration-400 pointer-events-none flex items-center gap-3 z-[210] min-w-max border border-zinc-800 dark:border-zinc-200">
         <div class="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"><i data-lucide="check"
                 class="w-3 h-3 text-white"></i></div><span id="toast-msg">Success</span>
     </div>
@@ -2238,6 +2311,43 @@
         </div>
     </div>
 
+    <div id="support-modal"
+        class="fixed inset-0 z-[160] flex items-center justify-center modal-backdrop hidden opacity-0 transition-opacity duration-300 px-4">
+        <div
+            class="bg-white dark:bg-[#18181b] rounded-[2.5rem] shadow-2xl p-6 md:p-8 w-full max-w-md transform scale-95 transition-transform duration-300 border border-zinc-200/50 dark:border-zinc-800/50 relative overflow-hidden">
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-rose-500/5 rounded-full blur-2xl pointer-events-none">
+            </div>
+            <div class="flex justify-between items-start mb-6">
+                <div class="relative z-10">
+                    <h3 class="text-2xl font-black text-zinc-900 dark:text-white tracking-tight">Support ChaosPrep</h3>
+                    <p class="text-xs text-zinc-500 font-medium mt-1">Keep the mission alive.</p>
+                </div>
+                <button onclick="closeSupportModal()"
+                    class="relative z-10 p-2 bg-zinc-100 dark:bg-zinc-800 rounded-full text-zinc-400 hover:text-rose-500 transition-colors"><i
+                        data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <div class="space-y-6 mb-8 text-center relative z-10">
+                <p class="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                    ChaosPrep is, and always will be, <strong>100% free with no ads.</strong><br><br>
+                    If this tool has helped you, please consider supporting its development and server costs. Your
+                    contribution, no matter how small, makes a huge difference.
+                </p>
+
+                <div
+                    class="bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50">
+                    <img src="https://i.ibb.co/bgs7zXX7/Whats-App-Image-2026-04-23-at-12-52-09-PM.jpg" alt="UPI QR Code for shaurya.sval@oksbi"
+                        class="w-48 h-48 mx-auto rounded-xl shadow-md border border-zinc-200 dark:border-zinc-700">
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-3 relative z-10">
+                <button onclick="closeSupportModal()"
+                    class="w-full py-3.5 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 font-bold text-sm transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-700">Close</button>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Mobile Stats Menu -->
     <div id="mobile-stats-menu"
@@ -2295,69 +2405,6 @@
     </div>
 
 
-    <div id="support-modal"
-        class="fixed inset-0 z-[160] flex items-center justify-center modal-backdrop hidden opacity-0 transition-opacity duration-300 px-4">
-        <div
-            class="bg-white dark:bg-[#18181b] rounded-[2.5rem] shadow-2xl p-8 w-full max-w-sm transform scale-95 transition-transform duration-300 border border-zinc-200/50 dark:border-zinc-800/50 relative overflow-hidden">
-
-            <div class="flex items-center gap-3 mb-4">
-                <div
-                    class="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-500/20 flex items-center justify-center text-rose-500">
-                    <i data-lucide="heart" class="w-5 h-5 fill-current"></i>
-                </div>
-                <div>
-                    <h3 class="text-lg font-black text-zinc-900 dark:text-white leading-tight">Support ChaosPrep</h3>
-                    <span class="text-[10px] font-bold text-brand-500 uppercase tracking-widest">Student Project</span>
-                </div>
-            </div>
-
-            <p class="text-sm text-zinc-500 dark:text-zinc-400 font-medium mb-6 leading-relaxed">
-                I built this tool to help us stay focused. You can support the project by donating or joining our
-                community!
-            </p>
-
-            <div
-                class="p-4 bg-brand-50 dark:bg-brand-900/10 border border-brand-100 dark:border-brand-800/50 rounded-2xl mb-3">
-                <p class="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-3">Support via Gift Card
-                    (Amazon)</p>
-                <div
-                    class="flex items-center justify-between bg-white dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 group">
-                    <span
-                        class="text-xs font-mono font-bold text-brand-600 dark:text-brand-400 truncate mr-2">shaurya.p.singh21@gmail.com</span>
-                    <button onclick="copySupportEmail('shaurya.p.singh21@gmail.com')"
-                        class="shrink-0 text-[10px] font-black text-zinc-400 hover:text-brand-500 transition-colors uppercase">Copy</button>
-                </div>
-            </div>
-
-            <a href="https://discord.gg/mKXPpSY6Dz" target="_blank" rel="noopener noreferrer"
-                class="w-full flex items-center justify-between p-4 mb-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 hover:border-[#5865F2]/50 hover:bg-[#5865F2]/5 transition-all group">
-                <div class="flex items-center gap-3">
-                    <div
-                        class="w-8 h-8 rounded-full bg-white dark:bg-zinc-800 flex items-center justify-center shadow-sm">
-                        <svg viewBox="0 0 24 24"
-                            class="w-4 h-4 fill-zinc-400 group-hover:fill-[#5865F2] transition-colors"
-                            xmlns="http://www.w3.org/2000/svg">
-                            <path
-                                d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.23 10.23 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
-                        </svg>
-                    </div>
-                    <div class="text-left">
-                        <div class="text-xs font-bold text-zinc-700 dark:text-zinc-300">Join Community</div>
-                        <div class="text-[9px] text-zinc-400 uppercase tracking-widest font-bold">Discord Server</div>
-                    </div>
-                </div>
-                <i data-lucide="chevron-right"
-                    class="w-3 h-3 text-zinc-300 group-hover:text-[#5865F2] transition-colors"></i>
-            </a>
-
-            <div class="space-y-3">
-                <button onclick="closeSupportModal()"
-                    class="w-full py-4 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 font-bold text-sm transition-all active:scale-95">
-                    Maybe Later
-                </button>
-            </div>
-        </div>
-    </div>
     <div id="squad-help-modal"
         class="fixed inset-0 z-[160] flex items-center justify-center modal-backdrop hidden opacity-0 transition-opacity duration-300 px-4">
         <div

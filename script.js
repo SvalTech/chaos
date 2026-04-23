@@ -3686,7 +3686,7 @@ function updateSubjectSelectors() {
             const padding = formSuffix === '-mobile' ? 'py-3.5 rounded-2xl' : 'py-2.5 rounded-xl';
 
             const colorDot = isMock ? '' : `<span class="w-2.5 h-2.5 rounded-full inline-block shrink-0 shadow-sm" style="background-color: ${colorInfo.hex}"></span>`;
-            const labelText = isMock ? '🏆 Mock' : sub;
+            const labelText = isMock ? 'Mock' : sub;
 
             // Apply 'checked' only to the remembered value
             const isChecked = (sub === selectedValue) ? 'checked' : '';
@@ -3761,7 +3761,7 @@ function updateSubjectSelectors() {
             const colorInfo = getSubjectColor(sub);
             const isActive = timerSubject === sub;
             const activeClass = isActive ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 border-transparent shadow-md' : 'bg-white dark:bg-[#18181b] text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 border-zinc-200 dark:border-zinc-800';
-            const icon = sub === 'MockTest' ? '🏆' : `<span class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full" style="background-color: ${colorInfo.hex}"></span>`;
+            const icon = sub === 'MockTest' ? '' : `<span class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full" style="background-color: ${colorInfo.hex}"></span>`;
 
             timerHtml += `<button onclick="setTimerSubject('${sub}')" data-sub="${sub}" class="timer-subject-pill flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl border text-[10px] md:text-xs font-bold transition-all ${activeClass}">${icon}${sub}</button>`;
         }); 
@@ -5984,7 +5984,7 @@ window.openEditTaskModal = function (id) {
     if (!subjects.includes('MockTest')) subjects.push('MockTest');
 
     select.innerHTML = subjects.map(s =>
-        `<option value="${s}" ${s === task.subject ? 'selected' : ''}>${s === 'MockTest' ? '🏆 MockTest' : s}</option>`
+        `<option value="${s}" ${s === task.subject ? 'selected' : ''}>${s === 'MockTest' ? 'MockTest' : s}</option>`
     ).join('');
 
     const modal = document.getElementById('edit-task-modal');
@@ -7498,6 +7498,25 @@ function listenForSystemUpdates() {
         }
     });
 }
+
+// Paste these new functions into script.js
+
+window.openSupportModal = () => {
+    const modal = document.getElementById('support-modal');
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        modal.querySelector('div').classList.replace('scale-95', 'scale-100');
+    }, 10);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+};
+
+window.closeSupportModal = () => {
+    const modal = document.getElementById('support-modal');
+    modal.classList.add('opacity-0');
+    modal.querySelector('div').classList.replace('scale-100', 'scale-95');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+};
 
 listenForSystemUpdates();
 updateLiveStudentCount();
