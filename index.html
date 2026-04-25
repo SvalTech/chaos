@@ -386,7 +386,7 @@
             <!-- Footer -->
             <div class="w-full mt-24 pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 z-20">
                 <div class="text-[11px] font-bold text-zinc-600 uppercase tracking-widest">
-                    © 2026 sval.tech
+                    © 2026 sval.tech 
                 </div>
                 <div class="flex items-center gap-6 text-[11px] font-bold uppercase tracking-widest text-zinc-500">
                     <a href="privacypolicy.html" class="hover:text-white transition-colors">Privacy</a>
@@ -464,50 +464,40 @@
                 </div>
             </div>
 
-            <nav class="flex flex-col gap-1.5 p-1.5 bg-zinc-100/80 dark:bg-zinc-900/80 rounded-2xl mb-6">
+            <nav class="flex flex-col gap-1.5 p-1.5 bg-zinc-100/80 dark:bg-zinc-900/80 rounded-2xl mb-6 shadow-inner-light dark:shadow-inner-dark">
                 <div class="flex w-full gap-1.5">
                     <button onclick="switchView('calendar')" id="nav-desktop-calendar"
-                        class="flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 bg-white dark:bg-zinc-800 shadow-sm text-brand-600 dark:text-brand-400"><i
-                            data-lucide="calendar" class="w-4 h-4"></i> Planner</button>
+                        class="flex-1 py-2.5 text-xs font-bold rounded-xl transition-all duration-300 ease-out active:scale-90 hover:scale-[0.98] flex items-center justify-center gap-2 bg-white dark:bg-zinc-800 shadow-sm text-brand-600 dark:text-brand-400">
+                        <i data-lucide="calendar" class="w-4 h-4"></i> Planner</button>
                     <button onclick="switchView('weekly')" id="nav-desktop-weekly"
-                        class="flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50"><i
-                            data-lucide="crosshair" class="w-4 h-4"></i> Targets</button>
+                        class="flex-1 py-2.5 text-xs font-bold rounded-xl transition-all duration-300 ease-out active:scale-90 hover:scale-[0.98] flex items-center justify-center gap-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50">
+                        <i data-lucide="crosshair" class="w-4 h-4"></i> Targets</button>
                     <button onclick="switchView('squad')" id="nav-desktop-squad"
-                        class="flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50">
+                        class="flex-1 py-2.5 text-xs font-bold rounded-xl transition-all duration-300 ease-out active:scale-90 hover:scale-[0.98] flex items-center justify-center gap-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50">
                         <i data-lucide="users" class="w-4 h-4"></i> Squad
                     </button>
                 </div>
                 <div class="flex w-full gap-1.5">
                     <button onclick="switchView('timer')" id="nav-desktop-timer"
-                        class="flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50"><i
-                            data-lucide="timer" class="w-4 h-4"></i> Timer</button>
+                        class="flex-1 py-2.5 text-xs font-bold rounded-xl transition-all duration-300 ease-out active:scale-90 hover:scale-[0.98] flex items-center justify-center gap-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50">
+                        <i data-lucide="timer" class="w-4 h-4"></i> Timer</button>
                     <div class="flex-1 relative group">
                         <button onclick="switchView('stats-mocks')" id="nav-desktop-stats"
-                            class="w-full py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50">
+                            class="w-full py-2.5 text-xs font-bold rounded-xl transition-all duration-300 ease-out active:scale-90 hover:scale-[0.98] flex items-center justify-center gap-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50">
                             <i data-lucide="bar-chart-2" class="w-4 h-4"></i> Stats
                         </button>
-                        <!-- Desktop Hover Menu (Fixed Bridge) -->
-                        <div
-                            class="absolute left-full top-0 pl-2 w-52 z-[100] opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200 flex">
-                            <div
-                                class="bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-xl rounded-2xl shadow-floating dark:shadow-floating-dark border border-zinc-200/80 dark:border-zinc-800 flex flex-col w-full scale-95 group-hover:scale-100 transition-transform duration-200 origin-left overflow-hidden">
-                                <button onclick="switchView('stats-mocks')"
-                                    class="text-left px-4 py-3 text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-3"><i
-                                        data-lucide="bar-chart" class="w-4 h-4 text-brand-500"></i> Mocks Data</button>
-                                <button onclick="switchView('stats-errors')"
-                                    class="text-left px-4 py-3 text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-3 border-t border-zinc-100 dark:border-zinc-800/50"><i
-                                        data-lucide="alert-triangle" class="w-4 h-4 text-rose-500"></i> Error
-                                    Tracking</button>
-                                <button onclick="switchView('stats-questions')"
-                                    class="text-left px-4 py-3 text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-3 border-t border-zinc-100 dark:border-zinc-800/50"><i
-                                        data-lucide="check-square" class="w-4 h-4 text-emerald-500"></i> Daily
-                                    Questions</button>
+                        <!-- Desktop Hover Menu -->
+                        <div class="absolute left-full top-0 pl-2 w-52 z-[100] opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200 flex">
+                            <div class="bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-xl rounded-2xl shadow-floating dark:shadow-floating-dark border border-zinc-200/80 dark:border-zinc-800 flex flex-col w-full scale-95 group-hover:scale-100 transition-transform duration-200 origin-left overflow-hidden">
+                                <button onclick="switchView('stats-mocks')" class="text-left px-4 py-3 text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-3"><i data-lucide="bar-chart" class="w-4 h-4 text-brand-500"></i> Mocks Data</button>
+                                <button onclick="switchView('stats-errors')" class="text-left px-4 py-3 text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-3 border-t border-zinc-100 dark:border-zinc-800/50"><i data-lucide="alert-triangle" class="w-4 h-4 text-rose-500"></i> Error Tracking</button>
+                                <button onclick="switchView('stats-questions')" class="text-left px-4 py-3 text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-3 border-t border-zinc-100 dark:border-zinc-800/50"><i data-lucide="check-square" class="w-4 h-4 text-emerald-500"></i> Daily Questions</button>
                             </div>
                         </div>
                     </div>
                     <button onclick="switchView('syllabus')" id="nav-desktop-syllabus"
-                        class="flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50"><i
-                            data-lucide="book-open-check" class="w-4 h-4"></i> Syllabus</button>
+                        class="flex-1 py-2.5 text-xs font-bold rounded-xl transition-all duration-300 ease-out active:scale-90 hover:scale-[0.98] flex items-center justify-center gap-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50">
+                        <i data-lucide="book-open-check" class="w-4 h-4"></i> Syllabus</button>
                 </div>
             </nav>
         </div>
@@ -1410,62 +1400,94 @@
             </div>
         </div>
 
-        <div id="view-container-squad" class="view-section hidden flex-1 flex flex-col h-full overflow-hidden">
-            <div class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar no-scrollbar">
-                <div class="max-w-5xl mx-auto pb-32">
+        <div id="view-container-squad" class="view-section hidden flex-1 flex flex-col h-full overflow-hidden relative">
+            
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar no-scrollbar relative z-10">
+                <div class="max-w-6xl mx-auto pb-32">
 
-                    <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-8">
-                        <div>
-                            <h2
-                                class="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tighter flex items-center gap-3">
-                                <i data-lucide="users" class="w-8 h-8 text-brand-500"></i> Accountability
-                            </h2><br>
-                            <div class="flex items-center gap-3 mt-1.5">
-                                <a href="javascript:void(0)" onclick="openSquadHelp()"
-                                    class="text-[10px] font-bold uppercase tracking-widest text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/20 px-2 py-1 rounded-md hover:bg-brand-100 dark:hover:bg-brand-900/40 transition-colors flex items-center gap-1 cursor-pointer">
-                                    <i data-lucide="book" class="w-3 h-3"></i> Guide
-                                </a>
-
-                                <!-- New "Live Only" Filter Button -->
-                                <button onclick="toggleSquadFocusFilter()" id="squad-focus-filter-btn"
-                                    class="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex items-center gap-1.5 border border-zinc-200 dark:border-zinc-700">
-                                    <span class="w-2 h-2 rounded-full bg-zinc-400 transition-colors"
-                                        id="squad-focus-filter-dot"></span>
-                                    Live Only
-                                </button>
-                            </div>
+                    <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-6">
+                        <div class="relative">
+                            <h2 class="text-3xl md:text-5xl font-black text-zinc-900 dark:text-white tracking-tighter flex items-center gap-3 drop-shadow-sm">
+                                Squad
+                            </h2>
                         </div>
 
-                        <div
-                            class="glass-card p-2 pl-5 md:pl-6 rounded-[2rem] flex items-center justify-between border border-zinc-200/80 dark:border-zinc-800 bg-white/60 dark:bg-[#18181b]/60 shadow-sm w-full xl:w-auto overflow-x-auto no-scrollbar">
+                        <div class="glass-card p-2 pl-5 md:pl-6 rounded-[2rem] flex items-center justify-between border border-zinc-200/80 dark:border-zinc-800 bg-white/60 dark:bg-[#18181b]/60 shadow-lg shadow-black/5 w-full xl:w-auto overflow-x-auto no-scrollbar relative overflow-hidden group">
+                            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 dark:via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite] pointer-events-none"></div>
+                            
                             <div class="shrink-0 mr-4">
-                                <div class="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-0.5">Your
-                                    Code</div>
-                                <div class="text-lg font-black tracking-widest text-zinc-900 dark:text-white select-all cursor-pointer hover:text-brand-500 transition-colors"
-                                    id="my-friend-code" onclick="copyFriendCode()">------</div>
+                                <div class="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-0.5">Your Identity Code</div>
+                                <div class="text-lg md:text-xl font-black tracking-[0.2em] text-zinc-900 dark:text-white select-all cursor-pointer hover:text-brand-500 transition-colors" id="my-friend-code" onclick="copyFriendCode()">------</div>
                             </div>
-                            <div class="w-px h-8 bg-zinc-200 dark:bg-zinc-800 mx-2 shrink-0 hidden sm:block"></div>
+                            <div class="w-px h-10 bg-zinc-200 dark:bg-zinc-800 mx-2 shrink-0 hidden sm:block"></div>
                             <div class="flex gap-2 shrink-0">
-                                <!-- In the squad view toolbar -->
-                                <button onclick="openProfileModal()" title="Edit Profile"
-                                    class="bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 px-4 py-2.5 rounded-xl font-bold text-xs shadow-sm active:scale-95 transition-all flex items-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-700">
-                                    <i data-lucide="user" class="w-4 h-4"></i> <span
-                                        class="hidden sm:inline">Profile</span>
+                                <button onclick="openProfileModal()" title="Edit Profile" class="bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 px-4 py-2.5 rounded-xl font-bold text-xs shadow-sm active:scale-90 transition-all duration-200 flex items-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-700">
+                                    <i data-lucide="user" class="w-4 h-4"></i> <span class="hidden sm:inline">Profile</span>
                                 </button>
-                                <button onclick="window.copyInviteLink()" title="Copy Invite Link"
-                                    class="bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 px-4 py-2.5 rounded-xl font-bold text-xs shadow-sm active:scale-95 transition-all flex items-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-700">
-                                    <i data-lucide="link" class="w-4 h-4"></i> <span
-                                        class="hidden sm:inline">Link</span>
+                                <button onclick="window.copyInviteLink()" title="Copy Invite Link" class="bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 px-4 py-2.5 rounded-xl font-bold text-xs shadow-sm active:scale-90 transition-all duration-200 flex items-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-700">
+                                    <i data-lucide="link" class="w-4 h-4"></i> <span class="hidden sm:inline">Link</span>
                                 </button>
-                                <button onclick="openAddFriendModal()"
-                                    class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md active:scale-95 transition-all flex items-center gap-2">
+                                <button onclick="openAddFriendModal()" class="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-lg shadow-brand-500/20 active:scale-90 transition-all duration-200 flex items-center gap-2">
                                     <i data-lucide="user-plus" class="w-4 h-4"></i> Add Friend
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    <div id="squad-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    <!-- Toolbar / Filters -->
+                    <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+                        <div class="flex items-center gap-3">
+                            <button onclick="toggleSquadFocusFilter()" id="squad-focus-filter-btn" class="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md px-3 py-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-all duration-200 flex items-center gap-2 border border-zinc-200/80 dark:border-zinc-700/80 shadow-sm active:scale-95">
+                                <span class="w-2 h-2 rounded-full bg-zinc-400 transition-colors shadow-sm" id="squad-focus-filter-dot"></span> Live Only
+                            </button>
+                            
+                            <button onclick="toggleSquadSettingsMenu()" class="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md px-3 py-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-all duration-200 flex items-center gap-2 border border-zinc-200/80 dark:border-zinc-700/80 shadow-sm active:scale-95">
+                                <i data-lucide="settings-2" class="w-3.5 h-3.5"></i> Settings
+                            </button>
+                        </div>
+                        
+                        <a href="javascript:void(0)" onclick="openSquadHelp()" class="text-[10px] font-bold uppercase tracking-widest text-brand-600 dark:text-brand-400 bg-brand-50/80 dark:bg-brand-900/20 backdrop-blur-md px-3 py-2 rounded-xl hover:bg-brand-100 dark:hover:bg-brand-900/40 transition-all duration-200 flex items-center gap-1.5 cursor-pointer shadow-sm border border-brand-200/50 dark:border-brand-800/50 active:scale-95">
+                            <i data-lucide="book" class="w-3.5 h-3.5"></i> Guide
+                        </a>
+                    </div>
+
+                    <!-- Collapsible Settings Panel -->
+                    <div id="squad-settings-panel" class="hidden opacity-0 -translate-y-4 transition-all duration-300 mb-8">
+                        <div class="glass-card p-5 rounded-[2rem] border-t-2 border-t-brand-500 grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-2xl flex flex-col justify-between border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
+                                <div class="mb-4">
+                                    <span class="font-bold text-sm text-zinc-900 dark:text-zinc-100 block flex items-center gap-2"><i data-lucide="share-2" class="w-4 h-4 text-brand-500"></i> Share Tasks</span>
+                                    <span class="text-[10px] text-zinc-500 font-medium mt-1 block leading-relaxed">Let your squad see your daily tasks and completion state.</span>
+                                </div>
+                                <button id="sharetasks-toggle" onclick="toggleShareTasksSetting()" class="relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300 shrink-0 self-end shadow-inner-dark">
+                                    <div id="sharetasks-knob" class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm translate-x-[20px]"></div>
+                                </button>
+                            </div>
+
+                            <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-2xl flex flex-col justify-between border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
+                                <div class="mb-4">
+                                    <span class="font-bold text-sm text-zinc-900 dark:text-zinc-100 block flex items-center gap-2"><i data-lucide="image" class="w-4 h-4 text-brand-500"></i> Banners</span>
+                                    <span class="text-[10px] text-zinc-500 font-medium mt-1 block leading-relaxed">Load custom background images for your friends' cards.</span>
+                                </div>
+                                <button id="squadbgs-toggle" onclick="toggleSquadBGsSetting()" class="relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300 shrink-0 self-end shadow-inner-dark">
+                                    <div id="squadbgs-knob" class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm translate-x-[20px]"></div>
+                                </button>
+                            </div>
+
+                            <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-2xl flex flex-col justify-between border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
+                                <div class="mb-4">
+                                    <span class="font-bold text-sm text-zinc-900 dark:text-zinc-100 block flex items-center gap-2"><i data-lucide="bell-ring" class="w-4 h-4 text-brand-500"></i> Allow Nudges</span>
+                                    <span class="text-[10px] text-zinc-500 font-medium mt-1 block leading-relaxed">Let friends send push notifications to wake you up.</span>
+                                </div>
+                                <button id="nudges-toggle" onclick="toggleNudgesSetting()" class="relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300 shrink-0 self-end shadow-inner-dark">
+                                    <div id="nudges-knob" class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm translate-x-[20px]"></div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- The Grid -->
+                    <div id="squad-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
                     </div>
 
                 </div>
@@ -1563,88 +1585,41 @@
                         </select>
                     </div>
 
-                    <div
-                        class="glass-card p-6 md:p-8 rounded-[2.5rem] flex flex-col gap-4 border-t-2 border-t-brand-500">
+                    <div class="glass-card p-6 md:p-8 rounded-[2.5rem] flex flex-col gap-4 border-t-2 border-t-brand-500">
                         <div class="flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-800 pb-4 mb-2">
                             <i data-lucide="toggle-right" class="w-5 h-5 text-zinc-400"></i>
                             <h3 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Features</h3>
                         </div>
 
-                        <div
-                            class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
                             <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200">Dark Mode</span>
-                            <button id="theme-toggle" onclick="toggleTheme()"
-                                class="relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300 shrink-0">
-                                <div id="theme-knob"
-                                    class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm">
-                                </div>
+                            <button id="theme-toggle" onclick="toggleTheme()" class="relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300 shrink-0">
+                                <div id="theme-knob" class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm"></div>
                             </button>
                         </div>
-                        <div
-                            class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
                             <div>
                                 <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200 block">Lite Mode</span>
-                                <span class="text-[10px] text-zinc-500 font-medium">RECOMMENDED | Disables blurs &
-                                    animations</span>
+                                <span class="text-[10px] text-zinc-500 font-medium">RECOMMENDED | Disables blurs & animations</span>
                             </div>
-                            <button id="litemode-toggle" onclick="toggleLiteModeSetting()"
-                                class="relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300 shrink-0">
-                                <div id="litemode-knob"
-                                    class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm">
-                                </div>
-                            </button>
-                        </div>
-                        <div
-                            class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
-                            <div>
-                                <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200 block">Share
-                                    Tasks</span>
-                                <span class="text-[10px] text-zinc-500 font-medium">Squad visibility</span>
-                            </div>
-                            <button id="sharetasks-toggle" onclick="toggleShareTasksSetting()"
-                                class="relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300 shrink-0">
-                                <div id="sharetasks-knob"
-                                    class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm translate-x-[20px]">
-                                </div>
+                            <button id="litemode-toggle" onclick="toggleLiteModeSetting()" class="relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300 shrink-0">
+                                <div id="litemode-knob" class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm"></div>
                             </button>
                         </div>
 
-                        <div
-                            class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
-                            <div>
-                                <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200 block">Squad
-                                    Banners</span>
-                                <span class="text-[10px] text-zinc-500 font-medium">Show custom backgrounds</span>
-                            </div>
-                            <button id="squadbgs-toggle" onclick="toggleSquadBGsSetting()"
-                                class="relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300 shrink-0">
-                                <div id="squadbgs-knob"
-                                    class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm translate-x-[20px]">
-                                </div>
-                            </button>
-                        </div>
-                        <div
-                            class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
                             <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200">Show Countdown</span>
-                            <button id="countdown-toggle" onclick="toggleCountdownSetting()"
-                                class="relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300 shrink-0">
-                                <div id="countdown-knob"
-                                    class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm">
-                                </div>
+                            <button id="countdown-toggle" onclick="toggleCountdownSetting()" class="relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300 shrink-0">
+                                <div id="countdown-knob" class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm"></div>
                             </button>
                         </div>
-                        <div
-                            class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
                             <div>
-                                <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200 block">Focus
-                                    Radio</span>
+                                <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200 block">Focus Radio</span>
                                 <span class="text-[10px] text-zinc-500 font-medium">Music player widget</span>
                             </div>
-                            <button id="music-toggle" onclick="toggleMusicSetting()"
-                                class="relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300 shrink-0">
-                                <div id="music-knob"
-                                    class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm">
-                                </div>
+                            <button id="music-toggle" onclick="toggleMusicSetting()" class="relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300 shrink-0">
+                                <div id="music-knob" class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm"></div>
                             </button>
                         </div>
                     </div>
@@ -1821,7 +1796,7 @@
                         </div>
                         <div
                             class="w-16 h-16 rounded-2xl bg-white p-2 shadow-lg flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                            <img src="https://jtestify.alphajee.online/alphajee.png" alt="AlphaJEE Logo"
+                            <img src="alphajee.png" alt="AlphaJEE Logo"
                                 class="w-full h-full object-contain">
                         </div>
                         <div class="relative z-10">
@@ -2329,7 +2304,6 @@
             <div class="flex justify-between items-start mb-6">
                 <div class="relative z-10">
                     <h3 class="text-2xl font-black text-zinc-900 dark:text-white tracking-tight">Support ChaosPrep</h3>
-                    <p class="text-xs text-zinc-500 font-medium mt-1">Keep the mission alive.</p>
                 </div>
                 <button onclick="closeSupportModal()"
                     class="relative z-10 p-2 bg-zinc-100 dark:bg-zinc-800 rounded-full text-zinc-400 hover:text-rose-500 transition-colors"><i
@@ -2337,10 +2311,16 @@
             </div>
 
             <div class="space-y-6 mb-8 text-center relative z-10">
-                <p class="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                    ChaosPrep is, and always will be, <strong>100% free with no ads.</strong><br><br>
-                    If this tool has helped you, please consider supporting its development and server costs. Your
-                    contribution, no matter how small, makes a huge difference.
+                <p>
+                This is a <b>one-person student project</b>. I love keeping this tool 
+                <b>completely ad-free</b> for everyone, and your support helps me 
+                keep this project growing alongside my studies.
+                </p>
+
+                <p>
+                If ChaosPrep has made your prep easier, a small donation is a 
+                <b>massive motivation boost</b> for me to keep coding and 
+                building new features.
                 </p>
 
                 <div

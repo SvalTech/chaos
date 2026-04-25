@@ -1,12 +1,14 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, setDoc, onSnapshot, updateDoc, deleteDoc, arrayUnion, arrayRemove, writeBatch, query, where, getDocs, getDoc, getCountFromServer } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-messaging.js";
 
 console.log("What you looking here at for? 🥀")
 
 const firebaseConfig = { apiKey: "AIzaSyAD2NBd8w86uMkuF5Kt6VG4qjb0LPDClj0", authDomain: "auth.sval.tech", projectId: "studydashboard-2a3eb", storageBucket: "studydashboard-2a3eb.firebasestorage.app", messagingSenderId: "79210973277", appId: "1:79210973277:web:cc0a5fa86729fd6d3f65b4" };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const messaging = getMessaging(app);
 
 // Initialize Firestore with the modern persistent cache settings
 const db = initializeFirestore(app, {
@@ -509,6 +511,7 @@ function setupListeners(user) {
         (snap) => {
             if (snap.exists()) {
                 state.settings = { ...state.settings, ...snap.data() };
+                if(typeof window.initSquadSettingsUI === 'function') window.initSquadSettingsUI();
                 if (state.settings.examType === 'NEET') {
                     const correctDate = `${state.settings.targetYear || new Date().getFullYear()}-05-03`;
                     // If their saved date doesn't match the correct 3rd May date, update it
@@ -2602,8 +2605,52 @@ window.toggleShareTasksSetting = function () {
     triggerAutoSave();
 }
 
+window.toggleNudgesSetting = async function () {
+    if (state.settings.allowNudges === undefined) state.settings.allowNudges = true;
+    state.settings.allowNudges = !state.settings.allowNudges;
+    
+    const knob = document.getElementById('nudges-knob'); 
+    const toggle = document.getElementById('nudges-toggle');
+    if (knob && toggle) {
+        if (state.settings.allowNudges) { 
+            knob.style.transform = 'translateX(20px)'; 
+            toggle.className = "relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300 shrink-0"; 
+        } else { 
+            knob.style.transform = 'translateX(0)'; 
+            toggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300 shrink-0"; 
+        }
+    }
+
+    // Instantly sync preference to public profile so friends' UI updates
+    if (currentUser) {
+        try {
+            await updateDoc(doc(db, 'artifacts', appId, 'socialProfiles', currentUser.uid), {
+                allowNudges: state.settings.allowNudges
+            });
+        } catch (e) {
+            console.warn("Could not sync nudge preference to public profile", e);
+        }
+    }
+    
+    triggerAutoSave();
+}
+window.toggleSquadSettingsMenu = function () {
+    const panel = document.getElementById('squad-settings-panel');
+    if (!panel) return;
+
+    if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        // Tiny delay so CSS transitions catch the display block change
+        setTimeout(() => {
+            panel.classList.remove('opacity-0', '-translate-y-4');
+        }, 10);
+    } else {
+        panel.classList.add('opacity-0', '-translate-y-4');
+        setTimeout(() => panel.classList.add('hidden'), 300);
+    }
+};
+
 window.initSettingsView = () => {
-    // Populate inputs from live state (no more tempSettings)
     setAccentTheme(state.settings.accentTheme || 'default');
 
     const bgInput = document.getElementById('settings-bg-url');
@@ -2632,27 +2679,39 @@ window.initSettingsView = () => {
 
     setExamType(state.settings.examType || 'JEE Main');
 
-    // Toggles initialization
     const setupToggle = (settingVal, knobId, toggleId, defaultVal = true) => {
         const val = settingVal !== undefined ? settingVal : defaultVal;
         const knob = document.getElementById(knobId);
         const toggle = document.getElementById(toggleId);
         if (knob && toggle) {
-            if (val) { knob.style.transform = 'translateX(20px)'; toggle.className = "relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300"; }
-            else { knob.style.transform = 'translateX(0)'; toggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300"; }
+            if (val) { knob.style.transform = 'translateX(20px)'; toggle.className = "relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300 shrink-0"; }
+            else { knob.style.transform = 'translateX(0)'; toggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300 shrink-0"; }
         }
     };
 
     setupToggle(state.settings.showCountdown, 'countdown-knob', 'countdown-toggle');
-    setupToggle(state.settings.shareTasks, 'sharetasks-knob', 'sharetasks-toggle');
     setupToggle(state.settings.showMusic, 'music-knob', 'music-toggle');
-    setupToggle(state.settings.showSquadBGs, 'squadbgs-knob', 'squadbgs-toggle');
-
+    
     renderSubjectColorSettings();
-    renderMockCategorySettings(); // <-- This line is new
+    renderMockCategorySettings(); 
     updateLiteModeToggleUI(state.settings.liteMode);
 };
 
+// Expose a function to strictly initialize Squad Setting toggles
+window.initSquadSettingsUI = () => {
+    const setupToggle = (settingVal, knobId, toggleId, defaultVal = true) => {
+        const val = settingVal !== undefined ? settingVal : defaultVal;
+        const knob = document.getElementById(knobId);
+        const toggle = document.getElementById(toggleId);
+        if (knob && toggle) {
+            if (val) { knob.style.transform = 'translateX(20px)'; toggle.className = "relative w-12 h-7 bg-brand-500 rounded-full transition-all duration-300 shrink-0"; }
+            else { knob.style.transform = 'translateX(0)'; toggle.className = "relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300 shrink-0"; }
+        }
+    };
+    setupToggle(state.settings.shareTasks, 'sharetasks-knob', 'sharetasks-toggle');
+    setupToggle(state.settings.showSquadBGs, 'squadbgs-knob', 'squadbgs-toggle');
+    setupToggle(state.settings.allowNudges !== false, 'nudges-knob', 'nudges-toggle', true);
+};
 
 window.updateTaskScore = async function (id, type, value) {
     if (!currentUser) return;
@@ -3533,29 +3592,28 @@ window.switchView = function (view) {
     }
 
     // Update Nav buttons
-    // ✅ ADD 'info' to the lists
     const navButtons = ['calendar', 'weekly', 'stats', 'syllabus', 'timer', 'squad', 'info']; 
     
     navButtons.forEach(v => {
         const btn = document.getElementById(`nav-desktop-${v}`);
         if (!btn) return;
         if (v === navHighlight) { 
-            btn.classList.add('bg-white', 'dark:bg-zinc-800', 'shadow-sm', 'text-brand-600', 'dark:text-brand-400'); 
-            btn.classList.remove('text-zinc-500', 'dark:text-zinc-400', 'hover:bg-zinc-200/50', 'dark:hover:bg-zinc-800/50'); 
+            btn.classList.add('bg-white', 'dark:bg-zinc-800', 'shadow-sm', 'text-brand-600', 'dark:text-brand-400', 'scale-100'); 
+            btn.classList.remove('text-zinc-500', 'dark:text-zinc-400', 'hover:bg-zinc-200/50', 'dark:hover:bg-zinc-800/50', 'hover:scale-[0.98]'); 
         } else { 
-            btn.classList.remove('bg-white', 'dark:bg-zinc-800', 'shadow-sm', 'text-brand-600', 'dark:text-brand-400'); 
-            btn.classList.add('text-zinc-500', 'dark:text-zinc-400', 'hover:bg-zinc-200/50', 'dark:hover:bg-zinc-800/50'); 
+            btn.classList.remove('bg-white', 'dark:bg-zinc-800', 'shadow-sm', 'text-brand-600', 'dark:text-brand-400', 'scale-100'); 
+            btn.classList.add('text-zinc-500', 'dark:text-zinc-400', 'hover:bg-zinc-200/50', 'dark:hover:bg-zinc-800/50', 'hover:scale-[0.98]'); 
         }
     });
     navButtons.forEach(v => {
         const btn = document.getElementById(`nav-mobile-${v}`);
         if (btn) { 
             if (v === navHighlight) { 
-                btn.classList.remove('text-zinc-400', 'dark:text-zinc-500'); 
-                btn.classList.add('text-brand-600', 'dark:text-brand-400'); 
+                btn.classList.remove('text-zinc-400', 'dark:text-zinc-500', 'hover:scale-110'); 
+                btn.classList.add('text-brand-600', 'dark:text-brand-400', 'scale-110'); 
             } else { 
-                btn.classList.add('text-zinc-400', 'dark:text-zinc-500'); 
-                btn.classList.remove('text-brand-600', 'dark:text-brand-400'); 
+                btn.classList.add('text-zinc-400', 'dark:text-zinc-500', 'hover:scale-110'); 
+                btn.classList.remove('text-brand-600', 'dark:text-brand-400', 'scale-110'); 
             } 
         }
     });
@@ -3570,8 +3628,6 @@ window.switchView = function (view) {
     if (view === 'squad') renderSquadView();
     if (view === 'timer') { updateSubjectSelectors(); updateTimerTaskSelector(); updateTimerStats(); renderRecentLogs(); renderTimerChart(); }
     if (view === 'settings') initSettingsView();
-    
-    // ✅ ADD this line to fetch the changelog when the info page is opened
     if (view === 'info') fetchChangelog();
 
     if (typeof updateMiniTimerVisibility === 'function') updateMiniTimerVisibility();
@@ -3890,8 +3946,15 @@ window.goToToday = function () {
         if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
 }
+
 window.openDayView = function (dateStr) {
-    currentDayViewDate = dateStr; const modal = document.getElementById('day-view-modal'); const list = document.getElementById('day-view-tasks'); const dateObj = new Date(dateStr);
+    // PREVENT MODAL IF WE JUST FINISHED DRAGGING A LASSO
+    if (window.justFinishedLasso) return;
+
+    currentDayViewDate = dateStr; 
+    const modal = document.getElementById('day-view-modal'); 
+    const list = document.getElementById('day-view-tasks'); 
+    const dateObj = new Date(dateStr);
     document.getElementById('day-view-date').innerText = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
 
     const tasks = state.tasks.filter(t => t.date === dateStr).sort((a, b) => {
@@ -3919,7 +3982,6 @@ window.openDayView = function (dateStr) {
         let subtasksHtml = `<div class="mt-2 pl-8 space-y-2">`;
         if (t.subtasks && t.subtasks.length > 0) {
             t.subtasks.forEach(st => {
-                // Inside openDayView loop for subtasks:
                 subtasksHtml += `
 <div class="flex items-center justify-between gap-2 text-sm group/sub">
     <div class="flex items-center gap-2">
@@ -3990,7 +4052,9 @@ window.openDayView = function (dateStr) {
                 }
             }
         });
-    }, 100); lucide.createIcons();
+    }, 100); 
+    
+    if(window.lucide) lucide.createIcons();
 
     // Check if we need to restore focus to a subtask input after the snapshot redraw
     if (window.activeSubtaskFocusId) {
@@ -4001,7 +4065,11 @@ window.openDayView = function (dateStr) {
         }, 50);
     }
 
-    modal.classList.remove('hidden'); setTimeout(() => { modal.classList.remove('opacity-0'); modal.querySelector('.mobile-sheet').classList.add('open'); }, 10);
+    modal.classList.remove('hidden'); 
+    setTimeout(() => { 
+        modal.classList.remove('opacity-0'); 
+        modal.querySelector('.mobile-sheet').classList.add('open'); 
+    }, 10);
 }
 
 window.deleteSubtask = async function (taskId, subtaskId) {
@@ -5198,7 +5266,6 @@ async function initSocialProfile(user) {
     document.getElementById('my-friend-code').innerText = code;
 }
 // 2. Listen to who the user has added as a friend
-// 2. Listen to who the user has added as a friend
 function setupSquadListeners(user) {
     const friendsRef = collection(db, 'artifacts', appId, 'socialFriends', user.uid, 'list');
 
@@ -5248,6 +5315,9 @@ function setupSquadListeners(user) {
 
         if (state.currentView === 'squad') renderSquadView();
     });
+
+    // 🌟 ACTIVATE THE NUDGE LISTENER
+    window.listenForNudges(user);
 }
 
 // 3. UI logic to add a friend via code
@@ -5466,11 +5536,151 @@ window.toggleSquadFocusFilter = function () {
     if (typeof renderSquadView === 'function') renderSquadView();
 }
 
+// ==========================================
+// SQUAD NUDGE SYSTEM & DEVICE NOTIFICATIONS
+// ==========================================
+window.requestDeviceNotifications = async function() {
+    if (!('Notification' in window)) {
+        showToast("Your browser doesn't support device notifications.");
+        return;
+    }
+    
+    try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            showToast("Registering device for Push Notifications...");
+            
+            // Get the unique FCM token for this browser
+            const currentToken = await getToken(messaging, { 
+                vapidKey: 'BLh1vQhK3BXhDkJ5efnaolcCoJ6HF93XmLW7vf1zf4VEBJOzTFEaqFBH5gNUX4WIOzQw671e55BFObMsXQnjogc' // <--- PASTE IT HERE
+            });
+
+            if (currentToken && currentUser) {
+                // Save it to their public profile so the backend knows where to send the nudge
+                await updateDoc(doc(db, 'artifacts', appId, 'socialProfiles', currentUser.uid), {
+                    fcmToken: currentToken
+                });
+                
+                showToast("Device connected to Squad Alerts!");
+                if (state.currentView === 'squad') renderSquadView(); // Hide the banner
+            } else {
+                showToast("Failed to generate push token.");
+            }
+        } else {
+            showToast("Notifications denied.");
+        }
+    } catch (error) {
+        console.error("Error setting up push notifications:", error);
+        showToast("Error enabling notifications.");
+    }
+}
+
+window.sendNudge = async function(friendUid, friendName) {
+    if (!currentUser) return;
+
+    // --- ANTI-SPAM COOLDOWN LOGIC ---
+    const COOLDOWN_MS = 60 * 1000; // 1 minute
+    const storageKey = 'chaosprep_nudge_cooldowns';
+    let cooldowns = {};
+    try {
+        cooldowns = JSON.parse(localStorage.getItem(storageKey)) || {};
+    } catch(e) {}
+
+    const lastNudgeTime = cooldowns[friendUid] || 0;
+    const timeSinceLastNudge = Date.now() - lastNudgeTime;
+
+    if (timeSinceLastNudge < COOLDOWN_MS) {
+        // Calculate exact seconds remaining for the toast
+        const secondsLeft = Math.ceil((COOLDOWN_MS - timeSinceLastNudge) / 1000);
+        showToast(`Wait ${secondsLeft}s before nudging ${friendName} again.`);
+        return;
+    }
+    // --------------------------------
+
+    try {
+        const nudgeId = Date.now().toString();
+        await setDoc(doc(db, 'artifacts', appId, 'socialProfiles', friendUid, 'nudges', nudgeId), {
+            from: myDisplayName || "A Squad Member",
+            timestamp: new Date().toISOString()
+        });
+        
+        // Save the new cooldown time
+        cooldowns[friendUid] = Date.now();
+        localStorage.setItem(storageKey, JSON.stringify(cooldowns));
+
+        showToast(`Nudge sent to ${friendName}!`);
+        
+        // Force UI to update instantly so the button turns into a cooldown timer
+        if (state.currentView === 'squad') renderSquadView();
+
+    } catch (e) {
+        console.error("Failed to send nudge", e);
+        showToast("Failed to send nudge.");
+    }
+}
+
+window.listenForNudges = function(user) {
+    const nudgesRef = collection(db, 'artifacts', appId, 'socialProfiles', user.uid, 'nudges');
+    onSnapshot(nudgesRef, (snap) => {
+        snap.docChanges().forEach((change) => {
+            if (change.type === 'added') {
+                const data = change.doc.data();
+                const docId = change.doc.id;
+                
+                const msg = `${data.from} says it's time to focus! 🚀`;
+                
+                // 1. In-App Toast & Audio (Always fires)
+                showToast(msg);
+                if (typeof playAudioFeedback === 'function') playAudioFeedback('start');
+                
+                // 2. OS Level Device Notification (Fires if permission is granted)
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    // This triggers the native Windows/Mac/Android/iOS push notification
+                    const notification = new Notification('Wake Up!', { 
+                        body: msg,
+                        icon: '/logo.png', // Ensure this points to a valid image path
+                        badge: '/logo.png',
+                        vibrate: [200, 100, 200]
+                    });
+
+                    // Clicking the notification focuses the web app
+                    notification.onclick = function() {
+                        window.focus();
+                        this.close();
+                    };
+                }
+
+                // 3. Immediately delete the nudge from database so it doesn't loop
+                deleteDoc(doc(db, 'artifacts', appId, 'socialProfiles', user.uid, 'nudges', docId)).catch(e => console.warn(e));
+            }
+        });
+    });
+}
+
 window.renderSquadView = function () {
     const grid = document.getElementById('squad-grid');
     if (!grid) return;
 
     grid.innerHTML = '';
+
+    if ('Notification' in window && Notification.permission === 'default') {
+        grid.innerHTML += `
+            <div class="col-span-full mb-4 bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0">
+                        <i data-lucide="bell-ring" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-black text-brand-900 dark:text-brand-100">Enable Device Notifications</h4>
+                        <p class="text-xs text-brand-700/80 dark:text-brand-300/80 font-medium">Let your squad wake you up when you're slacking. <b>YOU CAN DISABLE NUDGES AT ANY TIME in Squad Settings above.</b></p>
+                    </div>
+                </div>
+                <button onclick="requestDeviceNotifications()" class="w-full sm:w-auto px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 whitespace-nowrap">
+                    Allow Alerts
+                </button>
+            </div>
+        `;
+    }
 
     const displayList = [];
     if (state.myProfile) displayList.push({ ...state.myProfile, isMe: true });
@@ -5548,9 +5758,6 @@ window.renderSquadView = function () {
 
             // Build the display text to include the linked task (Context)
             let focusDisplay = friend.studySubject || 'Studying';
-            // if (friend.studyContext) {
-            //     focusDisplay += ` - ${friend.studyContext}`;
-            // }
 
             // Added truncate and max-width so long task names don't break your card layout
             statusText = `<span class="${isExam ? 'text-purple-600 dark:text-purple-400' : 'text-rose-600 dark:text-rose-400'} truncate block max-w-[140px] sm:max-w-[200px]" title="Focus: ${escapeHtml(focusDisplay)}">Focus: ${escapeHtml(focusDisplay)}</span>`;
@@ -5634,16 +5841,43 @@ window.renderSquadView = function () {
         }
 
         // 6. CARD ASSEMBLY
-
-        // 👉 RESTORED: Define Display Name, Action Buttons, and Task List
         const displayName = escapeHtml(friend.name || 'Student');
-        const friendCodeBadge = friend.code ? `<span class="ml-2 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800/80 px-1.5 py-0.5 rounded md border border-zinc-200 dark:border-zinc-700 tracking-widest cursor-text select-all hover:text-brand-500 transition-colors" title="Friend Code" onclick="navigator.clipboard.writeText('${friend.code}'); showToast('Copied Code!');">#${friend.code}</span>` : '';
+        
         let actionBtnsHtml = '';
         if (!friend.isMe) {
+            let nudgeBtnHtml = '';
+            
+            // Check Anti-Spam Cooldown status
+            let isCoolingDown = false;
+            try {
+                const cooldowns = JSON.parse(localStorage.getItem('chaosprep_nudge_cooldowns')) || {};
+                const lastNudge = cooldowns[friend.uid] || 0;
+                isCoolingDown = (Date.now() - lastNudge) < (60 * 1000); // 1 min (Changed from 5)
+            } catch(e) {}
+
+            // Generate the Nudge button state
+            if (friend.allowNudges === false) {
+                // Disabled: User turned off nudges
+                nudgeBtnHtml = `<button disabled title="Nudges disabled" class="p-1.5 text-zinc-300 dark:text-zinc-600 cursor-not-allowed"><i data-lucide="bell-off" class="w-3.5 h-3.5"></i></button>`;
+            } else if (isCoolingDown) {
+                // Disabled: Anti-spam cooldown active
+                nudgeBtnHtml = `<button disabled title="On cooldown (1 min)" class="p-1.5 text-amber-400 dark:text-amber-500/70 cursor-not-allowed"><i data-lucide="timer" class="w-3.5 h-3.5"></i></button>`;
+            } else if (!friend.isStudying) {
+                // Active: User is idle/offline and can be nudged
+                nudgeBtnHtml = `<button onclick="sendNudge('${friend.uid}', '${escapeHtml(friend.name || 'User')}')" title="Wake them up!" class="p-1.5 text-brand-500 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-500/20 rounded-lg transition-all shadow-sm"><i data-lucide="bell-ring" class="w-3.5 h-3.5"></i></button>`;
+            } else {
+                // Disabled: User is currently focusing
+                nudgeBtnHtml = `<button disabled title="Currently Focusing" class="p-1.5 text-zinc-300 dark:text-zinc-600 cursor-not-allowed"><i data-lucide="bell" class="w-3.5 h-3.5"></i></button>`;
+            }
+
+            // Compact Segmented Control Pill
             actionBtnsHtml = `
-                <div class="flex items-center gap-1">
-                    <button onclick="blockFriend('${friend.uid}', '${escapeHtml(friend.name || 'User')}')" title="Block User" class="p-2 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-colors"><i data-lucide="shield-alert" class="w-4 h-4"></i></button>
-                    <button onclick="removeFriend('${friend.uid}', '${escapeHtml(friend.name || 'User')}')" title="Remove Friend" class="p-2 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-colors"><i data-lucide="user-minus" class="w-4 h-4"></i></button>
+                <div class="flex items-center bg-zinc-100/80 dark:bg-zinc-800/50 rounded-[10px] border border-zinc-200/80 dark:border-zinc-700/80 p-0.5 shadow-sm shrink-0">
+                    ${nudgeBtnHtml}
+                    <div class="w-px h-3.5 bg-zinc-200 dark:bg-zinc-700 mx-0.5"></div>
+                    <button onclick="blockFriend('${friend.uid}', '${escapeHtml(friend.name || 'User')}')" title="Block" class="p-1.5 text-zinc-400 hover:text-rose-500 hover:bg-white dark:hover:bg-zinc-700 rounded-lg transition-all shadow-sm"><i data-lucide="shield-alert" class="w-3.5 h-3.5"></i></button>
+                    <div class="w-px h-3.5 bg-zinc-200 dark:bg-zinc-700 mx-0.5"></div>
+                    <button onclick="removeFriend('${friend.uid}', '${escapeHtml(friend.name || 'User')}')" title="Remove" class="p-1.5 text-zinc-400 hover:text-rose-500 hover:bg-white dark:hover:bg-zinc-700 rounded-lg transition-all shadow-sm"><i data-lucide="user-minus" class="w-3.5 h-3.5"></i></button>
                 </div>
             `;
         }
@@ -5652,10 +5886,8 @@ window.renderSquadView = function () {
         if (friend.shareTasks && friend.tasks && friend.tasks.length > 0) {
             // Show ALL tasks
             friend.tasks.forEach(t => {
-                // Check if this specific task is the one currently being studied
                 const isCurrentlyStudyingThis = friend.isStudying && friend.studyContext === t.text;
 
-                // 1. Build Subtasks HTML if they exist
                 let subtasksHtml = '';
                 if (t.subtasks && t.subtasks.length > 0) {
                     subtasksHtml = `<div class="mt-1 pl-6 space-y-1 w-full">`;
@@ -5670,11 +5902,9 @@ window.renderSquadView = function () {
                     subtasksHtml += `</div>`;
                 }
 
-                // 2. Wrap the Main Task + Subtasks in a container
                 tasksHtml += `<div class="mb-3">`;
 
                 if (isCurrentlyStudyingThis && !t.completed) {
-                    // 🌟 Highlighted Active Task styling
                     tasksHtml += `
                         <div class="flex items-start gap-2 group/task p-2 -mx-2 rounded-xl bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/20 shadow-sm transition-all">
                             <div class="relative flex h-3 w-3 mt-0.5 shrink-0 ml-0.5">
@@ -5685,7 +5915,6 @@ window.renderSquadView = function () {
                         </div>
                     `;
                 } else {
-                    // Standard Task styling
                     tasksHtml += `
                         <div class="flex items-start gap-2 group/task">
                             <i data-lucide="${t.completed ? 'check-circle-2' : 'circle'}" class="w-3.5 h-3.5 mt-0.5 shrink-0 ${t.completed ? 'text-emerald-500' : 'text-zinc-300 dark:text-zinc-600'}"></i>
@@ -5694,7 +5923,6 @@ window.renderSquadView = function () {
                     `;
                 }
 
-                // 3. Append the subtasks directly below the main task
                 tasksHtml += subtasksHtml;
                 tasksHtml += `</div>`;
             });
@@ -5706,14 +5934,12 @@ window.renderSquadView = function () {
 
         // --- VIP / ROLE CONFIGURATION ---
         const VIP_USERS = {
-            // Added 'isDev' flag to make this specific user supreme
             "KLh2R14NZCZinFvgCm6DtzghkBf2": { role: "DEV", icon: "zap", isDev: true },
         };
 
         const vip = VIP_USERS[friend.uid];
         const isDev = vip && vip.isDev;
 
-        // DEV user overrides everything. Otherwise, use database role, then fallback to standard VIP.
         const activeRole = isDev ? vip.role : (friend.role || (vip ? vip.role : null));
         const activeIcon = isDev ? vip.icon : (friend.roleIcon || (vip ? vip.icon : 'crown'));
 
@@ -5727,7 +5953,6 @@ window.renderSquadView = function () {
             let tooltipHtml = '';
 
             if (isDev) {
-                // 🌟 SPECIAL DEV BADGE (Gradient background, glowing shadow, amber icon)
                 badgeHtml = `
                     <span class="relative inline-flex items-center gap-1 bg-gradient-to-r from-brand-600 to-fuchsia-600 text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border border-white/20 shadow-[0_0_15px_rgba(139,92,246,0.6)] cursor-help">
                         <i data-lucide="${activeIcon}" class="w-3 h-3 text-amber-300 fill-current"></i> ${activeRole}
@@ -5738,7 +5963,6 @@ window.renderSquadView = function () {
                     Developer of ChaosPrep.
                 `;
             } else {
-                // 🛡️ STANDARD BADGE
                 badgeHtml = `
                     <span class="relative inline-flex items-center gap-1 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border border-zinc-700 dark:border-zinc-200 shadow-sm cursor-help">
                         <i data-lucide="${activeIcon}" class="w-3 h-3 text-brand-400 dark:text-brand-600 fill-current"></i> ${activeRole}
@@ -5783,7 +6007,6 @@ window.renderSquadView = function () {
                             </div>
                             ${focusedTimeHtml}
                         </div>
-                        
                     </div>
                     <div class="shrink-0 mt-[-4px]">
                         ${actionBtnsHtml}
@@ -5801,9 +6024,8 @@ window.renderSquadView = function () {
                     </div>
                 </div>` : ''}
 
-                    <div class="flex-1 w-full ">
-
-                ${tasksHtml}
+                <div class="flex-1 w-full ">
+                    ${tasksHtml}
                 </div>
             </div>
         `;
@@ -5813,7 +6035,6 @@ window.renderSquadView = function () {
     const visibleFriends = finalDisplayList.filter(user => !user.isMe);
 
     if (state.squad.length === 0) {
-        // True empty state (No friends added at all)
         grid.innerHTML += `
             <div class="glass-card p-8 rounded-[2.5rem] border-2 border-dashed border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col items-center justify-center text-center bg-transparent min-h-[250px] col-span-full md:col-span-1">
                 <div class="w-16 h-16 bg-brand-50 dark:bg-brand-900/20 text-brand-500 rounded-full flex items-center justify-center mb-4 shadow-inner-light">
@@ -5823,14 +6044,12 @@ window.renderSquadView = function () {
                 <p class="text-sm text-zinc-500 dark:text-zinc-400 max-w-xs mb-6 font-medium leading-relaxed">
                     Accountability is the fastest way to improve. Invite a friend to start tracking tasks together.
                 </p>
-                <button onclick="window.copyInviteLink()" 
-                    class="flex items-center justify-center gap-2 w-full py-3.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-floating">
+                <button onclick="window.copyInviteLink()" class="flex items-center justify-center gap-2 w-full py-3.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-floating">
                     <i data-lucide="link" class="w-4 h-4"></i>
                     <span>Copy Invite Link</span>
                 </button>
             </div>`;
     } else if (window.squadShowOnlyFocusing && visibleFriends.length === 0) {
-        // Filter is ON, but no FRIENDS are studying (Only you are visible)
         grid.innerHTML += `
             <div class="glass-card p-8 rounded-[2.5rem] border-2 border-dashed border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col items-center justify-center text-center bg-transparent min-h-[250px] col-span-full md:col-span-1">
                 <div class="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 rounded-full flex items-center justify-center mb-4 shadow-inner-light">
@@ -5840,8 +6059,7 @@ window.renderSquadView = function () {
                 <p class="text-sm text-zinc-500 dark:text-zinc-400 max-w-xs mb-6 font-medium leading-relaxed">
                     Nobody in your squad is currently focusing. Time to take the lead.
                 </p>
-                <button onclick="switchView('timer')" 
-                    class="flex items-center justify-center gap-2 px-6 py-3.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-bold transition-all active:scale-95 shadow-floating">
+                <button onclick="switchView('timer')" class="flex items-center justify-center gap-2 px-6 py-3.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-bold transition-all active:scale-95 shadow-floating">
                     <i data-lucide="play" class="w-4 h-4"></i>
                     <span>Start Session</span>
                 </button>
@@ -6484,6 +6702,9 @@ window.selectedTaskIds = new Set();
 window.copiedTasks = [];
 
 let isLassoing = false;
+let hasLassoMoved = false; // Tracks if they actually dragged
+window.justFinishedLasso = false; // Global flag to block day card clicks
+
 let lassoStartX = 0;
 let lassoStartY = 0;
 let lassoBox = null;
@@ -6522,6 +6743,7 @@ document.addEventListener('mousedown', (e) => {
     // Start Lasso Box if clicking empty space in the calendar grid
     if (grid && grid.contains(e.target)) {
         isLassoing = true;
+        hasLassoMoved = false; // Reset the movement flag on new click
         lassoStartX = e.clientX;
         lassoStartY = e.clientY;
         
@@ -6540,6 +6762,12 @@ document.addEventListener('mousemove', (e) => {
     const currentY = e.clientY;
     const width = Math.abs(currentX - lassoStartX);
     const height = Math.abs(currentY - lassoStartY);
+    
+    // If the mouse moves more than 5px, we consider it a drag, not a misclick
+    if (width > 5 || height > 5) {
+        hasLassoMoved = true;
+    }
+
     const left = Math.min(currentX, lassoStartX);
     const top = Math.min(currentY, lassoStartY);
 
@@ -6575,7 +6803,19 @@ document.addEventListener('mousemove', (e) => {
 
 // Handle Mouse Up (End Lasso)
 document.addEventListener('mouseup', () => {
+    // If we were lassoing and actually dragged the mouse, trigger the block flag
+    if (isLassoing && hasLassoMoved) {
+        window.justFinishedLasso = true;
+        // The unwanted click event fires immediately after mouseup. 
+        // We clear this flag 100ms later so normal clicking works again.
+        setTimeout(() => {
+            window.justFinishedLasso = false;
+        }, 100);
+    }
+
     isLassoing = false;
+    hasLassoMoved = false;
+
     if (lassoBox) {
         lassoBox.remove();
         lassoBox = null;
@@ -7060,7 +7300,7 @@ function injectGlobalFooters() {
                     <span class="text-sm font-black text-zinc-800 dark:text-zinc-200 tracking-tight">ChaosPrep</span>
                 </div>
                 <div class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 tracking-widest uppercase">
-                    © 2026 sval.tech
+                    © 2026 sval.tech <br> Built by aspirants, for aspirants.
                 </div>
             </div>
 
@@ -7098,7 +7338,7 @@ function injectGlobalFooters() {
                 <span class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Partnered With</span>
                 <a href="https://alphajee.online" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2.5 group/brand bg-zinc-50 dark:bg-zinc-800/50 px-3 py-1.5 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 hover:bg-white dark:hover:bg-zinc-800 hover:border-blue-200 dark:hover:border-blue-900/50 transition-all duration-300 hover:scale-105 shadow-sm">
                     <div class="w-6 h-6 flex items-center justify-center bg-white rounded-md shadow-sm p-1">
-                        <img src="https://jtestify.alphajee.online/alphajee.png" alt="AlphaJEE" class="w-full h-full object-contain filter grayscale opacity-70 group-hover/brand:grayscale-0 group-hover/brand:opacity-100 transition-all duration-300">
+                        <img src="alphajee.png" alt="AlphaJEE" class="w-full h-full object-contain filter grayscale opacity-70 group-hover/brand:grayscale-0 group-hover/brand:opacity-100 transition-all duration-300">
                     </div>
                     <span class="text-xs font-black text-zinc-600 dark:text-zinc-300 group-hover/brand:text-blue-500 transition-colors tracking-tight">AlphaJEE</span>
                 </a>
