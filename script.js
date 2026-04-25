@@ -5619,39 +5619,34 @@ window.sendNudge = async function(friendUid, friendName) {
     }
 }
 
+let activeNudgesUnsub = null;
+
 window.listenForNudges = function(user) {
+    // If a listener is already running, stop it before starting a new one
+    if (activeNudgesUnsub) {
+        activeNudgesUnsub();
+    }
+
     const nudgesRef = collection(db, 'artifacts', appId, 'socialProfiles', user.uid, 'nudges');
-    onSnapshot(nudgesRef, (snap) => {
+    
+    activeNudgesUnsub = onSnapshot(nudgesRef, (snap) => {
         snap.docChanges().forEach((change) => {
             if (change.type === 'added') {
                 const data = change.doc.data();
-                const docId = change.doc.id;
                 
                 const msg = `${data.from} says it's time to focus! 🚀`;
                 
-                // 1. In-App Toast & Audio (Always fires)
+                // 1. In-App Visual & Audio Notification ONLY
                 showToast(msg);
                 if (typeof playAudioFeedback === 'function') playAudioFeedback('start');
                 
-                // 2. OS Level Device Notification (Fires if permission is granted)
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    // This triggers the native Windows/Mac/Android/iOS push notification
-                    const notification = new Notification('Wake Up!', { 
-                        body: msg,
-                        icon: '/logo.png', // Ensure this points to a valid image path
-                        badge: '/logo.png',
-                        vibrate: [200, 100, 200]
-                    });
+                // Note: We completely removed the manual OS Notification block here.
+                // The Firebase Cloud Function + Service Worker will automatically handle 
+                // delivering the OS-level push notification if the app is in the background.
 
-                    // Clicking the notification focuses the web app
-                    notification.onclick = function() {
-                        window.focus();
-                        this.close();
-                    };
-                }
-
-                // 3. Immediately delete the nudge from database so it doesn't loop
-                deleteDoc(doc(db, 'artifacts', appId, 'socialProfiles', user.uid, 'nudges', docId)).catch(e => console.warn(e));
+                // Note 2: We also removed the deleteDoc() from here. 
+                // The backend Cloud Function will delete the nudge after sending the push,
+                // keeping everything perfectly synchronized.
             }
         });
     });
