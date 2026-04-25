@@ -4345,31 +4345,67 @@ window.exportData = function () {
 
 window.importData = async function (event) {
     if (!currentUser) return;
-    const file = event.target.files[0]; if (!file) return;
+    const file = event.target.files[0]; 
+    if (!file) return;
+    
     const reader = new FileReader();
     reader.onload = async (e) => {
         try {
             const data = JSON.parse(e.target.result);
-            const isSure = await customConfirm("Importing this backup will overwrite existing tasks and settings. Do you want to proceed?", "Import Data Warning", true, "Import Data");
-            if (!isSure) { document.getElementById('import-file').value = ''; return; }
+            const isSure = await customConfirm(
+                "Importing this backup will overwrite existing tasks and settings. Do you want to proceed?", 
+                "Import Data Warning", 
+                true, 
+                "Import Data"
+            );
+            
+            const fileInput = document.getElementById('import-file');
+            if (!isSure) { 
+                if (fileInput) fileInput.value = ''; 
+                return; 
+            }
+            
+            // 🚨 FIX: Show a toast instead of crashing on a missing button
+            showToast("Importing data, please wait...");
+            
             const btn = document.getElementById('save-settings-btn');
-            btn.innerText = "Importing...";
+            if (btn) btn.innerText = "Importing..."; // Safely check if button exists
 
-            const batch = writeBatch(db); const uid = currentUser.uid;
+            const batch = writeBatch(db); 
+            const uid = currentUser.uid;
+            
             if (data.settings) batch.set(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'config'), data.settings);
             if (data.syllabusData) batch.set(doc(db, 'artifacts', appId, 'users', uid, 'syllabus', 'progress'), data.syllabusData);
 
-            const collectionsMap = { 'tasks': 'tasks', 'targets': 'weeklyTargets', 'studyLogs': 'studyLogs', 'errorLogs': 'errorLogs', 'questionLogs': 'questionLogs' };
+            const collectionsMap = { 
+                'tasks': 'tasks', 
+                'targets': 'weeklyTargets', 
+                'studyLogs': 'studyLogs', 
+                'errorLogs': 'errorLogs', 
+                'questionLogs': 'questionLogs' 
+            };
+            
             const promises = [];
             Object.keys(collectionsMap).forEach(key => {
                 if (data[key] && Array.isArray(data[key])) {
-                    data[key].forEach(item => { if (item.id) promises.push(setDoc(doc(db, 'artifacts', appId, 'users', uid, collectionsMap[key], item.id), item)); });
+                    data[key].forEach(item => { 
+                        if (item.id) promises.push(setDoc(doc(db, 'artifacts', appId, 'users', uid, collectionsMap[key], item.id), item)); 
+                    });
                 }
             });
-            await Promise.all(promises); await batch.commit();
-            showToast("Import successful!"); setTimeout(() => window.location.reload(), 1000);
-        } catch (err) { console.error(err); showToast("Failed to import data."); }
-    }; reader.readAsText(file);
+            
+            await Promise.all(promises); 
+            await batch.commit();
+            
+            showToast("Import successful!"); 
+            setTimeout(() => window.location.reload(), 1500);
+            
+        } catch (err) { 
+            console.error("Import failed:", err); 
+            showToast("Failed to import data. Invalid file format."); 
+        }
+    }; 
+    reader.readAsText(file);
 }
 
 // --- Error Tracking ---
