@@ -2606,7 +2606,7 @@ window.toggleShareTasksSetting = function () {
 }
 
 window.toggleNudgesSetting = async function () {
-    if (state.settings.allowNudges === undefined) state.settings.allowNudges = true;
+    if (state.settings.allowNudges === undefined) state.settings.allowNudges = false;
     state.settings.allowNudges = !state.settings.allowNudges;
     
     const knob = document.getElementById('nudges-knob'); 
@@ -2710,7 +2710,7 @@ window.initSquadSettingsUI = () => {
     };
     setupToggle(state.settings.shareTasks, 'sharetasks-knob', 'sharetasks-toggle');
     setupToggle(state.settings.showSquadBGs, 'squadbgs-knob', 'squadbgs-toggle');
-    setupToggle(state.settings.allowNudges !== false, 'nudges-knob', 'nudges-toggle', true);
+    setupToggle(state.settings.allowNudges === true, 'nudges-knob', 'nudges-toggle', false);
 };
 
 window.updateTaskScore = async function (id, type, value) {
@@ -5887,9 +5887,9 @@ window.renderSquadView = function () {
             } catch(e) {}
 
             // Generate the Nudge button state
-            if (friend.allowNudges === false) {
-                // Disabled: User turned off nudges
-                nudgeBtnHtml = `<button disabled title="Nudges disabled" class="p-1.5 text-zinc-300 dark:text-zinc-600 cursor-not-allowed"><i data-lucide="bell-off" class="w-3.5 h-3.5"></i></button>`;
+            if (friend.allowNudges !== true) {
+                // Disabled: User has not turned on nudges
+                nudgeBtnHtml = `<button disabled title="User has not enabled nudges" class="p-1.5 text-zinc-300 dark:text-zinc-600 cursor-not-allowed"><i data-lucide="bell-off" class="w-3.5 h-3.5"></i></button>`;
             } else if (isCoolingDown) {
                 // Disabled: Anti-spam cooldown active
                 nudgeBtnHtml = `<button disabled title="On cooldown (1 min)" class="p-1.5 text-amber-400 dark:text-amber-500/70 cursor-not-allowed"><i data-lucide="timer" class="w-3.5 h-3.5"></i></button>`;

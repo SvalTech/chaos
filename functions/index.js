@@ -40,8 +40,8 @@ exports.sendNudgePushNotification = functions.firestore
         const profileData = profileSnap.data();
 
         // SAFETY CHECK: Did the user disable nudges in settings?
-        if (profileData.allowNudges === false) {
-            console.log("Push aborted. User disabled nudges:", receiverId);
+        if (profileData.allowNudges !== true) {
+            console.log("Push aborted. User has not enabled nudges:", receiverId);
             return snap.ref.delete(); // Clean up the ignored nudge
         }
 
