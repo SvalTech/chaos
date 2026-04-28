@@ -323,11 +323,7 @@ window.checkPendingInvitesUI = function () {
         const heroTitle = document.querySelector('#login-screen h1');
         if (heroTitle) {
             heroTitle.innerHTML = `
-                You have been <br class="hidden md:block">
-                <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 via-brand-500 to-fuchsia-500 animate-pulse relative">
-                    invited.
-                    <svg class="absolute w-full h-3 -bottom-1 left-0 text-brand-500 opacity-60" viewBox="0 0 100 10" preserveAspectRatio="none"><path d="M0 5 Q 50 10 100 5" stroke="currentColor" stroke-width="4" fill="transparent"/></svg>
-                </span>
+                You have been invited.
             `;
         }
 
@@ -345,7 +341,7 @@ window.checkPendingInvitesUI = function () {
             mainCtaBtn.className = 'opacity-0 animate-reveal delay-200 relative overflow-hidden rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-black text-sm py-4 px-8 flex items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-[0_0_40px_-10px_rgba(139,92,246,0.6)] border border-brand-400/50';
             mainCtaBtn.innerHTML = `
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5 bg-white rounded-full p-0.5 shadow-sm shrink-0" alt="Google">
-                <span class="uppercase tracking-widest">Sign In to Join Squad</span>
+                <span class="uppercase tracking-widest">Join</span>
             `;
         }
 
@@ -636,7 +632,7 @@ window.processPendingInvite = async function () {
             }
 
             // 5. 🌟 Upgraded cinematic confirmation
-            showToast(`Joined ${inviterName}'s Squad. No excuses now.`);
+            showToast(`Added ${inviterName} to your squad.`);
 
         } catch (error) {
             console.error("Error processing invite:", error);
@@ -7802,6 +7798,172 @@ window.closeSupportModal = () => {
     modal.classList.add('opacity-0');
     modal.querySelector('div').classList.replace('scale-100', 'scale-95');
     setTimeout(() => modal.classList.add('hidden'), 300);
+};
+
+
+window.openLightbox = function(src) {
+    const modal = document.getElementById('lightbox-modal');
+    const img = document.getElementById('lightbox-img');
+    
+    if (modal && img) {
+        img.src = src;
+        modal.classList.remove('hidden');
+        
+        // Slight delay to allow CSS transition to trigger after removing 'hidden'
+        requestAnimationFrame(() => {
+            modal.classList.remove('opacity-0');
+            img.classList.remove('scale-95');
+            img.classList.add('scale-100');
+        });
+    }
+};
+
+window.closeLightbox = function() {
+    const modal = document.getElementById('lightbox-modal');
+    const img = document.getElementById('lightbox-img');
+    
+    if (modal && img) {
+        modal.classList.add('opacity-0');
+        img.classList.remove('scale-100');
+        img.classList.add('scale-95');
+        
+        // Wait for transition to finish before hiding display
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            img.src = ''; // Clear source so it doesn't flash old image next time
+        }, 300);
+    }
+};
+
+// ==========================================
+// SHARE SUMMARY MODAL (SCREENSHOT UI)
+// ==========================================
+window.openShareModal = function() {
+    const modal = document.getElementById('share-summary-modal');
+    if (!modal) return;
+
+    // 1. Gather Data (Time & Sessions)
+    const todayStr = getLogicalTodayStr();
+    const todayLogs = state.studyLogs.filter(l => l.date === todayStr);
+
+    let totalMins = todayLogs.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
+    const subTotals = {};
+    
+    // Add completed logs to subjects
+    todayLogs.forEach(l => {
+        subTotals[l.subject] = (subTotals[l.subject] || 0) + (l.durationMinutes || 0);
+    });
+
+    // Add actively running timer data
+    if (typeof isTimerRunning !== 'undefined' && isTimerRunning && typeof timerSeconds !== 'undefined') {
+        const liveMins = Math.floor(timerSeconds / 60);
+        totalMins += liveMins;
+        subTotals[timerSubject] = (subTotals[timerSubject] || 0) + liveMins;
+    }
+
+    const sessionCount = todayLogs.length + (isTimerRunning ? 1 : 0);
+
+    // 2. Gather Data (Tasks)
+    const todayTasks = state.tasks.filter(t => t.date === todayStr);
+    const totalTasks = todayTasks.length;
+    const completedTasks = todayTasks.filter(t => t.completed).length;
+
+    // 3. Format Total Time (FIXED SPACING)
+    const hrs = Math.floor(totalMins / 60);
+    const mins = totalMins % 60;
+    
+    let timeString = '';
+    if (hrs > 0) {
+        timeString = `${hrs.toString().padStart(2, '0')}<span class="text-3xl md:text-4xl text-zinc-400 font-bold ml-1 mr-4 tracking-normal">h</span>${mins.toString().padStart(2, '0')}<span class="text-3xl md:text-4xl text-zinc-400 font-bold ml-1 tracking-normal">m</span>`;
+    } else {
+        timeString = `${mins.toString().padStart(2, '0')}<span class="text-3xl md:text-4xl text-zinc-400 font-bold ml-1 tracking-normal">m</span>`;
+    }
+
+    // 4. Inject Text & Stats into DOM
+    document.getElementById('share-total-time').innerHTML = timeString;
+    
+    // Inject Sessions
+    document.getElementById('share-session-count').innerText = `${sessionCount} Session${sessionCount !== 1 ? 's' : ''}`;
+    
+    // Inject Tasks
+    const taskEl = document.getElementById('share-task-count');
+    if (totalTasks === 0) {
+        taskEl.innerText = `No Tasks Set`;
+    } else if (completedTasks === totalTasks) {
+        taskEl.innerText = `All ${totalTasks} Done!`;
+        taskEl.classList.replace('text-zinc-600', 'text-emerald-600');
+        taskEl.classList.replace('dark:text-zinc-300', 'dark:text-emerald-400');
+    } else {
+        taskEl.innerText = `${completedTasks}/${totalTasks} Tasks`;
+        // Reset colors if they were changed to green previously
+        taskEl.classList.remove('text-emerald-600', 'dark:text-emerald-400');
+        taskEl.classList.add('text-zinc-600', 'dark:text-zinc-300');
+    }
+    
+    const todayObj = new Date();
+    document.getElementById('share-date').innerText = todayObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+    const inviteCode = (typeof myFriendCode !== 'undefined' && myFriendCode) ? myFriendCode : (state.myProfile?.code || 'PRIVATE');
+    document.getElementById('share-invite-code').innerText = inviteCode;
+
+    // 5. Build Subject Breakdown Bars
+    const subContainer = document.getElementById('share-subject-breakdown');
+    subContainer.innerHTML = '';
+    
+    const sortedSubjects = Object.entries(subTotals).sort((a, b) => b[1] - a[1]);
+    
+    if (sortedSubjects.length === 0) {
+        subContainer.innerHTML = `<div class="text-center text-xs font-bold text-zinc-500 py-4 italic">No sessions logged yet today.</div>`;
+    } else {
+        sortedSubjects.forEach(([sub, smins]) => {
+            const h = Math.floor(smins / 60);
+            const m = smins % 60;
+            const tStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
+            
+            const colorObj = getSubjectColor(sub);
+            const colorHex = colorObj ? colorObj.hex : '#7c3aed';
+            const percent = totalMins > 0 ? (smins / totalMins) * 100 : 0;
+
+            subContainer.innerHTML += `
+                <div class="mb-3">
+                    <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest mb-1.5">
+                        <span class="text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full" style="background-color: ${colorHex}"></span>${sub}
+                        </span>
+                        <span class="text-zinc-900 dark:text-white">${tStr}</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-zinc-100 dark:bg-zinc-800/80 rounded-full overflow-hidden shadow-inner-dark">
+                        <div class="h-full rounded-full transition-all duration-1000 ease-out" style="width: 0%; background-color: ${colorHex}" data-target-width="${percent}%"></div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    // 6. Reveal Animations
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        modal.querySelector('#share-capture-area').classList.replace('scale-95', 'scale-100');
+        
+        subContainer.querySelectorAll('[data-target-width]').forEach(bar => {
+            bar.style.width = bar.getAttribute('data-target-width');
+        });
+    }, 10);
+    
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+};
+
+window.closeShareModal = function() {
+    const modal = document.getElementById('share-summary-modal');
+    if (!modal) return;
+    
+    modal.classList.add('opacity-0');
+    modal.querySelector('#share-capture-area').classList.replace('scale-100', 'scale-95');
+    
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
 };
 
 listenForSystemUpdates();
