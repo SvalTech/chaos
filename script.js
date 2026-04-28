@@ -386,6 +386,9 @@ async function initAuth() {
         document.getElementById('loading-overlay').classList.add('opacity-0', 'pointer-events-none');
         if (user) {
             currentUser = user; updateProfileUI(user); setupListeners(user);
+            
+            // Set signed-in title
+            document.title = "ChaosPrep - sval.tech";
 
             // KILL SWITCH LOGIC
             if (ENABLE_SQUAD_FEATURE) {
@@ -405,6 +408,8 @@ async function initAuth() {
 
             toggleAppVisibility(true); document.getElementById('login-screen').classList.add('hidden');
         } else {
+            // Revert title on sign out
+            document.title = "ChaosPrep | Ultimate Tracker for JEE, NEET & Competitive Exams";
             toggleAppVisibility(false); document.getElementById('login-screen').classList.remove('hidden');
         }
     });
@@ -1413,6 +1418,16 @@ function updateTimerDisplay() {
         } else {
             if (typeof drawPiPCanvas === 'function') drawPiPCanvas();
         }
+    }
+
+    // --- DYNAMIC BROWSER TAB TITLE ---
+    if (isTimerRunning) {
+        document.title = `▶ ${h}:${m}:${s} - ${timerSubject} | ChaosPrep`;
+    } else if (timerAccumulatedMs > 0) {
+        document.title = `⏸ ${h}:${m}:${s} - Paused | ChaosPrep`;
+    } else {
+        // Fallback to the signed-in default
+        document.title = "ChaosPrep - sval.tech";
     }
 }
 
