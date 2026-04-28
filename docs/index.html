@@ -85,8 +85,8 @@
     <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-  <script type="module" crossorigin src="./assets/main-Dr6VEJDl.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/main-Bos-x8rQ.css">
+  <script type="module" crossorigin src="./assets/main-qrdipA67.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/main-nrCmcXDN.css">
 <script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
 
 <body
@@ -2812,22 +2812,26 @@
         </div>
     </div>
 
-    <div id="share-summary-modal"
-        class="fixed inset-0 z-[300] flex items-center justify-center modal-backdrop hidden opacity-0 transition-opacity duration-300 px-4">
+    <!-- Aesthetic Expanded Share Summary Modal -->
+<div id="share-summary-modal"
+    class="fixed inset-0 z-[300] flex items-center justify-center modal-backdrop hidden opacity-0 transition-opacity duration-300 px-4 py-8">
+    
+    <!-- Outer container handles the click-away to close -->
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeShareModal()"></div>
+
+    <!-- The actual expanded card meant for screenshotting -->
+    <div id="share-capture-area"
+        class="bg-white dark:bg-[#09090b] rounded-[2.5rem] shadow-[0_0_60px_rgba(0,0,0,0.6)] w-full max-w-[850px] transform scale-95 transition-transform duration-300 border border-zinc-200 dark:border-zinc-800 relative flex flex-col md:flex-row z-10 max-h-full overflow-hidden">
         
-        <!-- Outer container handles the click-away to close -->
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeShareModal()"></div>
+        <!-- Ambient Background Glows -->
+        <div class="absolute -top-20 -left-20 w-64 h-64 bg-brand-500/10 dark:bg-brand-500/20 rounded-full blur-3xl pointer-events-none z-0"></div>
+        <div class="absolute -bottom-20 -right-20 w-64 h-64 bg-fuchsia-500/10 dark:bg-fuchsia-500/20 rounded-full blur-3xl pointer-events-none z-0"></div>
 
-        <!-- The actual card meant for screenshotting -->
-        <div id="share-capture-area"
-            class="bg-white dark:bg-[#09090b] rounded-[2.5rem] shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-sm transform scale-95 transition-transform duration-300 border border-zinc-200 dark:border-zinc-800 relative overflow-hidden flex flex-col p-8 z-10">
+        <!-- LEFT COLUMN: Stats & Time -->
+        <div class="flex-1 flex flex-col p-6 md:p-8 border-b md:border-b-0 md:border-r border-zinc-100 dark:border-zinc-800/80 relative z-10 overflow-y-auto custom-scrollbar">
             
-            <!-- Ambient Background Glows -->
-            <div class="absolute -top-20 -left-20 w-48 h-48 bg-brand-500/10 dark:bg-brand-500/20 rounded-full blur-3xl pointer-events-none"></div>
-            <div class="absolute -bottom-20 -right-20 w-48 h-48 bg-fuchsia-500/10 dark:bg-fuchsia-500/20 rounded-full blur-3xl pointer-events-none"></div>
-
             <!-- Header: Branding & Date -->
-            <div class="flex justify-between items-center mb-8 relative z-10">
+            <div class="flex justify-between items-center mb-8 shrink-0">
                 <div class="flex items-center gap-2">
                     <img src="logo.png" class="w-6 h-6 rounded-[5px] grayscale opacity-80 object-contain shadow-sm">
                     <span class="font-black tracking-tight text-zinc-900 dark:text-white text-lg leading-none">ChaosPrep</span>
@@ -2835,41 +2839,41 @@
                 <div id="share-date" class="text-[9px] font-bold text-zinc-500 uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800/80 px-2.5 py-1.5 rounded-lg border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm"></div>
             </div>
 
-            <!-- Main Stats: Time & Sessions -->
-            <div class="text-center mb-8 relative z-10 flex flex-col items-center">
-            <div class="flex items-center gap-1.5 text-[10px] font-bold text-brand-500 uppercase tracking-widest mb-3 bg-brand-50 dark:bg-brand-500/10 px-3 py-1.5 rounded-full border border-brand-100 dark:border-brand-500/20">
-                <i data-lucide="flame" class="w-3 h-3"></i> Today's Focus
-            </div>
-            
-            <h1 id="share-total-time" class="text-[5rem] md:text-7xl font-black text-zinc-900 dark:text-white tracking-tighter leading-none drop-shadow-sm tabular-nums flex items-baseline justify-center">
-                --h --m
-            </h1>
-            
-            <!-- NEW: Sleek Stat Pills for Sessions & Tasks -->
-            <div class="flex items-center justify-center gap-2.5 mt-5">
-                <div class="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800/80 rounded-lg border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm">
-                    <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-500"></i>
-                    <span class="text-[10px] font-bold text-zinc-600 dark:text-zinc-300 uppercase tracking-widest" id="share-session-count">0 Sessions</span>
+            <!-- Main Stats -->
+            <div class="text-center mb-8 flex flex-col items-center shrink-0">
+                <div class="flex items-center gap-1.5 text-[10px] font-bold text-brand-500 uppercase tracking-widest mb-3 bg-brand-50 dark:bg-brand-500/10 px-3 py-1.5 rounded-full border border-brand-100 dark:border-brand-500/20 shadow-sm">
+                    <i data-lucide="flame" class="w-3 h-3"></i> Today's Focus
                 </div>
-                <div class="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800/80 rounded-lg border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm">
-                    <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-500"></i>
-                    <span class="text-[10px] font-bold text-zinc-600 dark:text-zinc-300 uppercase tracking-widest" id="share-task-count">0/0 Tasks</span>
+                
+                <!-- Time strictly formatted -->
+                <h1 id="share-total-time" class="text-6xl md:text-[5.5rem] font-black text-zinc-900 dark:text-white tracking-tighter leading-none drop-shadow-sm tabular-nums flex items-baseline justify-center">
+                    --h --m
+                </h1>
+                
+                <div class="flex items-center justify-center gap-2.5 mt-5 w-full">
+                    <div class="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800/80 rounded-lg border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm">
+                        <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-500"></i>
+                        <span class="text-[10px] font-bold text-zinc-600 dark:text-zinc-300 uppercase tracking-widest" id="share-session-count">0 Sessions</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800/80 rounded-lg border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm">
+                        <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-500"></i>
+                        <span class="text-[10px] font-bold text-zinc-600 dark:text-zinc-300 uppercase tracking-widest" id="share-task-count">0/0 Tasks</span>
+                    </div>
                 </div>
             </div>
-        </div>
 
-            <!-- Subject Breakdown Bars -->
-            <div class="relative z-10 flex-1">
+            <!-- Subject Breakdown -->
+            <div class="flex-1 min-h-[120px] shrink-0">
                 <h3 class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Subject Breakdown</h3>
                 <div id="share-subject-breakdown" class="space-y-4">
-                    <!-- Dynamically injected via JS -->
+                    <!-- Bars injected here -->
                 </div>
             </div>
 
             <!-- Footer: Squad Invite -->
-            <div class="mt-8 pt-6 border-t border-zinc-100 dark:border-zinc-800/50 relative z-10 flex items-center justify-between">
+            <div class="mt-6 pt-5 border-t border-zinc-100 dark:border-zinc-800/50 flex items-center justify-between shrink-0">
                 <div>
-                    <p class="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">For Accountability</p>
+                    <p class="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Accountability Squad</p>
                     <p class="text-sm font-black text-zinc-900 dark:text-white tracking-tight">
                         Add Code: <span id="share-invite-code" class="text-brand-500 tracking-[0.1em] ml-1 bg-brand-50 dark:bg-brand-900/20 px-2 py-1 rounded-md border border-brand-100 dark:border-brand-800/50">------</span>
                     </p>
@@ -2880,11 +2884,24 @@
             </div>
         </div>
 
-        <!-- Dismiss Button for UI clarity (Hidden from the actual screenshot card) -->
-        <button onclick="closeShareModal()" class="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all active:scale-95 backdrop-blur-md">
-            <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
+        <!-- RIGHT COLUMN: Task List -->
+        <div class="flex-1 flex flex-col p-6 md:p-8 bg-zinc-50/50 dark:bg-zinc-900/30 relative z-10 overflow-y-auto custom-scrollbar">
+            <h3 class="text-xs font-black text-zinc-900 dark:text-white uppercase tracking-widest mb-5 flex items-center gap-2 shrink-0">
+                <i data-lucide="list-todo" class="w-4 h-4 text-brand-500"></i> Today's Plan
+            </h3>
+            
+            <div id="share-task-list" class="space-y-3 flex-1 shrink-0 pb-4">
+                <!-- Task Items injected here -->
+            </div>
+        </div>
+
     </div>
+
+    <!-- Dismiss Button -->
+    <button onclick="closeShareModal()" class="absolute top-4 right-4 md:top-6 md:right-6 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all active:scale-95 backdrop-blur-md z-[310]">
+        <i data-lucide="x" class="w-5 h-5"></i>
+    </button>
+</div>
 
 </body>
 

@@ -7849,12 +7849,10 @@ window.openShareModal = function() {
     let totalMins = todayLogs.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
     const subTotals = {};
     
-    // Add completed logs to subjects
     todayLogs.forEach(l => {
         subTotals[l.subject] = (subTotals[l.subject] || 0) + (l.durationMinutes || 0);
     });
 
-    // Add actively running timer data
     if (typeof isTimerRunning !== 'undefined' && isTimerRunning && typeof timerSeconds !== 'undefined') {
         const liveMins = Math.floor(timerSeconds / 60);
         totalMins += liveMins;
@@ -7868,7 +7866,7 @@ window.openShareModal = function() {
     const totalTasks = todayTasks.length;
     const completedTasks = todayTasks.filter(t => t.completed).length;
 
-    // 3. Format Total Time (FIXED SPACING)
+    // 3. Format Total Time 
     const hrs = Math.floor(totalMins / 60);
     const mins = totalMins % 60;
     
@@ -7879,30 +7877,25 @@ window.openShareModal = function() {
         timeString = `${mins.toString().padStart(2, '0')}<span class="text-3xl md:text-4xl text-zinc-400 font-bold ml-1 tracking-normal">m</span>`;
     }
 
-    // 4. Inject Text & Stats into DOM
     document.getElementById('share-total-time').innerHTML = timeString;
-    
-    // Inject Sessions
     document.getElementById('share-session-count').innerText = `${sessionCount} Session${sessionCount !== 1 ? 's' : ''}`;
     
-    // Inject Tasks
-    const taskEl = document.getElementById('share-task-count');
+    // 4. Inject Task Count
+    const taskCountEl = document.getElementById('share-task-count');
     if (totalTasks === 0) {
-        taskEl.innerText = `No Tasks Set`;
+        taskCountEl.innerText = `No Tasks Set`;
     } else if (completedTasks === totalTasks) {
-        taskEl.innerText = `All ${totalTasks} Done!`;
-        taskEl.classList.replace('text-zinc-600', 'text-emerald-600');
-        taskEl.classList.replace('dark:text-zinc-300', 'dark:text-emerald-400');
+        taskCountEl.innerText = `All ${totalTasks} Done!`;
+        taskCountEl.classList.replace('text-zinc-600', 'text-emerald-600');
+        taskCountEl.classList.replace('dark:text-zinc-300', 'dark:text-emerald-400');
     } else {
-        taskEl.innerText = `${completedTasks}/${totalTasks} Tasks`;
-        // Reset colors if they were changed to green previously
-        taskEl.classList.remove('text-emerald-600', 'dark:text-emerald-400');
-        taskEl.classList.add('text-zinc-600', 'dark:text-zinc-300');
+        taskCountEl.innerText = `${completedTasks}/${totalTasks} Tasks`;
+        taskCountEl.classList.remove('text-emerald-600', 'dark:text-emerald-400');
+        taskCountEl.classList.add('text-zinc-600', 'dark:text-zinc-300');
     }
     
     const todayObj = new Date();
     document.getElementById('share-date').innerText = todayObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-
     const inviteCode = (typeof myFriendCode !== 'undefined' && myFriendCode) ? myFriendCode : (state.myProfile?.code || 'PRIVATE');
     document.getElementById('share-invite-code').innerText = inviteCode;
 
@@ -7940,7 +7933,65 @@ window.openShareModal = function() {
         });
     }
 
-    // 6. Reveal Animations
+    // 6. Generate the Right Column Task List
+    const taskListContainer = document.getElementById('share-task-list');
+    taskListContainer.innerHTML = '';
+
+    if (todayTasks.length === 0) {
+        taskListContainer.innerHTML = `<div class="text-center text-xs font-bold text-zinc-500 py-10 italic border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl">No tasks planned for today.</div>`;
+    } else {
+        // Sort: uncompleted first, completed at the bottom
+        const sortedTasks = [...todayTasks].sort((a,b) => (a.completed === b.completed ? 0 : a.completed ? 1 : -1));
+
+        sortedTasks.forEach(t => {
+            const colorObj = getSubjectColor(t.subject);
+            const colorHex = colorObj ? colorObj.hex : '#7c3aed';
+            
+            const taskIcon = t.completed 
+                ? `<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0"></i>` 
+                : `<i data-lucide="circle" class="w-4 h-4 text-zinc-300 dark:text-zinc-600 mt-0.5 shrink-0"></i>`;
+                
+            const textStyle = t.completed ? 'text-zinc-400 dark:text-zinc-600 line-through' : 'text-zinc-800 dark:text-zinc-200';
+            
+            let subHtml = '';
+            if (t.subtasks && t.subtasks.length > 0) {
+                subHtml = `<div class="mt-2 pl-6 space-y-1.5 w-full">`;
+                t.subtasks.forEach(st => {
+                    const stIcon = st.completed 
+                        ? `<i data-lucide="check" class="w-3 h-3 text-emerald-500 shrink-0"></i>` 
+                        : `<i data-lucide="minus" class="w-3 h-3 text-zinc-300 dark:text-zinc-600 shrink-0"></i>`;
+                    const stTextStyle = st.completed ? 'text-zinc-400 dark:text-zinc-500 line-through' : 'text-zinc-600 dark:text-zinc-400';
+                    
+                    subHtml += `
+                        <div class="flex items-start gap-1.5">
+                            ${stIcon}
+                            <span class="text-[10px] font-bold ${stTextStyle} leading-snug tracking-tight">${escapeHtml(st.text)}</span>
+                        </div>
+                    `;
+                });
+                subHtml += `</div>`;
+            }
+
+            taskListContainer.innerHTML += `
+                <div class="p-3 bg-white dark:bg-[#18181b] border border-zinc-200/80 dark:border-zinc-800 rounded-xl shadow-sm">
+                    <div class="flex items-start gap-2.5">
+                        ${taskIcon}
+                        <div class="flex-1 min-w-0">
+                            <div class="text-[11px] font-black ${textStyle} tracking-tight leading-snug mb-1.5">
+                                ${escapeHtml(t.text)}
+                            </div>
+                            <span class="inline-block text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm border border-zinc-200/50 dark:border-zinc-700/50" style="color: ${colorHex}; background-color: ${colorHex}15;">
+                                ${t.subject}
+                            </span>
+                        </div>
+                    </div>
+                    ${subHtml}
+                </div>
+            `;
+        });
+    }
+
+    // 7. Reveal Animations
     modal.classList.remove('hidden');
     setTimeout(() => {
         modal.classList.remove('opacity-0');
@@ -7952,6 +8003,18 @@ window.openShareModal = function() {
     }, 10);
     
     if (typeof lucide !== 'undefined') lucide.createIcons();
+};
+
+window.closeShareModal = function() {
+    const modal = document.getElementById('share-summary-modal');
+    if (!modal) return;
+    
+    modal.classList.add('opacity-0');
+    modal.querySelector('#share-capture-area').classList.replace('scale-100', 'scale-95');
+    
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
 };
 
 window.closeShareModal = function() {
