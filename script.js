@@ -438,8 +438,8 @@ function toggleAppVisibility(show) {
 }
 
 function updateProfileUI(user) {
-    document.getElementById('user-email-desktop').innerText = user.email; document.getElementById('user-name-desktop').innerText = user.displayName || "Aspirant";
-    if (user.photoURL) document.getElementById('user-avatar-desktop').innerHTML = `<img src="${user.photoURL}" class="w-full h-full rounded-full object-cover">`;
+    // document.getElementById('user-email-desktop').innerText = user.email; document.getElementById('user-name-desktop').innerText = user.displayName || "Aspirant";
+    // if (user.photoURL) document.getElementById('user-avatar-desktop').innerHTML = `<img src="${user.photoURL}" class="w-full h-full rounded-full object-cover">`;
 }
 
 window.signInWithGoogle = async () => { const provider = new GoogleAuthProvider(); await signInWithPopup(auth, provider).catch(console.error); };
@@ -956,12 +956,10 @@ window.setTimerMode = async function (mode) {
 
     let customDurationSecs = 0;
 
-    // Ask for duration if they selected Custom mode
     if (mode === 'custom') {
         const input = await customPrompt("Enter timer duration in minutes:", "60", "Set Custom Timer", "e.g., 45");
         const parsedMins = parseInt(input);
 
-        // Fallback to flow if they cancel or enter invalid text
         if (!parsedMins || isNaN(parsedMins) || parsedMins <= 0) {
             showToast("Invalid duration. Switching to Flow mode.");
             mode = 'flow';
@@ -977,9 +975,7 @@ window.setTimerMode = async function (mode) {
 
     const svgRing = document.getElementById('timer-progress-ring');
     const flowPath = document.getElementById('timer-active-path');
-    const label = document.getElementById('timer-mode-label');
 
-    // Update button styling to reflect active mode
     ['flow', 'custom'].forEach(m => {
         const btn = document.getElementById(`btn-mode-${m}`);
         if (btn) {
@@ -998,26 +994,25 @@ window.setTimerMode = async function (mode) {
             flowPath.classList.remove('hidden');
             flowPath.style.animationPlayState = 'paused';
         }
-        if (label) label.innerText = "Flow State";
-
     } else if (mode === 'custom') {
         targetDurationSecs = customDurationSecs;
         if (svgRing) {
             svgRing.classList.remove('hidden');
             const perimeter = svgRing.getTotalLength ? svgRing.getTotalLength() : 880;
             svgRing.style.strokeDasharray = `${perimeter} ${perimeter}`;
-            svgRing.style.strokeDashoffset = perimeter; // Initialize empty
+            svgRing.style.strokeDashoffset = perimeter;
         }
         if (flowPath) {
             flowPath.classList.add('hidden');
             flowPath.style.animationPlayState = 'paused';
         }
-        if (label) label.innerText = `Custom: ${customDurationSecs / 60}m Target`;
     }
 
+    window.updateTimerModeLabel();
     updateTimerDisplay();
     if (typeof window.saveTimerState === 'function') window.saveTimerState();
 }
+
 
 // --- AUDIO FEEDBACK SYSTEM ---
 let audioCtx = null;
@@ -1293,6 +1288,47 @@ async function processSessionLog() {
     syncMySocialStatus(false, "");
 }
 
+window.onTimerTaskSelected = function(e) {
+    linkedTaskId = e.target.value;
+    
+    if (linkedTaskId) {
+        const selectedTask = state.tasks.find(t => t.id === linkedTaskId);
+        if (selectedTask && selectedTask.subject) {
+            setTimerSubject(selectedTask.subject);
+        }
+    }
+    
+    // Visually update the label without changing the actual timer mechanics
+    window.updateTimerModeLabel();
+
+    // Force an instant sync to the squad if the timer is currently running
+    if (typeof isTimerRunning !== 'undefined' && isTimerRunning) {
+        syncMySocialStatus(true, timerSubject);
+    }
+    if (typeof window.saveTimerState === 'function') window.saveTimerState();
+};
+
+window.updateTimerModeLabel = function() {
+    const label = document.getElementById('timer-mode-label');
+    if (!label) return;
+    
+    let baseLabel = timerMode === 'flow' ? 'Flow State' : `${Math.floor(targetDurationSecs / 60)}m Target`;
+    
+    if (linkedTaskId) {
+        const selectedTask = state.tasks.find(t => t.id === linkedTaskId);
+        if (selectedTask && selectedTask.intendedDuration) {
+            const h = Math.floor(selectedTask.intendedDuration / 60);
+            const m = selectedTask.intendedDuration % 60;
+            const displayStr = h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
+            
+            label.innerHTML = `${baseLabel} <span class="opacity-40 mx-1.5">|</span> <i data-lucide="target" class="w-3 h-3 inline mb-[2px] opacity-70"></i> ${displayStr}`;
+            if (window.lucide) window.lucide.createIcons();
+            return;
+        }
+    }
+    
+    label.innerText = baseLabel;
+};
 
 function updateTimerDisplay() {
     let totalMs = timerAccumulatedMs;
@@ -1488,9 +1524,8 @@ window.updateTimerStats = function () {
     const el = document.getElementById('today-total');
     if (el) el.innerText = formatMinsToText(totalMinsToday);
 
-    // --- NEW: ADVANCED METRICS ENGINE ---
+    // --- ADVANCED METRICS ENGINE ---
     
-    // Calculate Active Run Time across all loops
     let activeTimeOverall = 0;
     if (typeof isTimerRunning !== 'undefined' && isTimerRunning) {
         activeTimeOverall = Math.floor(timerSeconds / 60);
@@ -1513,19 +1548,26 @@ window.updateTimerStats = function () {
     const avgEl = document.getElementById('stat-avg-7d');
     if (avgEl) avgEl.innerText = formatMinsToText(avg7);
 
-    // 3. All-Time Record Day
+    // 3. Record Day (Last 7 Days)
+    const dailyTotals7d = {};
+    last7Logs.forEach(l => {
+        dailyTotals7d[l.date] = (dailyTotals7d[l.date] || 0) + (l.durationMinutes || 0);
+    });
+    dailyTotals7d[todayStr] = (dailyTotals7d[todayStr] || 0) + activeTimeOverall;
+
+    let bestDayMins = 0;
+    for (const date in dailyTotals7d) {
+        if (dailyTotals7d[date] > bestDayMins) bestDayMins = dailyTotals7d[date];
+    }
+    const bestDayEl = document.getElementById('stat-best-day');
+    if (bestDayEl) bestDayEl.innerText = formatMinsToText(bestDayMins);
+
+    // Create All-Time Daily Totals strictly for the Streak Logic
     const dailyTotals = {};
     state.studyLogs.forEach(l => {
         dailyTotals[l.date] = (dailyTotals[l.date] || 0) + (l.durationMinutes || 0);
     });
     dailyTotals[todayStr] = (dailyTotals[todayStr] || 0) + activeTimeOverall;
-
-    let bestDayMins = 0;
-    for (const date in dailyTotals) {
-        if (dailyTotals[date] > bestDayMins) bestDayMins = dailyTotals[date];
-    }
-    const bestDayEl = document.getElementById('stat-best-day');
-    if (bestDayEl) bestDayEl.innerText = formatMinsToText(bestDayMins);
 
     // 4. Deep Insights: Peak Focus Time
     const todCounts = { 'Morning (5a-12p)': 0, 'Afternoon (12p-5p)': 0, 'Evening (5p-9p)': 0, 'Night (9p-5a)': 0 };
@@ -1587,7 +1629,6 @@ window.updateTimerStats = function () {
     const streakEl = document.getElementById('streak-count');
     if (streakEl) streakEl.innerText = streak;
 
-    // Trigger heatmap/pie updates
     window.renderAdvancedAnalytics();
 }
 
@@ -2838,6 +2879,16 @@ window.renderCalendar = function () {
         const isToday = dateStr === todayStr; const completedCount = tasks.filter(t => t.completed).length; const totalCount = tasks.length;
         const progress = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;
 
+        // NEW: Calculate Total Expected Duration
+        const totalIntendedMins = tasks.reduce((sum, t) => sum + (t.intendedDuration || 0), 0);
+        let durationBadge = '';
+        if (totalIntendedMins > 0) {
+            const h = Math.floor(totalIntendedMins / 60);
+            const m = totalIntendedMins % 60;
+            const timeStr = h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
+            durationBadge = `<div class="text-[10px] font-black text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 px-2 py-1 rounded-md hidden md:flex items-center gap-1 shadow-sm"><i data-lucide="clock" class="w-3 h-3"></i> ${timeStr}</div>`;
+        }
+
         const card = document.createElement('div');
         card.className = `day-card group relative p-4 md:p-5 rounded-3xl md:rounded-[2rem] flex md:flex-col min-h-[70px] md:min-h-[170px] h-auto border transition-all items-center md:items-stretch gap-3 md:gap-0 ${isToday ? 'bg-white dark:bg-[#18181b] border-brand-400 dark:border-brand-600 shadow-glow-sm z-10' : 'bg-white/60 dark:bg-[#18181b]/60 backdrop-blur-md border-zinc-200/50 dark:border-zinc-800/50'}`;
         if (isToday) card.id = 'today-card';
@@ -2853,8 +2904,6 @@ window.renderCalendar = function () {
             tasks.forEach(t => {
                 const styleClass = t.completed ? 'line-through opacity-40 grayscale' : '';
                 const colors = getSubjectColor(t.subject); const colorClass = state.settings.theme === 'dark' ? colors.dark : colors.light;
-                
-                // NEW: Apply selection state classes dynamically
                 const selectClass = window.selectedTaskIds && window.selectedTaskIds.has(t.id) ? 'task-selected' : '';
                 
                 taskListHTML += `<div data-id="${t.id}" draggable="true" ondragstart="handleDragStart(event, '${t.id}')" class="task-item text-xs font-bold flex items-center gap-2 px-2.5 py-2 rounded-xl border transition-all shadow-sm ${colorClass} ${styleClass} ${selectClass}"><i data-lucide="grip-vertical" class="w-3 h-3 opacity-30 shrink-0 pointer-events-none"></i><span class="truncate pointer-events-none flex-1 tracking-tight">${t.text}</span></div>`;
@@ -2866,17 +2915,20 @@ window.renderCalendar = function () {
 
         card.onclick = () => openDayView(dateStr);
         card.innerHTML = `
-                    <div class="flex flex-col md:flex-row md:justify-between items-center md:items-start md:mb-1 pointer-events-none shrink-0 md:w-full">
-                        <div class="text-center md:text-left">
-                            <span class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 block mb-0.5">${dayName}</span>
-                            <div class="text-2xl font-black tracking-tighter ${isToday ? 'text-brand-600 dark:text-brand-400' : 'text-zinc-900 dark:text-white'}">${i}</div>
-                        </div>
-                        ${totalCount > 0 ? `<div class="text-[10px] font-black text-zinc-400 dark:text-zinc-600 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-md hidden md:block">${completedCount}/${totalCount}</div>` : ''}
-                    </div>
-                    ${progBar} ${taskListHTML} ${mobileTaskSummary} ${mobileDot}
-                    <button onclick="event.stopPropagation(); selectDateForAdd('${dateStr}')" class="mt-auto pt-3 text-[10px] text-zinc-400 font-bold text-left pointer-events-auto hidden md:flex items-center gap-1 hover:text-brand-500 transition-colors uppercase tracking-widest"><i data-lucide="plus" class="w-3 h-3"></i> Add Task</button>
-                    <i data-lucide="chevron-right" class="w-5 h-5 text-zinc-300 dark:text-zinc-700 md:hidden ml-auto pointer-events-none"></i>
-                `;
+            <div class="flex flex-col md:flex-row md:justify-between items-center md:items-start md:mb-1 pointer-events-none shrink-0 md:w-full">
+                <div class="text-center md:text-left">
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 block mb-0.5">${dayName}</span>
+                    <div class="text-2xl font-black tracking-tighter ${isToday ? 'text-brand-600 dark:text-brand-400' : 'text-zinc-900 dark:text-white'}">${i}</div>
+                </div>
+                <div class="flex items-center gap-1.5 mt-1 md:mt-0">
+                    ${durationBadge}
+                    ${totalCount > 0 ? `<div class="text-[10px] font-black text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800/80 px-2 py-1 rounded-md hidden md:block border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm">${completedCount}/${totalCount}</div>` : ''}
+                </div>
+            </div>
+            ${progBar} ${taskListHTML} ${mobileTaskSummary} ${mobileDot}
+            <button onclick="event.stopPropagation(); selectDateForAdd('${dateStr}')" class="mt-auto pt-3 text-[10px] text-zinc-400 font-bold text-left pointer-events-auto hidden md:flex items-center gap-1 hover:text-brand-500 transition-colors uppercase tracking-widest"><i data-lucide="plus" class="w-3 h-3"></i> Add Task</button>
+            <i data-lucide="chevron-right" class="w-5 h-5 text-zinc-300 dark:text-zinc-700 md:hidden ml-auto pointer-events-none"></i>
+        `;
         grid.appendChild(card);
     }
     if(window.lucide) lucide.createIcons();
@@ -3854,6 +3906,17 @@ async function handleTaskSubmit(mode) {
     const selectorId = mode === 'mobile' ? 'subject-selector-mobile' : 'subject-selector';
     const subject = document.querySelector(`#${selectorId} input[name="subject"]:checked`)?.value;
 
+    // Capture the newly added split duration inputs
+    const hInput = document.getElementById(`task-duration-h${suffix}`);
+    const mInput = document.getElementById(`task-duration-m${suffix}`);
+    
+    let intendedDuration = 0;
+    if (hInput || mInput) {
+        const h = parseInt(hInput?.value) || 0;
+        const m = parseInt(mInput?.value) || 0;
+        intendedDuration = (h * 60) + m;
+    }
+
     const cleanText = rawText.trim();
 
     if (!date || cleanText.length < 2 || !subject) {
@@ -3867,12 +3930,19 @@ async function handleTaskSubmit(mode) {
     const tasksOnDate = state.tasks.filter(t => t.date === date);
     const maxOrder = tasksOnDate.length > 0 ? Math.max(...tasksOnDate.map(t => t.order || 0)) : -1;
 
-    const newTask = { text: cleanText, date, subject, completed: false, order: maxOrder + 1, createdAt: new Date().toISOString() };
+    const newTask = { 
+        text: cleanText, 
+        date, 
+        subject, 
+        completed: false, 
+        order: maxOrder + 1, 
+        createdAt: new Date().toISOString(),
+        intendedDuration: intendedDuration > 0 ? intendedDuration : null
+    };
 
     if (subject === 'MockTest') {
         const currentMockMode = window[`mockMode${suffix}`] || 'schedule';
 
-        // Get category regardless of mode
         const categorySelect = document.getElementById(`task-mock-category${suffix}`);
         if (categorySelect && categorySelect.value) {
             newTask.category = categorySelect.value;
@@ -3890,12 +3960,10 @@ async function handleTaskSubmit(mode) {
                 return;
             }
 
-            // Save marks & max marks strictly as Integers
             newTask.marks = parseInt(marks);
             newTask.maxMarks = parseInt(document.getElementById(maxMarksId).value) || 300;
             newTask.completed = true;
 
-            // Collect Subject Marks properly
             let subjectMarks = {};
             document.querySelectorAll(`.mock-subject-input${suffix}`).forEach(input => {
                 if (input.value !== '') {
@@ -3904,7 +3972,6 @@ async function handleTaskSubmit(mode) {
             });
             if (Object.keys(subjectMarks).length > 0) newTask.subjectMarks = subjectMarks;
 
-            // Collect Accuracy tracking
             const attemptedVal = document.getElementById(`task-attempted${suffix}`).value;
             const correctVal = document.getElementById(`task-correct${suffix}`).value;
             if (attemptedVal) newTask.attempted = parseInt(attemptedVal);
@@ -3919,6 +3986,11 @@ async function handleTaskSubmit(mode) {
         await setDoc(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks')), newTask);
         showToast("Added!");
         document.getElementById(`task-input${suffix}`).value = '';
+        
+        // Reset the split duration inputs
+        if (hInput) hInput.value = ''; 
+        if (mInput) mInput.value = '';
+        
         if (mode === 'mobile') closeAddTaskModal();
         const addedDate = new Date(date);
         if (addedDate.getMonth() !== state.viewDate.getMonth()) {
@@ -3936,6 +4008,7 @@ async function handleTaskSubmit(mode) {
         setTimeout(() => document.getElementById('task-input').focus(), 50);
     }
 }
+
 window.changeMonth = function (d) {
     state.viewDate.setMonth(state.viewDate.getMonth() + d);
 
@@ -3959,7 +4032,6 @@ window.goToToday = function () {
 }
 
 window.openDayView = function (dateStr) {
-    // PREVENT MODAL IF WE JUST FINISHED DRAGGING A LASSO
     if (window.justFinishedLasso) return;
 
     currentDayViewDate = dateStr; 
@@ -3969,10 +4041,8 @@ window.openDayView = function (dateStr) {
     document.getElementById('day-view-date').innerText = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
 
     const tasks = state.tasks.filter(t => t.date === dateStr).sort((a, b) => {
-        // Default missing orders to 9999 so they fall to the bottom safely
         const orderA = typeof a.order === 'number' ? a.order : 9999;
         const orderB = typeof b.order === 'number' ? b.order : 9999;
-
         if (orderA !== orderB) return orderA - orderB;
         return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
     });
@@ -3989,41 +4059,40 @@ window.openDayView = function (dateStr) {
         const colors = getSubjectColor(t.subject);
         const badgeClass = state.settings.theme === 'dark' ? colors.dark : colors.light;
 
-        // Build Subtasks HTML
+        // NEW: Formatting Individual Duration Pill
+        let durationHtml = '';
+        if (t.intendedDuration) {
+            const h = Math.floor(t.intendedDuration / 60);
+            const m = t.intendedDuration % 60;
+            const timeStr = h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
+            durationHtml = `<span class="text-[9px] font-black px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 flex items-center gap-1 shadow-sm"><i data-lucide="clock" class="w-3 h-3"></i> ${timeStr}</span>`;
+        }
+
         let subtasksHtml = `<div class="mt-2 pl-8 space-y-2">`;
         if (t.subtasks && t.subtasks.length > 0) {
             t.subtasks.forEach(st => {
                 subtasksHtml += `
-<div class="flex items-center justify-between gap-2 text-sm group/sub">
-    <div class="flex items-center gap-2">
-        <input type="checkbox" ${st.completed ? 'checked' : ''} 
-            class="w-4 h-4 accent-brand-500 cursor-pointer" 
-            onclick="toggleSubtask('${t.id}', '${st.id}', ${st.completed})">
-        <span class="${st.completed ? 'line-through text-zinc-400' : 'text-zinc-700 dark:text-zinc-300'}">${st.text}</span>
-    </div>
-    <button onclick="deleteSubtask('${t.id}', '${st.id}')" class="opacity-0 group-hover/sub:opacity-100 p-1 text-zinc-400 hover:text-rose-500 transition-opacity">
-        <i data-lucide="x" class="w-3 h-3"></i>
-    </button>
-</div>`;
+                <div class="flex items-center justify-between gap-2 text-sm group/sub">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" ${st.completed ? 'checked' : ''} class="w-4 h-4 accent-brand-500 cursor-pointer" onclick="toggleSubtask('${t.id}', '${st.id}', ${st.completed})">
+                        <span class="${st.completed ? 'line-through text-zinc-400' : 'text-zinc-700 dark:text-zinc-300'}">${st.text}</span>
+                    </div>
+                    <button onclick="deleteSubtask('${t.id}', '${st.id}')" class="opacity-0 group-hover/sub:opacity-100 p-1 text-zinc-400 hover:text-rose-500 transition-opacity"><i data-lucide="x" class="w-3 h-3"></i></button>
+                </div>`;
             });
         }
-        // Add Subtask Input
         subtasksHtml += `
         <div class="flex items-center gap-2 mt-1">
             <i data-lucide="corner-down-right" class="w-3 h-3 text-zinc-400"></i>
-            <input type="text" id="subtask-input-${t.id}" 
-                class="bg-transparent border-none text-xs outline-none dark:text-white placeholder:text-zinc-400 w-full focus:ring-0" 
-                placeholder="Add subtask..." 
-                onkeydown="if(event.key==='Enter') addSubtask('${t.id}')">
-        </div>
-    </div>`;
+            <input type="text" id="subtask-input-${t.id}" class="bg-transparent border-none text-xs outline-none dark:text-white placeholder:text-zinc-400 w-full focus:ring-0" placeholder="Add subtask..." onkeydown="if(event.key==='Enter') addSubtask('${t.id}')">
+        </div></div>`;
 
-        // Main Task Content
         let contentHTML = `
         <div class="flex-1">
-            <div class="flex items-center gap-2 mb-1">
+            <div class="flex items-center gap-2 mb-1 flex-wrap">
                 <i data-lucide="grip-vertical" class="w-4 h-4 text-zinc-300 hover:text-zinc-500 cursor-grab grip-handle active:cursor-grabbing"></i>
-                <span class="text-[9px] font-black px-2 py-1 rounded-lg ${badgeClass} uppercase tracking-widest">${t.subject}</span>
+                <span class="text-[9px] font-black px-2 py-1 rounded-lg ${badgeClass} uppercase tracking-widest shadow-sm">${t.subject}</span>
+                ${durationHtml}
             </div>
             <div class="text-base font-bold tracking-tight mt-1 ${t.completed ? 'line-through opacity-50' : 'text-zinc-900 dark:text-white'}">${t.text}</div>
         </div>`;
@@ -4034,45 +4103,39 @@ window.openDayView = function (dateStr) {
             ${contentHTML}
             <div class="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
                 <button onclick="openEditTaskModal('${t.id}')" class="text-zinc-400 hover:text-brand-500 p-2 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-            <button onclick="requestDelete('task', '${t.id}')" class="text-zinc-400 hover:text-rose-500 p-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                <button onclick="requestDelete('task', '${t.id}')" class="text-zinc-400 hover:text-rose-500 p-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </div>
         </div>
-        ${subtasksHtml}
-    `;
+        ${subtasksHtml}`;
         list.appendChild(el);
     });
 
-    // Initialize SortableJS at the end of openDayView
     setTimeout(() => {
         Sortable.create(list, {
-            handle: '.grip-handle', // Only drag by the grip icon
+            handle: '.grip-handle',
             animation: 150,
             ghostClass: 'opacity-50',
             onEnd: async function () {
                 const taskElements = [...list.querySelectorAll('.task-row')];
-                window.isReordering = true; // Pause firestore snapshot rendering glitches
-
+                window.isReordering = true;
                 try {
                     await Promise.all(taskElements.map((el, index) => {
                         const id = el.dataset.id;
                         return updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', id), { order: index });
                     }));
                 } catch (error) { console.error(error); }
-                finally {
-                    setTimeout(() => { window.isReordering = false; }, 300);
-                }
+                finally { setTimeout(() => { window.isReordering = false; }, 300); }
             }
         });
     }, 100); 
     
     if(window.lucide) lucide.createIcons();
 
-    // Check if we need to restore focus to a subtask input after the snapshot redraw
     if (window.activeSubtaskFocusId) {
         setTimeout(() => {
             const inputToFocus = document.getElementById(`subtask-input-${window.activeSubtaskFocusId}`);
             if (inputToFocus) inputToFocus.focus();
-            window.activeSubtaskFocusId = null; // Clear it out
+            window.activeSubtaskFocusId = null; 
         }, 50);
     }
 
@@ -4236,7 +4299,6 @@ function renderCountdown() {
     const displayDays = days > 0 ? days : 0;
 
     document.getElementById('days-left-desktop').innerText = displayDays;
-    document.getElementById('target-date-display-desktop').innerText = `Goal: ${targetMidnight.toLocaleDateString('en-GB')}`;
     document.getElementById('days-left-mobile').innerText = `${displayDays} days`;
 }
 
@@ -5293,13 +5355,13 @@ async function initSocialProfile(user) {
     myDisplayName = currentName;
 
     // Update the sidebar UI to reflect their actual stored display name & avatar
-    document.getElementById('user-name-desktop').innerText = currentName;
-    if (currentAvatar) {
-        const desktopAvatarEl = document.getElementById('user-avatar-desktop');
-        if (desktopAvatarEl) {
-            desktopAvatarEl.innerHTML = `<img src="${currentAvatar}" class="w-full h-full rounded-full object-cover">`;
-        }
-    }
+    // document.getElementById('user-name-desktop').innerText = currentName;
+    // if (currentAvatar) {
+    //     const desktopAvatarEl = document.getElementById('user-avatar-desktop');
+    //     if (desktopAvatarEl) {
+    //         desktopAvatarEl.innerHTML = `<img src="${currentAvatar}" class="w-full h-full rounded-full object-cover">`;
+    //     }
+    // }
 
     // Make sure we update their name/avatar in case it changed
     await setDoc(profileRef, {
@@ -7142,18 +7204,14 @@ window.restoreTimerState = function () {
         timerSubject = parsed.timerSubject || 'Physics';
         linkedTaskId = parsed.linkedTaskId || null;
         timerAccumulatedMs = parsed.timerAccumulatedMs || 0;
-        
-        // NEW: Restore the saved target duration (default to 0 if it somehow failed)
         targetDurationSecs = parsed.targetDurationSecs || 0;
 
         isTimerRunning = false;
         timerStartMs = 0;
 
         const svgRing = document.getElementById('timer-progress-ring');
-        const flowPath = document.getElementById('timer-active-path'); // Use the new path!
-        const label = document.getElementById('timer-mode-label');
+        const flowPath = document.getElementById('timer-active-path'); 
 
-        // FIX: Replaced 'exam' with 'custom' in the loop
         ['flow', 'custom'].forEach(m => {
             const btn = document.getElementById(`btn-mode-${m}`);
             if (btn) {
@@ -7164,27 +7222,23 @@ window.restoreTimerState = function () {
         });
 
         if (timerMode === 'flow') {
-            targetDurationSecs = 0; // Force to 0 for safety
+            targetDurationSecs = 0; 
             if (svgRing) svgRing.classList.add('hidden');
             if (flowPath) {
-                flowPath.classList.remove('hidden'); // Show traveling border
-                flowPath.style.animationPlayState = 'paused'; // FIX: Force pause on initial app load
+                flowPath.classList.remove('hidden'); 
+                flowPath.style.animationPlayState = 'paused'; 
             }
-            if (label) label.innerText = "Flow State";
-            
-        } else if (timerMode === 'custom') { // FIX: Changed 'exam' to 'custom'
-            // Keep the restored targetDurationSecs
+        } else if (timerMode === 'custom') { 
             if (svgRing) {
                 svgRing.classList.remove('hidden');
-                // Set the dasharray immediately so it doesn't glitch to full ring
                 const perimeter = svgRing.getTotalLength ? svgRing.getTotalLength() : 880;
                 svgRing.style.strokeDasharray = `${perimeter} ${perimeter}`;
             }
-            if (flowPath) flowPath.classList.add('hidden'); // Hide traveling border
-            if (label) label.innerText = `Custom: ${Math.floor(targetDurationSecs / 60)}m Target`;
+            if (flowPath) flowPath.classList.add('hidden');
         }
 
         setTimerSubject(timerSubject);
+        window.updateTimerModeLabel(); // Safely applies the label logic
 
         if (timerAccumulatedMs > 0) {
             document.getElementById('btn-timer-stop').disabled = false;
@@ -7198,7 +7252,6 @@ window.restoreTimerState = function () {
         console.error("Failed to restore timer state", e);
     }
 
-    // At the end of restoreTimerState
     const miniToggle = document.getElementById('btn-mini-timer-toggle');
     if (miniToggle) {
         miniToggle.innerHTML = isTimerRunning
@@ -7342,7 +7395,7 @@ function injectGlobalFooters() {
                     <span class="text-sm font-black text-zinc-800 dark:text-zinc-200 tracking-tight">ChaosPrep</span>
                 </div>
                 <div class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 tracking-widest uppercase">
-                    © 2026 sval.tech <br> Built by aspirants, for aspirants.
+                    © 2026 sval.tech 
                 </div>
             </div>
 

@@ -243,7 +243,7 @@
                             </div>
                             <div>
                                 <div class="text-[10px] md:text-xs font-bold text-zinc-400 uppercase tracking-widest mb-0.5">Study Streak</div>
-                                <div class="text-xl md:text-2xl font-black text-white leading-none">14 Days</div>
+                                <div class="text-xl md:text-2xl font-black text-white leading-none">67 Days</div>
                             </div>
                         </div>
 
@@ -549,20 +549,20 @@
 
             <!-- Enhanced Countdown Card -->
             <div id="desktop-countdown-card" onclick="openRealityCheck()"
-                class="cursor-pointer bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-[#18181b] border border-zinc-200/80 dark:border-zinc-800 rounded-[2rem] p-6 shadow-soft relative overflow-hidden group mb-8 transition-all duration-300 hover:border-brand-500/50 hover:shadow-glow-sm">
-                <div
-                    class="absolute -right-4 -top-4 w-32 h-32 bg-brand-500/10 rounded-full blur-2xl group-hover:bg-brand-500/20 transition-colors">
-                </div>
-                <div class="relative z-10">
-                    <div class="text-zinc-500 dark:text-zinc-400 text-[10px] font-bold mb-1 uppercase tracking-widest">
-                        Time to Target</div>
-                    <div class="flex items-baseline gap-1.5 mb-2"><span id="days-left-desktop"
-                            class="text-5xl font-black text-zinc-900 dark:text-white tracking-tighter">--</span><span
-                            class="text-sm font-bold text-zinc-400">Days</span></div>
-                    <div id="target-date-display-desktop"
-                        class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 tracking-wide">Goal: --</div>
-                </div>
-            </div>
+    class="group cursor-pointer relative overflow-hidden bg-white/60 dark:bg-[#18181b]/60 backdrop-blur-xl border border-zinc-200/80 dark:border-zinc-800 rounded-[2rem] p-6 mb-8 shadow-sm hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-500">
+    
+    <!-- Ambient Corner Glow -->
+    <div class="absolute -top-12 -right-12 w-40 h-40 bg-brand-500/5 dark:bg-brand-500/10 rounded-full blur-3xl group-hover:bg-brand-500/10 dark:group-hover:bg-brand-500/20 transition-colors duration-500 pointer-events-none"></div>
+
+    <!-- Main Giant Number -->
+    <div class="flex items-end relative z-10">
+        <span id="days-left-desktop" class="text-5xl font-black tracking-tighter text-zinc-900 dark:text-white leading-[0.85] drop-shadow-sm tabular-nums group-hover:scale-105 transition-transform origin-bottom-left duration-500 ease-out">--</span>
+        <div class="flex flex-col ml-3 mb-1">
+            <span class="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest leading-tight">Days</span>
+            <span class="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest leading-tight">Remaining</span>
+        </div>
+    </div>
+</div>
 
             <nav class="flex flex-col gap-1.5 p-1.5 bg-zinc-100/80 dark:bg-zinc-900/80 rounded-2xl mb-6 shadow-inner-light dark:shadow-inner-dark">
                 <div class="flex w-full gap-1.5">
@@ -605,59 +605,60 @@
         <div id="desktop-add-task-container" class="flex-1 overflow-y-auto px-6 pb-6 space-y-6 custom-scrollbar">
             <div class="flex items-center gap-2 mb-2">
                 <div class="w-1 h-4 bg-brand-500 rounded-full"></div>
-                <h2 class="text-sm font-bold text-zinc-900 dark:text-white tracking-tight">Quick Add Task</h2>
+                <h2 class="text-sm font-bold text-zinc-900 dark:text-white tracking-tight">Add Task</h2>
             </div>
-            <form id="add-task-form" class="space-y-5">
-                <input type="date" id="task-date"
-                    class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 outline-none dark:text-white transition-all shadow-inner-light dark:shadow-inner-dark font-medium">
-                <div>
-                    <div class="flex justify-between items-center mb-2.5">
-                        <label
-                            class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Subject</label>
-                        <button type="button" onclick="openCustomSubjectModal()"
-                            class="text-[10px] font-bold text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/30 px-2 py-1 rounded transition-colors">+
-                            Manage</button>
-                    </div>
-                    <div id="subject-selector" class="grid grid-cols-2 gap-2"></div>
-                </div>
-                <div id="mock-fields-container"
-                    class="hidden animate-slide-up space-y-4 p-4 bg-fuchsia-50/50 dark:bg-fuchsia-900/10 rounded-2xl border border-fuchsia-100 dark:border-fuchsia-900/30">
-                    <div class="flex items-center gap-2 mb-2 text-fuchsia-700 dark:text-fuchsia-300">
-                        <i data-lucide="trophy" class="w-4 h-4"></i><span
-                            class="text-xs font-bold uppercase tracking-wide">Score Details</span>
-                    </div>
-                </div>
-                <textarea id="task-input" rows="3" placeholder="What's the objective?"
-                    class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 outline-none dark:text-white resize-none transition-all shadow-inner-light dark:shadow-inner-dark font-medium placeholder:text-zinc-400"></textarea>
-                <button id="btn-add-task" type="submit"
-                    class="w-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold py-3.5 rounded-xl shadow-floating dark:shadow-white/10 transition-all active:scale-95 flex items-center justify-center gap-2 hover:-translate-y-0.5">
-                    <i data-lucide="plus" class="w-4 h-4 text-brand-400 dark:text-brand-600"></i> <span>Add to
-                        Plan</span>
-                </button>
-            </form>
+            <!-- Replace the existing <form id="add-task-form"> in index.html -->
+<form id="add-task-form" class="space-y-4">
+    
+    <!-- DATE ON ITS OWN LINE -->
+    <input type="date" id="task-date"
+        class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 outline-none dark:text-white transition-all shadow-inner-light dark:shadow-inner-dark font-medium h-[46px]">
+    
+    <!-- DURATION ON ITS OWN LINE -->
+    <div class="flex focus-within:ring-2 focus-within:ring-brand-500/30 focus-within:border-brand-500 rounded-xl transition-all shadow-inner-light dark:shadow-inner-dark bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 overflow-hidden group/duration h-[46px]">
+        
+        <!-- <div class="w-12 shrink-0 flex items-center justify-center border-r border-zinc-200/80 dark:border-zinc-800 bg-black/5 dark:bg-white/5 cursor-default">
+            <i data-lucide="clock" class="w-4 h-4 text-zinc-400 group-focus-within/duration:text-brand-500 transition-colors"></i>
+        </div> -->
+        
+        <div class="flex flex-1 items-center justify-center px-4">
+            <input type="number" id="task-duration-h" placeholder="0" min="0" max="23"
+                class="w-12 bg-transparent text-right outline-none text-zinc-900 dark:text-white font-bold placeholder:text-zinc-400 placeholder:font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+            <span class="text-zinc-400 font-black ml-1.5 text-[10px] uppercase tracking-widest mt-0.5 cursor-default">h</span>
+            
+            <div class="w-px h-4 bg-zinc-300 dark:bg-zinc-700 mx-6 shrink-0"></div>
+            
+            <input type="number" id="task-duration-m" placeholder="00" min="0" max="59"
+                class="w-12 bg-transparent text-right outline-none text-zinc-900 dark:text-white font-bold placeholder:text-zinc-400 placeholder:font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+            <span class="text-zinc-400 font-black ml-1.5 text-[10px] uppercase tracking-widest mt-0.5 cursor-default">m</span>
+        </div>
+    </div>
+
+    <div class="pt-1">
+        <div class="flex justify-between items-center mb-2.5">
+            <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Subject</label>
+            <button type="button" onclick="openCustomSubjectModal()"
+                class="text-[10px] font-bold text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/30 px-2 py-1 rounded transition-colors">+ Manage</button>
+        </div>
+        <div id="subject-selector" class="grid grid-cols-2 gap-2"></div>
+    </div>
+    
+    <div id="mock-fields-container" class="hidden animate-slide-up space-y-4 p-4 bg-fuchsia-50/50 dark:bg-fuchsia-900/10 rounded-2xl border border-fuchsia-100 dark:border-fuchsia-900/30">
+        <div class="flex items-center gap-2 mb-2 text-fuchsia-700 dark:text-fuchsia-300">
+            <i data-lucide="trophy" class="w-4 h-4"></i><span class="text-xs font-bold uppercase tracking-wide">Score Details</span>
+        </div>
+    </div>
+    
+    <textarea id="task-input" rows="3" placeholder="What's the objective?"
+        class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 outline-none dark:text-white resize-none transition-all shadow-inner-light dark:shadow-inner-dark font-medium placeholder:text-zinc-400"></textarea>
+    
+    <button id="btn-add-task" type="submit"
+        class="w-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold py-3.5 rounded-xl shadow-floating dark:shadow-white/10 transition-all active:scale-95 flex items-center justify-center gap-2 hover:-translate-y-0.5 mt-2">
+        <i data-lucide="plus" class="w-4 h-4 text-brand-400 dark:text-brand-600"></i> <span>Add to Plan</span>
+    </button>
+</form>
         </div>
 
-        <!-- Replace this section in index.html -->
-        <div
-            class="p-5 border-t border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/80 dark:bg-[#18181b]/80 backdrop-blur-xl">
-            <div class="flex items-center gap-2">
-                <!-- Made clickable -->
-                <div onclick="openProfileModal()"
-                    class="flex flex-1 items-center gap-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 p-1.5 -m-1.5 rounded-xl transition-colors">
-                    <div id="user-avatar-desktop"
-                        class="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/50 flex items-center justify-center text-brand-600 dark:text-brand-400 font-bold text-sm ring-2 ring-white dark:ring-zinc-800 shadow-sm overflow-hidden shrink-0">
-                        U</div>
-                    <div class="flex-1 min-w-0">
-                        <p id="user-name-desktop" class="text-xs font-bold text-zinc-900 dark:text-white truncate">User
-                        </p>
-                        <p id="user-email-desktop" class="text-[10px] text-zinc-500 truncate font-medium">Syncing...</p>
-                    </div>
-                </div>
-                <button onclick="handleSignOut()"
-                    class="p-2.5 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-colors shrink-0"
-                    title="Sign Out"><i data-lucide="log-out" class="w-4 h-4"></i></button>
-            </div>
-        </div>
     </aside>
 
     <main id="main-content-area"
@@ -968,7 +969,7 @@
                                     <i data-lucide="target" class="w-3.5 h-3.5"></i> Link Task
                                 </label>
                                 <div class="relative">
-                                    <select id="timer-task-linker"
+                                    <select id="timer-task-linker" onchange="window.onTimerTaskSelected(event)"
                                         class="w-full bg-zinc-50 dark:bg-[#18181b] border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-10 py-3 md:py-3.5 text-xs md:text-sm font-bold outline-none dark:text-white appearance-none cursor-pointer shadow-inner-light dark:shadow-inner-dark group-hover/linker:border-brand-300 dark:group-hover/linker:border-brand-700 transition-colors">
                                         <option value="">+ Link a task for today</option>
                                     </select>
@@ -1035,7 +1036,7 @@
                                     <i data-lucide="trophy" class="w-6 h-6 text-emerald-500 mb-2 relative z-10"></i>
                                     <div
                                         class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5 relative z-10">
-                                        Record Day</div>
+                                        7-Day Peak</div>
                                     <div class="text-2xl font-black text-zinc-900 dark:text-white leading-none relative z-10"
                                         id="stat-best-day">0m</div>
                                 </div>
@@ -1527,9 +1528,6 @@
                             </div>
                             <div class="w-px h-10 bg-zinc-200 dark:bg-zinc-800 mx-2 shrink-0 hidden sm:block"></div>
                             <div class="flex gap-2 shrink-0">
-                                <button onclick="openProfileModal()" title="Edit Profile" class="bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 px-4 py-2.5 rounded-xl font-bold text-xs shadow-sm active:scale-90 transition-all duration-200 flex items-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-700">
-                                    <i data-lucide="user" class="w-4 h-4"></i> <span class="hidden sm:inline">Profile</span>
-                                </button>
                                 <button onclick="window.copyInviteLink()" title="Copy Invite Link" class="bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 px-4 py-2.5 rounded-xl font-bold text-xs shadow-sm active:scale-90 transition-all duration-200 flex items-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-700">
                                     <i data-lucide="link" class="w-4 h-4"></i> <span class="hidden sm:inline">Link</span>
                                 </button>
@@ -1549,6 +1547,10 @@
                             
                             <button onclick="toggleSquadSettingsMenu()" class="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md px-3 py-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-all duration-200 flex items-center gap-2 border border-zinc-200/80 dark:border-zinc-700/80 shadow-sm active:scale-95">
                                 <i data-lucide="settings-2" class="w-3.5 h-3.5"></i> Settings
+                            </button>
+
+                            <button onclick="openProfileModal()" class="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md px-3 py-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-all duration-200 flex items-center gap-2 border border-zinc-200/80 dark:border-zinc-700/80 shadow-sm active:scale-95">
+                                <i data-lucide="user" class="w-3.5 h-3.5"></i> Profile
                             </button>
                         </div>
                         
@@ -2103,26 +2105,33 @@
                             data-lucide="x" class="w-5 h-5"></i></button>
                 </div>
                 <form id="add-task-form-mobile" class="space-y-6">
-                    <input type="date" id="task-date-mobile"
-                        class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl px-5 py-4 text-base focus:ring-2 focus:ring-brand-500/30 outline-none dark:text-white transition-all appearance-none font-medium shadow-inner-light dark:shadow-inner-dark">
+                    <div class="flex flex-col gap-4">
+                        <input type="date" id="task-date-mobile"
+                            class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl px-5 py-4 text-base focus:ring-2 focus:ring-brand-500/30 outline-none dark:text-white transition-all appearance-none font-medium shadow-inner-light dark:shadow-inner-dark">
+                        
+                        <div class="relative flex items-center">
+                            <i data-lucide="clock" class="absolute left-5 w-5 h-5 text-zinc-400"></i>
+                            <input type="number" id="task-duration-mobile" placeholder="Intended Duration (Mins)"
+                                class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl pl-12 pr-5 py-4 text-base focus:ring-2 focus:ring-brand-500/30 outline-none dark:text-white transition-all shadow-inner-light dark:shadow-inner-dark font-bold placeholder:font-medium placeholder:text-zinc-400">
+                        </div>
+                    </div>
+
                     <div>
                         <div class="flex justify-between items-center mb-3">
-                            <label
-                                class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Subject</label>
+                            <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Subject</label>
                             <button type="button" onclick="openCustomSubjectModal()"
-                                class="text-[10px] font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/20 px-2.5 py-1 rounded-md border border-brand-100 dark:border-brand-900/50 transition-colors">+
-                                Custom</button>
+                                class="text-[10px] font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/20 px-2.5 py-1 rounded-md border border-brand-100 dark:border-brand-900/50 transition-colors">+ Custom</button>
                         </div>
                         <div id="subject-selector-mobile" class="grid grid-cols-2 gap-3"></div>
                     </div>
-                    <div id="mock-fields-container-mobile"
-                        class="hidden animate-slide-up space-y-4 p-5 bg-fuchsia-50 dark:bg-fuchsia-900/10 rounded-2xl border border-fuchsia-100 dark:border-fuchsia-900/30">
-                        <div class="flex items-center gap-2 mb-2 text-fuchsia-700 dark:text-fuchsia-300"><i
-                                data-lucide="trophy" class="w-5 h-5"></i><span
-                                class="text-sm font-bold uppercase tracking-wide">Score Details</span></div>
+                    
+                    <div id="mock-fields-container-mobile" class="hidden animate-slide-up space-y-4 p-5 bg-fuchsia-50 dark:bg-fuchsia-900/10 rounded-2xl border border-fuchsia-100 dark:border-fuchsia-900/30">
+                        <div class="flex items-center gap-2 mb-2 text-fuchsia-700 dark:text-fuchsia-300"><i data-lucide="trophy" class="w-5 h-5"></i><span class="text-sm font-bold uppercase tracking-wide">Score Details</span></div>
                     </div>
+                    
                     <textarea id="task-input-mobile" rows="3" placeholder="What's the goal?"
                         class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl px-5 py-4 text-base focus:ring-2 focus:ring-brand-500/30 outline-none dark:text-white resize-none transition-all appearance-none font-medium shadow-inner-light dark:shadow-inner-dark placeholder:text-zinc-400"></textarea>
+                    
                     <button id="btn-add-task-mobile" type="submit"
                         class="w-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold py-4 rounded-2xl shadow-floating dark:shadow-white/10 transition-all active:scale-95 flex items-center justify-center gap-2 text-lg mt-2">
                         <i data-lucide="plus" class="w-5 h-5"></i> <span>Add to Plan</span>
