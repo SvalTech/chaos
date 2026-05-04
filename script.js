@@ -1785,9 +1785,11 @@ function renderRecentLogs() {
 window.openManualLogModal = () => {
     const select = document.getElementById('manual-log-subject');
     const type = state.settings.examType;
-    const subjects = window.getExamSubjects(type, state.settings.customSubjects);
-    select.innerHTML = subjects.map(s => `<option value="${s}">${s}</option>`).join('');
-    document.getElementById('manual-log-modal').classList.remove('hidden'); setTimeout(() => document.getElementById('manual-log-modal').classList.remove('opacity-0'), 10);
+    // Add 'true' at the end to include MockTest in the dropdown
+    const subjects = window.getExamSubjects(type, state.settings.customSubjects, true);
+    select.innerHTML = subjects.map(s => `<option value="${s}">${s === 'MockTest' ? 'Mock Test' : s}</option>`).join('');
+    document.getElementById('manual-log-modal').classList.remove('hidden'); 
+    setTimeout(() => document.getElementById('manual-log-modal').classList.remove('opacity-0'), 10);
 }
 
 window.closeManualLogModal = () => { document.getElementById('manual-log-modal').classList.add('opacity-0'); setTimeout(() => document.getElementById('manual-log-modal').classList.add('hidden'), 300); }
