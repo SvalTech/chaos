@@ -85,8 +85,8 @@
     <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-  <script type="module" crossorigin src="./assets/main-G-wv2UWo.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/main-BCTYEq-J.css">
+  <script type="module" crossorigin src="./assets/main-IfJ_PJDE.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/main-C4wOyL8C.css">
 <script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
 
 <body
@@ -100,536 +100,717 @@
     </div>
 
     <!-- Replace the existing <div id="login-screen"> ... </div> entirely with this block -->
-    <div id="login-screen"
-        class="fixed inset-0 z-[70] bg-[#050505] text-white transition-opacity duration-700 font-sans overflow-hidden">
+    <div id="login-screen" class="fixed inset-0 z-[70] transition-opacity duration-700 overflow-y-auto overflow-x-hidden">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap');
 
-        <style>
-            @keyframes revealUp {
-                0% {
-                    opacity: 0;
-                    transform: translateY(20px);
-                }
+        #login-screen {
+            --brand: #7c3aed;
+            --brand-dim: rgba(124,58,237,0.12);
+            --brand-border: rgba(124,58,237,0.25);
+            --surface: #0a0a0c;
+            --surface-1: #111114;
+            --surface-2: #18181d;
+            --surface-3: #222228;
+            --border: rgba(255,255,255,0.07);
+            --border-hover: rgba(255,255,255,0.14);
+            --text-1: #f4f4f5;
+            --text-2: #a1a1aa;
+            --text-3: #71717a;
+            --heading: 'Syne', sans-serif;
+            --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
-                100% {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
+            background: var(--surface);
+            color: var(--text-1);
+            font-family: var(--body);
+            min-height: 100vh;
+        }
 
-            .animate-reveal {
-                animation: revealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            }
+        #login-screen *, #login-screen *::before, #login-screen *::after { 
+            box-sizing: border-box; 
+        }
 
-            .delay-100 {
-                animation-delay: 100ms;
-            }
+        /* ── Grid bg ── */
 
-            .delay-200 {
-                animation-delay: 200ms;
-            }
+        #login-screen .grid-bg {
+            position: absolute; inset: 0; pointer-events: none; z-index: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+            background-size: 48px 48px;
+            mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 100%);
+            -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 100%);
+        }
 
-            .delay-300 {
-                animation-delay: 300ms;
-            }
+        #login-screen .radial-glow {
+            position: absolute; top: -200px; left: 50%; transform: translateX(-50%);
+            width: 900px; height: 600px; pointer-events: none; z-index: 0;
+            background: radial-gradient(ellipse at center, rgba(124,58,237,0.18) 0%, transparent 70%);
+        }
 
-            .delay-400 {
-                animation-delay: 400ms;
-            }
+        #login-screen .wrapper { position: relative; z-index: 1; }
 
-            .delay-500 {
-                animation-delay: 500ms;
-            }
+        /* ── Nav ── */
 
-            .bento-card {
-                background: rgba(14, 14, 17, 0.7);
-                backdrop-filter: blur(20px);
-                -webkit-backdrop-filter: blur(20px);
-                border: 1px solid rgba(255, 255, 255, 0.08);
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-                transition: all 0.3s ease;
-            }
+        #login-screen nav {
+            position: sticky; top: 0; z-index: 50;
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            background: rgba(10,10,12,0.75);
+        }
 
-            .bento-card:hover {
-                border-color: rgba(255, 255, 255, 0.15);
-                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-            }
+        #login-screen .nav-inner {
+            max-width: 1200px; margin: 0 auto;
+            padding: 0 2rem; height: 60px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
 
-            .bg-grid-pattern {
-                background-size: 40px 40px;
-                background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            }
-        </style>
+        #login-screen .nav-brand { display: flex; align-items: center; gap: 10px; }
 
-        <!-- Subtle Technical Background -->
-        <div class="absolute inset-0 pointer-events-none z-0 bg-[#050505] bg-grid-pattern">
+        #login-screen .nav-brand img { width: 30px; height: 30px; border-radius: 8px; }
+
+        #login-screen .nav-brand-name { font-family: var(--sans); font-weight: 800; font-size: 17px; letter-spacing: -0.02em; color: var(--text-1); }
+
+        #login-screen .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+
+        #login-screen .nav-links a { font-size: 13px; font-weight: 500; color: var(--text-3); text-decoration: none; transition: color .2s; }
+
+        #login-screen .nav-links a:hover { color: var(--text-1); }
+
+        #login-screen .btn-signin {
+            font-size: 13px; font-weight: 600; font-family: var(--sans);
+            background: var(--text-1); color: #0a0a0c;
+            border: none; padding: 8px 18px; border-radius: 8px; cursor: pointer;
+            transition: opacity .2s, transform .15s;
+            letter-spacing: -0.01em;
+        }
+
+        #login-screen .btn-signin:hover { opacity: 0.88; transform: scale(0.98); }
+
+        /* ── HERO ── */
+
+        #login-screen .hero {
+            max-width: 1440px; margin: 0 auto;
+            padding: 6rem 3rem 4rem;
+            display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 6rem; align-items: center;
+        }
+
+        @media (max-width: 1024px) { #login-screen .hero { grid-template-columns: 1fr 1fr; gap: 4rem; } }
+
+        @media (max-width: 900px) { #login-screen .hero { grid-template-columns: 1fr; gap: 3rem; padding: 4rem 1.5rem; } }
+
+        #login-screen .hero-eyebrow {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--brand); border: 1px solid var(--brand-border);
+            background: var(--brand-dim);
+            padding: 6px 12px; border-radius: 6px; margin-bottom: 1.5rem;
+            animation: lsFadeUp .6s ease both;
+        }
+
+        #login-screen .hero-eyebrow-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); animation: lsPulse 2s infinite; }
+
+        #login-screen .hero-headline {
+            font-family: var(--heading); font-weight: 800; font-size: clamp(3rem, 6vw, 5.25rem);
+            line-height: 1.0; letter-spacing: -0.035em;
+            color: var(--text-1); margin-bottom: 1.5rem; margin-top: 0;
+            animation: lsFadeUp .7s .1s ease both;
+        }
+
+        #login-screen .hero-headline .dim { color: var(--text-3); }
+
+        #login-screen .hero-body {
+            font-size: 16px; line-height: 1.75; color: var(--text-2); font-weight: 400;
+            max-width: 420px; margin-bottom: 2.5rem; margin-top: 0;
+            animation: lsFadeUp .7s .2s ease both;
+        }
+
+        #login-screen .hero-ctas {
+            display: flex; gap: 12px; flex-wrap: wrap;
+            animation: lsFadeUp .7s .3s ease both;
+        }
+
+        #login-screen .btn-primary {
+            display: inline-flex; align-items: center; gap: 10px;
+            font-family: var(--sans); font-weight: 700; font-size: 14px; letter-spacing: -0.01em;
+            background: white; color: #0a0a0c;
+            padding: 12px 22px; border-radius: 10px; border: none; cursor: pointer;
+            transition: opacity .2s, transform .15s; text-decoration: none;
+        }
+
+        #login-screen .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+
+        #login-screen .btn-primary img { width: 18px; height: 18px; }
+
+        #login-screen .btn-ghost {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-family: var(--sans); font-weight: 600; font-size: 14px; letter-spacing: -0.01em;
+            color: var(--text-2); background: transparent;
+            padding: 12px 20px; border-radius: 10px; border: 1px solid var(--border); cursor: pointer;
+            transition: border-color .2s, color .2s, transform .15s; text-decoration: none;
+        }
+
+        #login-screen .btn-ghost:hover { border-color: var(--border-hover); color: var(--text-1); transform: translateY(-1px); }
+
+        #login-screen .hero-trust {
+            display: flex; align-items: center; gap: 1.5rem; margin-top: 2.5rem;
+            padding-top: 2rem; border-top: 1px solid var(--border);
+            animation: lsFadeUp .7s .4s ease both;
+        }
+
+        #login-screen .trust-pill {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+        }
+
+        #login-screen .trust-dot-green { width: 7px; height: 7px; border-radius: 50%; background: #10b981; }
+
+        #login-screen .trust-dot-red { width: 7px; height: 7px; border-radius: 50%; background: #f43f5e; }
+
+        #login-screen .trust-sep { width: 1px; height: 24px; background: var(--border); }
+
+        #login-screen .trust-partner { display: flex; align-items: center; gap: 10px; text-decoration: none; transition: opacity .2s; }
+
+        #login-screen .trust-partner:hover { opacity: 0.75; }
+
+        #login-screen .trust-partner-logo { width: 28px; height: 28px; border-radius: 7px; background: rgba(255,255,255,0.07); border: 1px solid var(--border); padding: 5px; display: flex; align-items: center; justify-content: center; }
+
+        #login-screen .trust-partner-logo img { width: 100%; height: 100%; -o-object-fit: contain; object-fit: contain; filter: grayscale(1) brightness(0.7); }
+
+        #login-screen .trust-partner:hover .trust-partner-logo img { filter: grayscale(0) brightness(1); }
+
+        #login-screen .trust-partner-label { display: flex; flex-direction: column; }
+
+        #login-screen .trust-partner-sub { font-family: var(--mono); font-size: 9px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.12em; line-height: 1; }
+
+        #login-screen .trust-partner-name { font-family: var(--sans); font-size: 13px; font-weight: 700; color: var(--text-2); transition: color .2s; letter-spacing: -0.01em; line-height: 1.2; }
+
+        #login-screen .trust-partner:hover .trust-partner-name { color: var(--text-1); }
+
+        /* ── Hero image ── */
+
+        #login-screen .hero-visual { animation: lsFadeUp .8s .2s ease both; transform: scale(1.05); transform-origin: right center; }
+
+        #login-screen .hero-img-frame {
+            position: relative; border-radius: 20px; border: 1px solid var(--border);
+            background: var(--surface-1); padding: 10px;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+        }
+
+        #login-screen .hero-img-frame img { width: 100%; border-radius: 13px; display: block; }
+
+        #login-screen .hero-float { position: absolute; display: flex; align-items: center; gap: 12px; background: rgba(10,10,12,0.92); border: 1px solid var(--border); border-radius: 14px; padding: 12px 16px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: 0 16px 32px rgba(0,0,0,0.5); }
+
+        #login-screen .hero-float-streak { bottom: -20px; left: -30px; }
+
+        #login-screen .hero-float-timer { top: -16px; right: -20px; }
+
+        #login-screen .float-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+
+        #login-screen .float-icon-orange { background: rgba(249,115,22,0.18); }
+
+        #login-screen .float-icon-brand { background: var(--brand-dim); }
+
+        #login-screen .float-label { font-family: var(--mono); font-size: 9px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 2px; }
+
+        #login-screen .float-value { font-family: var(--sans); font-size: 18px; font-weight: 800; color: var(--text-1); letter-spacing: -0.02em; line-height: 1; }
+
+        #login-screen .float-mono { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--text-1); letter-spacing: -0.01em; }
+
+        #login-screen .float-live { font-family: var(--mono); font-size: 9px; color: var(--brand); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 1px; display: flex; align-items: center; gap: 5px; }
+
+        #login-screen .live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--brand); animation: lsPulse 2s infinite; }
+
+        /* ── Section headers ── */
+
+        #login-screen .section-label {
+            font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.15em;
+            text-transform: uppercase; color: var(--text-3); margin-bottom: 0.75rem;
+            display: flex; align-items: center; gap: 10px;
+        }
+
+        #login-screen .section-label::before { content: ''; display: block; width: 24px; height: 1px; background: var(--text-3); }
+
+        #login-screen .section-title {
+            font-family: var(--heading); font-weight: 800; font-size: clamp(2rem, 4vw, 3rem);
+            letter-spacing: -0.03em; line-height: 1.1; color: var(--text-1); margin-bottom: 1rem; margin-top: 0;
+        }
+
+        #login-screen .section-body { font-size: 15px; line-height: 1.75; color: var(--text-2); max-width: 560px; margin-top: 0; }
+
+        /* ── Features ── */
+
+        #login-screen .features-section { max-width: 1200px; margin: 6rem auto; padding: 0 2rem; }
+
+        #login-screen .features-grid {
+            display: grid; 
+            grid-template-columns: repeat(12, 1fr); 
+            gap: 1px;
+            background: var(--border); 
+            border-radius: 20px; 
+            overflow: hidden;
+            border: 1px solid var(--border); 
+            margin-top: 4rem;
+        }
+
+        #login-screen .feature-cell {
+            background: var(--surface-1); padding: 2rem;
+            transition: background .25s;
+            display: flex; flex-direction: column; gap: 1rem;
+        }
+
+        #login-screen .feature-cell:hover { background: var(--surface-2); }
+
+        #login-screen .span-12 { grid-column: span 12; }
+
+        #login-screen .span-8 { grid-column: span 8; }
+
+        #login-screen .span-6 { grid-column: span 6; }
+
+        #login-screen .span-4 { grid-column: span 4; }
+
+        @media (max-width: 900px) { 
+            #login-screen .span-12, #login-screen .span-8, #login-screen .span-6, #login-screen .span-4 { 
+                grid-column: span 12; 
+            } 
+        }
+
+        @media (min-width: 901px) and (max-width: 1100px) { 
+            #login-screen .span-8, #login-screen .span-4 { grid-column: span 12; }
+            #login-screen .span-6 { grid-column: span 6; } 
+        }
+
+        #login-screen .feature-tag {
+            font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
+            text-transform: uppercase; color: var(--text-3); margin-bottom: 4px;
+        }
+
+        #login-screen .feature-title { font-family: var(--heading); font-weight: 700; font-size: 18px; letter-spacing: -0.02em; color: var(--text-1); }
+
+        #login-screen .feature-desc { font-size: 13.5px; line-height: 1.7; color: var(--text-2); flex: 1; margin: 0; }
+
+        #login-screen .mini-stat-row { display: flex; gap: 8px; margin-top: 1rem; }
+
+        #login-screen .mini-stat {
+            flex: 1; background: var(--surface-2); border: 1px solid var(--border);
+            border-radius: 10px; padding: 10px 12px;
+        }
+
+        #login-screen .mini-stat-label { font-family: var(--mono); font-size: 9px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+
+        #login-screen .mini-stat-value { font-family: var(--sans); font-weight: 800; font-size: 22px; letter-spacing: -0.03em; color: var(--text-1); line-height: 1; }
+
+        #login-screen .mini-stat-value.green { color: #10b981; }
+
+        #login-screen .mini-stat-value.blue { color: #3b82f6; }
+
+        #login-screen .mini-stat-value.amber { color: #f59e0b; }
+
+        #login-screen .mock-log {
+            background: var(--surface-2); border: 1px solid var(--border);
+            border-radius: 10px; padding: 10px 12px; margin-top: 8px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+
+        #login-screen .mock-subject { font-family: var(--mono); font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-3); display: flex; align-items: center; gap: 8px; }
+
+        #login-screen .mock-badge { font-family: var(--mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 3px 8px; border-radius: 5px; }
+
+        #login-screen .badge-rose { background: rgba(244,63,94,0.12); color: #f43f5e; border: 1px solid rgba(244,63,94,0.2); }
+
+        #login-screen .badge-amber { background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+
+        #login-screen .progress-bar { height: 4px; background: var(--surface-2); border-radius: 2px; margin-top: 12px; overflow: hidden; }
+
+        #login-screen .progress-fill { height: 100%; border-radius: 2px; background: var(--brand); }
+
+        #login-screen .progress-fill.green { background: #10b981; }
+
+        #login-screen .timer-display {
+            font-family: var(--mono); font-size: 2.5rem; font-weight: 700; letter-spacing: -0.02em;
+            color: var(--text-1); margin: 0.75rem 0 0.25rem; line-height: 1;
+        }
+
+        #login-screen .timer-sub { font-family: var(--mono); font-size: 11px; color: var(--brand); text-transform: uppercase; letter-spacing: 0.1em; }
+
+        #login-screen .squad-row {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--surface-2); border: 1px solid var(--border);
+            border-radius: 10px; padding: 10px 14px; margin-top: 8px;
+        }
+
+        #login-screen .squad-user { display: flex; align-items: center; gap: 10px; }
+
+        #login-screen .squad-avatar { width: 32px; height: 32px; border-radius: 8px; background: var(--brand-dim); display: flex; align-items: center; justify-content: center; font-family: var(--sans); font-size: 13px; font-weight: 800; color: var(--brand); border: 1px solid var(--brand-border); }
+
+        #login-screen .squad-name { font-family: var(--sans); font-size: 14px; font-weight: 600; color: var(--text-1); letter-spacing: -0.01em; }
+
+        #login-screen .squad-status { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 6px; }
+
+        #login-screen .squad-status.live { color: var(--brand); }
+
+        #login-screen .squad-status.idle { color: var(--text-3); }
+
+        /* ── Testimonials (Bento Grid) ── */
+
+        #login-screen .testimonials-section { max-width: 1200px; margin: 7rem auto; padding: 0 2rem; }
+
+        #login-screen .testimonials-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 3rem; flex-wrap: wrap; gap: 1.5rem; }
+
+        #login-screen .bento-testimonials {
+            -moz-column-count: 1;
+                 column-count: 1;
+            -moz-column-gap: 1.5rem;
+                 column-gap: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            #login-screen .bento-testimonials { -moz-column-count: 2; column-count: 2; }
+        }
+
+        @media (min-width: 1024px) {
+            #login-screen .bento-testimonials { -moz-column-count: 3; column-count: 3; }
+        }
+
+        #login-screen .bento-card {
+            -moz-column-break-inside: avoid;
+                 break-inside: avoid;
+            margin-bottom: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            background: var(--surface-1);
+            overflow: hidden;
+            cursor: zoom-in;
+            transition: border-color .2s, transform .2s, box-shadow .2s;
+            position: relative;
+        }
+
+        #login-screen .bento-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+        }
+
+        #login-screen .bento-card img {
+            width: 100%;
+            height: auto;
+            -o-object-fit: contain;
+               object-fit: contain;
+            display: block;
+            border-radius: 16px;
+        }
+
+        #login-screen .discord-cta { text-align: center; margin-top: 3rem; }
+
+        #login-screen .btn-discord {
+            display: inline-flex; align-items: center; gap: 10px;
+            font-family: var(--sans); font-weight: 700; font-size: 14px; letter-spacing: -0.01em;
+            background: #5865F2; color: white;
+            padding: 12px 24px; border-radius: 10px; border: none; cursor: pointer;
+            transition: opacity .2s, transform .15s; text-decoration: none;
+        }
+
+        #login-screen .btn-discord:hover { opacity: 0.88; transform: translateY(-1px); }
+
+        /* ── Live count ── */
+
+        #login-screen .live-count-bar {
+            background: var(--surface-1); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+            padding: 12px 2rem; text-align: center; margin-bottom: 0;
+        }
+
+        #login-screen .live-count-inner {
+            font-family: var(--mono); font-size: 11px; color: var(--text-3); letter-spacing: 0.08em; text-transform: uppercase;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+
+        #login-screen .live-number { color: var(--text-1); font-weight: 700; font-size: 13px; }
+
+        /* ── Footer ── */
+
+        #login-screen footer {
+            border-top: 1px solid var(--border);
+            max-width: 1200px; margin: 0 auto; padding: 2rem;
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+        }
+
+        #login-screen .footer-copy { font-family: var(--mono); font-size: 11px; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; }
+
+        #login-screen .footer-links { display: flex; gap: 1.5rem; }
+
+        #login-screen .footer-links a { font-family: var(--mono); font-size: 11px; color: var(--text-3); text-decoration: none; letter-spacing: 0.06em; text-transform: uppercase; transition: color .2s; }
+
+        #login-screen .footer-links a:hover { color: var(--text-1); }
+
+        /* ── Animations ── */
+
+        @keyframes lsFadeUp {
+            from { opacity: 0; transform: translateY(18px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes lsPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.55; transform: scale(0.85); }
+        }
+    </style>
+
+    <div class="grid-bg"></div>
+    <div class="radial-glow"></div>
+
+    <div class="wrapper">
+
+        <!-- NAV -->
+        <nav>
+            <div class="nav-inner">
+                <div class="nav-brand">
+                    <img src="logo.png" alt="ChaosPrep">
+                    <span class="nav-brand-name">ChaosPrep</span>
+                </div>
+                <div class="nav-links">
+                    <a href="https://discord.gg/mKXPpSY6Dz" target="_blank" style="display:flex;align-items:center;gap:6px;">
+                        <i data-lucide="message-square" style="width:14px;height:14px;"></i> Community
+                    </a>
+                    <button class="btn-signin" onclick="signInWithGoogle()">Log In</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- LIVE COUNT BAR -->
+        <div class="live-count-bar">
+            <div class="live-count-inner">
+                <span class="live-number" id="live-student-count">—</span>
+                <span>aspirants are using ChaosPrep</span>
+            </div>
         </div>
 
-        <div class="absolute inset-0 w-full h-full overflow-y-auto custom-scrollbar z-10 scroll-smooth">
+        <!-- HERO -->
+        <section class="hero">
+            <div class="hero-left">
+                <div class="hero-eyebrow">
+                    JEE · NEET · Competitive Exams
+                </div>
 
-            <!-- Minimalist Nav -->
-            <nav class="w-full z-50 border-b border-white/5 bg-[#050505]/80 backdrop-blur-xl sticky top-0">
-                <div class="max-w-7xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <img src="logo.png" alt="ChaosPrep Logo" class="w-8 h-8 rounded-lg object-contain">
-                        <span class="text-xl font-black tracking-tight text-white">ChaosPrep</span>
+                <h1 class="hero-headline">
+                    Master<br>the <span class="dim">chaos.</span>
+                </h1>
+
+                <p class="hero-body">
+                    The operating system for serious aspirants. Micro-manage your syllabus, log your daily hours, track along with friends and clock consistent 10-hour days.
+                </p>
+
+                <div class="hero-ctas">
+                    <button class="btn-primary" onclick="signInWithGoogle()">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                        Start Tracking
+                    </button>
+                    <a href="#features" class="btn-ghost">
+                        Explore Features
+                        <i data-lucide="arrow-down" style="width:15px;height:15px;"></i>
+                    </a>
+                </div>
+
+                <div class="hero-trust">
+                    <div class="trust-pill"><span class="trust-dot-green"></span><span style="color:var(--text-2)">Free</span></div>
+                    <div class="trust-pill"><span class="trust-dot-red"></span><span style="color:var(--text-2)">No Ads</span></div>
+                    <div class="trust-sep"></div>
+                    <a href="https://alphajee.online" target="_blank" class="trust-partner">
+                        <div class="trust-partner-logo"><img src="alphajee.png" alt="AlphaJEE"></div>
+                        <div class="trust-partner-label">
+                            <span class="trust-partner-sub">Official Partner</span>
+                            <span class="trust-partner-name">AlphaJEE</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <div class="hero-visual">
+                <div class="hero-img-frame">
+                    <img src="og-image.png" alt="ChaosPrep Interface" onerror="this.style.minHeight='320px';this.style.background='var(--surface-2)'">
+
+                    <div class="hero-float hero-float-streak">
+                        <div class="float-icon float-icon-orange">
+                            <i data-lucide="flame" style="width:18px;height:18px;color:#f97316;"></i>
+                        </div>
+                        <div>
+                            <div class="float-label">Study Streak</div>
+                            <div class="float-value">16 Days</div>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-6">
-                        <a href="https://discord.gg/mKXPpSY6Dz" target="_blank"
-                            class="hidden md:flex items-center gap-2 text-xs font-bold text-zinc-400 hover:text-white transition-colors">
-                            <i data-lucide="message-square" class="w-4 h-4"></i> Community
-                        </a>
-                        <button onclick="signInWithGoogle()"
-                            class="text-xs font-bold bg-white text-black px-5 py-2.5 rounded-lg hover:bg-zinc-200 active:scale-95 transition-all flex items-center gap-2">
-                            Log In
-                        </button>
+
+                    <div class="hero-float hero-float-timer">
+                        <div>
+                            <div class="float-live"><span class="live-dot"></span> Deep Work</div>
+                            <div class="float-mono">04:20:00</div>
+                        </div>
                     </div>
                 </div>
-            </nav>
+            </div>
+        </section>
 
-            <div class="w-full max-w-7xl mx-auto px-4 md:px-8 pt-16 pb-24 flex flex-col items-center">
+        <!-- FEATURES -->
+        <section class="features-section" id="features">
+            <div class="section-label">Features</div>
+            <h2 class="section-title">Built for the obsessive.</h2>
+            <p class="section-body">Every tool engineered around the one goal that matters — your rank on exam day.</p>
 
-                <!-- Split Hero Section -->
-                <div
-                    class="w-full grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 xl:gap-12 items-center relative z-20 mb-32 mt-4 md:mt-8">
+            <div class="features-grid">
 
-                    <!-- Left Column: Content (40% width on Desktop) -->
-                    <div class="flex flex-col items-start text-left z-20 lg:col-span-5">
-
-                        <!-- Live tracking badge -->
-                        <div class="flex items-center gap-3 mb-6 opacity-0 animate-reveal">
-                            <div
-                                class="px-3 py-1.5 rounded-md bg-brand-500/10 border border-brand-500/20 text-[12px] font-bold text-brand-400 uppercase tracking-widest flex items-center gap-1.5">
-                                <span id="live-student-count" class="text-white">--</span> Aspirants Tracking
-                            </div>
+                <!-- Syllabus -->
+                <div class="feature-cell span-8">
+                    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+                        <div>
+                            <div class="feature-tag">Syllabus Matrix</div>
+                            <div class="feature-title">Track to the sub-topic.</div>
+                            <p class="feature-desc" style="max-width:340px;margin-top:0.5rem;">Track completion states, revision counts, and PYQ coverage across Physics, Chemistry, Maths &amp; Biology — chapter by chapter.</p>
                         </div>
-
-                        <!-- Title -->
-                        <h1
-                            class="text-5xl md:text-6xl lg:text-6xl xl:text-[5.5rem] font-black tracking-tighter text-left leading-[1.05] mb-6 text-white opacity-0 animate-reveal delay-100 drop-shadow-2xl">
-                            Master the <br />
-                            <span
-                                class="text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 via-zinc-400 to-zinc-500">
-                                chaos.
-                            </span>
-                        </h1>
-
-                        <!-- Description -->
-                        <p
-                            class="text-base md:text-lg text-zinc-400 text-left max-w-md xl:max-w-lg mb-10 font-medium leading-relaxed opacity-0 animate-reveal delay-200">
-                            The definitive operating system for serious competitive exam aspirants. Micro-manage your
-                            syllabus, extract data from your mistakes, and clock 10-hour days consistently.
-                        </p>
-
-                        <!-- Buttons -->
-                        <div
-                            class="opacity-0 animate-reveal delay-300 flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-10 w-full sm:w-auto">
-                            <button onclick="signInWithGoogle()"
-                                class="rounded-xl bg-white hover:bg-zinc-100 text-black px-8 py-4 flex items-center justify-center gap-3 transition-all active:scale-95 font-bold text-sm shadow-[0_0_40px_-10px_rgba(255,255,255,0.2)]">
-                                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                                    class="w-5 h-5 shrink-0" alt="Google">
-                                Start Tracking
-                            </button>
-                            <a href="#features"
-                                class="rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-white px-8 py-4 flex items-center justify-center gap-2 transition-all active:scale-95 font-bold text-sm">
-                                Explore Features <i data-lucide="arrow-down" class="w-4 h-4 text-zinc-400"></i>
-                            </a>
-                        </div>
-
-                        <!-- Trust / Partnerships Row -->
-                        <div
-                            class="opacity-0 animate-reveal delay-400 flex flex-col sm:flex-row items-start sm:items-center gap-6 pt-6 border-t border-white/5 w-full">
-
-                            <!-- The "No BS" Guarantee -->
-                            <div class="flex items-center gap-4 shrink-0">
-                                <div
-                                    class="flex items-center gap-1.5 text-[11px] font-black text-emerald-400 uppercase tracking-widest">
-                                    <i data-lucide="check-circle-2" class="w-4 h-4"></i> Free
-                                </div>
-                                <div class="w-1 h-1 rounded-full bg-zinc-700"></div>
-                                <div
-                                    class="flex items-center gap-1.5 text-[11px] font-black text-rose-400 uppercase tracking-widest">
-                                    <i data-lucide="x-circle" class="w-4 h-4"></i> No Ads
-                                </div>
+                        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;min-width:200px;">
+                            <div style="font-family:var(--mono);font-size:9px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">Physics Covered</div>
+                            <div style="font-family:var(--sans);font-size:3.5rem;font-weight:800;line-height:1;letter-spacing:-0.04em;color:var(--text-1);">82<span style="color:#10b981;font-size:2rem;">%</span></div>
+                            <div class="progress-bar" style="margin-top:10px;">
+                                <div class="progress-fill" style="width:45%;background:var(--brand);display:inline-block;float:left;"></div>
+                                <div class="progress-fill" style="width:37%;background:#10b981;display:inline-block;float:left;"></div>
                             </div>
-
-                            <div class="hidden sm:block w-px h-8 bg-white/10"></div>
-
-                            <!-- AlphaJEE Partnership Badge -->
-                            <a href="https://alphajee.online" target="_blank" rel="noopener noreferrer"
-                                class="flex items-center gap-3 group/brand transition-all duration-300 hover:scale-105">
-                                <div
-                                    class="w-8 h-8 flex items-center justify-center overflow-hidden bg-white/5 rounded-lg p-1.5 border border-white/10 shrink-0">
-                                    <img class="w-full h-full object-contain filter grayscale opacity-70 group-hover/brand:grayscale-0 group-hover/brand:opacity-100 transition-all duration-300"
-                                        alt="AlphaJEE" src="alphajee.png">
-                                </div>
-                                <div class="flex flex-col">
-                                    <span
-                                        class="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 leading-none mb-1">Official
-                                        Partner</span>
-                                    <span
-                                        class="text-xs font-black text-zinc-300 group-hover/brand:text-blue-400 transition-colors tracking-tight leading-none">AlphaJEE</span>
-                                </div>
-                            </a>
                         </div>
                     </div>
-
-                    <!-- Right Column: Image Aesthetic (60% width on Desktop, scaled up) -->
-                    <div
-                        class="relative w-full max-w-2xl lg:max-w-none mx-auto opacity-0 animate-reveal delay-500 lg:col-span-7 mt-12 lg:mt-0 lg:pl-6 xl:pl-10 2xl:scale-105 2xl:origin-right">
-
-                        <!-- Ambient Background Glow -->
-                        <div
-                            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[110%] h-[110%] bg-brand-600/20 blur-[120px] rounded-full pointer-events-none">
+                    <div class="mock-log">
+                        <div class="mock-subject">
+                            <span style="width:7px;height:7px;border-radius:50%;background:#10b981;display:inline-block;"></span>
+                            Rotational Motion
                         </div>
-
-                        <!-- Main Floating Image Card -->
-                        <div
-                            class="relative z-10 rounded-[2rem] border border-white/10 bg-[#09090b]/80 backdrop-blur-xl p-2 md:p-3 shadow-[0_0_80px_-15px_rgba(0,0,0,0.8)] transform transition-transform duration-700 hover:scale-[1.02]">
-
-                            <img src="og-image.png" alt="ChaosPrep Interface"
-                                class="w-full h-auto rounded-[1.5rem] border border-white/5 shadow-inner"
-                                onerror="this.src='https://placehold.co/1200x800/18181b/white?text=Add+App+Screenshot'">
-
-                            <!-- Floating Mini Stat Component (Bottom Left) -->
-                            <div
-                                class="absolute -bottom-8 -left-4 md:-left-10 bg-zinc-900/95 backdrop-blur-md border border-white/10 p-4 md:p-5 rounded-2xl md:rounded-[1.5rem] shadow-2xl hidden sm:flex items-center gap-4 group cursor-default hover:-translate-y-1 transition-transform">
-                                <div
-                                    class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-orange-500/20 flex items-center justify-center text-orange-400 border border-orange-500/20 shadow-inner">
-                                    <i data-lucide="flame"
-                                        class="w-5 h-5 md:w-6 md:h-6 group-hover:scale-110 transition-transform"></i>
-                                </div>
-                                <div>
-                                    <div
-                                        class="text-[10px] md:text-xs font-bold text-zinc-400 uppercase tracking-widest mb-0.5">
-                                        Study Streak</div>
-                                    <div class="text-xl md:text-2xl font-black text-white leading-none">67 Days</div>
-                                </div>
-                            </div>
-
-                            <!-- Floating Mini Timer Component (Top Right) -->
-                            <div
-                                class="absolute -top-6 -right-4 md:-right-8 bg-zinc-900/95 backdrop-blur-md border border-white/10 p-3 md:p-4 rounded-2xl md:rounded-[1.5rem] shadow-2xl hidden sm:flex flex-col items-center gap-1 group cursor-default hover:-translate-y-1 transition-transform">
-                                <div
-                                    class="text-[9px] md:text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse"></span> Deep Work
-                                </div>
-                                <div class="text-lg md:text-xl font-black text-white font-mono tracking-tighter">
-                                    04:20:00</div>
-                            </div>
+                        <div style="display:flex;gap:6px;">
+                            <span class="mock-badge" style="background:var(--surface-3);color:var(--text-2);border:1px solid var(--border);">R3</span>
+                            <span class="mock-badge" style="background:rgba(16,185,129,0.1);color:#10b981;border:1px solid rgba(16,185,129,0.2);">PYQs ✓</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Bento OS Grid -->
-                <div id="features"
-                    class="w-full grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 opacity-0 animate-reveal delay-500 z-20">
-
-                    <!-- 1. Syllabus Tracker (Spans 8 cols) -->
-                    <div
-                        class="bento-card md:col-span-8 rounded-3xl p-6 md:p-10 flex flex-col md:flex-row justify-between items-center gap-8 overflow-hidden relative">
-                        <div class="relative z-10 flex-1">
-                            <div class="flex items-center gap-2 mb-4 text-emerald-400">
-                                <i data-lucide="map" class="w-5 h-5"></i>
-                                <span class="text-xs font-bold uppercase tracking-widest">Syllabus Matrix</span>
-                            </div>
-                            <h3 class="text-2xl font-black text-white mb-2">Track to the sub-topic.</h3>
-                            <p class="text-zinc-400 text-sm leading-relaxed mb-6">Don't just read chapters. Track
-                                completion states, log revision counts, and explicitly mark when PYQs are done across
-                                Physics, Chemistry, Maths, and Biology.</p>
-
-                            <div class="space-y-2 w-full max-w-sm">
-                                <div
-                                    class="flex items-center justify-between p-3 bg-[#09090b] border border-zinc-800 rounded-xl shadow-md">
-                                    <div class="flex items-center gap-2">
-                                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                        <span class="text-xs font-bold text-zinc-300">Rotational Motion</span>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <span
-                                            class="text-[10px] font-bold bg-zinc-800 text-zinc-400 px-2 py-1 rounded">R3</span>
-                                        <span
-                                            class="text-[10px] font-bold bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded">PYQs
-                                            ✓</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Prominent Stat UI -->
-                        <div
-                            class="bg-[#09090b] border border-zinc-800 rounded-3xl p-6 md:p-8 w-full md:w-auto md:min-w-[280px] shrink-0 relative z-10 shadow-2xl flex flex-col items-center justify-center">
-                            <div
-                                class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 w-full text-left">
-                                Physics Covered</div>
-                            <div class="flex items-baseline gap-1 w-full text-left mb-5">
-                                <span class="text-7xl font-black text-white tracking-tighter">82</span>
-                                <span class="text-3xl font-black text-emerald-500">%</span>
-                            </div>
-                            <div class="w-full h-2 bg-zinc-900 rounded-full overflow-hidden flex">
-                                <div class="bg-brand-500 w-[45%]"></div>
-                                <div class="bg-emerald-500 w-[37%]"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 2. Timer (Spans 4 cols) -->
-                    <div class="bento-card md:col-span-4 rounded-3xl p-6 md:p-10 flex flex-col justify-between">
-                        <div class="mb-8">
-                            <div class="flex items-center gap-2 mb-4 text-brand-400">
-                                <i data-lucide="timer" class="w-5 h-5"></i>
-                                <span class="text-xs font-bold uppercase tracking-widest">Deep Work</span>
-                            </div>
-                            <h3 class="text-2xl font-black text-white mb-2">Clock your hours.</h3>
-                            <p class="text-zinc-400 text-sm leading-relaxed">Built-in flow timer with PiP support. Track
-                                exact focus hours daily.</p>
-                        </div>
-
-                        <!-- Prominent Stat UI -->
-                        <div
-                            class="bg-[#09090b] border border-zinc-800 rounded-3xl p-6 flex flex-col items-center justify-center relative overflow-hidden shadow-2xl mt-auto">
-                            <div
-                                class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 relative z-10">
-                                Today's Focus</div>
-                            <div class="flex items-baseline gap-1 relative z-10 mb-3">
-                                <span
-                                    class="text-5xl font-black tabular-nums text-white tracking-tighter">10</span><span
-                                    class="text-xl font-bold text-zinc-500">h</span>
-                                <span
-                                    class="text-5xl font-black tabular-nums text-white tracking-tighter ml-1">14</span><span
-                                    class="text-xl font-bold text-zinc-500">m</span>
-                            </div>
-                            <div
-                                class="text-xs font-bold text-brand-400 bg-brand-500/10 px-3 py-1.5 rounded-lg border border-brand-500/20 relative z-10 text-center truncate w-full">
-                                Physics • Electrostatics</div>
-                        </div>
-                    </div>
-
-                    <!-- 3. Mock Analytics (Spans 6 cols) -->
-                    <div class="bento-card md:col-span-6 rounded-3xl p-6 md:p-10 flex flex-col justify-between">
-                        <div class="mb-8">
-                            <div class="flex items-center gap-2 mb-4 text-blue-400">
-                                <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
-                                <span class="text-xs font-bold uppercase tracking-widest">Analytics</span>
-                            </div>
-                            <h3 class="text-2xl font-black text-white mb-2">Measure the trajectory.</h3>
-                            <p class="text-zinc-400 text-sm leading-relaxed">Log your mock tests. Track accuracy ratios,
-                                subject-wise breakdowns, and visualize your progress.</p>
-                        </div>
-
-                        <!-- Prominent Stat UI -->
-                        <div class="grid grid-cols-2 gap-4">
-                            <div
-                                class="bg-[#09090b] border border-zinc-800 rounded-2xl p-5 flex flex-col justify-center">
-                                <div class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Target
-                                    Score</div>
-                                <div class="text-4xl font-black text-white tracking-tighter">220<span
-                                        class="text-lg text-zinc-600 font-bold tracking-normal">/300</span></div>
-                            </div>
-                            <div
-                                class="bg-[#09090b] border border-zinc-800 rounded-2xl p-5 flex flex-col justify-center">
-                                <div class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Accuracy
-                                </div>
-                                <div class="text-4xl font-black text-blue-400 tracking-tighter">88%</div>
-                            </div>
-                            <div
-                                class="col-span-2 bg-[#09090b] border border-zinc-800 rounded-2xl p-5 flex justify-between items-center">
-                                <div>
-                                    <div class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">
-                                        Latest Full Syllabus</div>
-                                    <div
-                                        class="text-3xl font-black text-emerald-400 tracking-tighter flex items-center gap-2">
-                                        184 <i data-lucide="trending-up" class="w-6 h-6"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 4. Error Tracking (Spans 6 cols) -->
-                    <div class="bento-card md:col-span-6 rounded-3xl p-6 md:p-10 flex flex-col justify-between">
-                        <div class="mb-8">
-                            <div class="flex items-center gap-2 mb-4 text-rose-400">
-                                <i data-lucide="shield-alert" class="w-5 h-5"></i>
-                                <span class="text-xs font-bold uppercase tracking-widest">Error Log</span>
-                            </div>
-                            <h3 class="text-2xl font-black text-white mb-2">Fix the leaks.</h3>
-                            <p class="text-zinc-400 text-sm leading-relaxed">Top rankers don't just solve; they analyze.
-                                Categorize every mistake you make to build an impenetrable defense before D-Day.</p>
-                        </div>
-
-                        <!-- Prominent Stat UI -->
-                        <div class="bg-[#09090b] border border-zinc-800 rounded-2xl p-5 space-y-3">
-                            <div
-                                class="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 bg-zinc-900 rounded-xl border border-zinc-800 gap-3">
-                                <div class="flex items-center gap-3">
-                                    <span
-                                        class="text-[10px] font-black text-zinc-900 bg-white px-2 py-1 rounded">MATH</span>
-                                    <span class="text-sm font-bold text-zinc-200">Definite Integration</span>
-                                </div>
-                                <span
-                                    class="text-[10px] font-black text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1.5 rounded w-fit tracking-widest">CONCEPTUAL</span>
-                            </div>
-                            <div
-                                class="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 bg-zinc-900 rounded-xl border border-zinc-800 gap-3">
-                                <div class="flex items-center gap-3">
-                                    <span
-                                        class="text-[10px] font-black text-zinc-900 bg-white px-2 py-1 rounded">CHEM</span>
-                                    <span class="text-sm font-bold text-zinc-200">Chemical Kinetics</span>
-                                </div>
-                                <span
-                                    class="text-[10px] font-black text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1.5 rounded w-fit tracking-widest">SILLY
-                                    MISTAKE</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 5. Peers (Spans 12 cols) -->
-                    <div
-                        class="bento-card md:col-span-12 rounded-3xl p-6 md:p-10 flex flex-col md:flex-row items-center gap-8 md:gap-12 text-center md:text-left">
-                        <div class="flex-1">
-                            <div class="flex items-center justify-center md:justify-start gap-2 mb-4 text-fuchsia-400">
-                                <i data-lucide="users" class="w-5 h-5"></i>
-                                <span class="text-xs font-bold uppercase tracking-widest">Accountability Peers</span>
-                            </div>
-                            <h3 class="text-3xl md:text-4xl font-black text-white mb-4 tracking-tight">Peer pressure,
-                                weaponized.</h3>
-                            <p class="text-zinc-400 text-base leading-relaxed max-w-2xl">
-                                Connect 1-on-1 via 6-digit codes. No groups. No chatrooms. No endless feeds. Just see
-                                when your friends are studying live, and let the silent competition drive you to study
-                                longer.
-                            </p>
-                        </div>
-
-                        <div class="w-full md:w-auto shrink-0 flex flex-col gap-4">
-                            <div
-                                class="flex items-center justify-between gap-8 bg-[#09090b] border border-zinc-800 p-4 pr-6 rounded-2xl shadow-lg">
-                                <div class="flex items-center gap-4">
-                                    <div
-                                        class="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-sm font-black shadow-inner">
-                                        Y</div>
-                                    <span class="text-base font-bold text-white">You</span>
-                                </div>
-                                <div
-                                    class="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-400 bg-brand-500/10 px-3 py-1.5 rounded-lg border border-brand-500/20">
-                                    <span class="w-2 h-2 rounded-full bg-brand-500"></span> Live
-                                </div>
-                            </div>
-                            <div
-                                class="flex items-center justify-between gap-8 bg-[#09090b] border border-zinc-800 p-4 pr-6 rounded-2xl shadow-lg">
-                                <div class="flex items-center gap-4">
-                                    <div
-                                        class="w-10 h-10 rounded-xl bg-zinc-700 flex items-center justify-center text-sm font-black shadow-inner">
-                                        A</div>
-                                    <span class="text-base font-bold text-zinc-300">Air1_Target</span>
-                                </div>
-                                <div
-                                    class="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-zinc-500 bg-zinc-800/50 px-3 py-1.5 rounded-lg border border-zinc-700/50">
-                                    Idle
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-
-                <div id="testimonials" class="w-full mt-32 mb-10 opacity-0 animate-reveal delay-500 z-20">
-
-                    <div class="flex flex-col items-center text-center mb-12 px-4">
-                        <h2 class="text-3xl md:text-5xl font-black text-white tracking-tight mb-4">Built for the
-                            community.</h2>
-                        <p class="text-zinc-400 text-sm md:text-base max-w-2xl leading-relaxed">
-                            Join serious aspirants mastering the chaos. Here's what they have to say in our Discord.
-                        </p>
-                    </div>
-
-                    <!-- 2-Column Masonry Grid for Larger Screenshots -->
-                    <div class="columns-1 md:columns-2 gap-5 md:gap-8 space-y-5 md:space-y-8 max-w-5xl mx-auto px-4">
-
-                        <!-- Screenshot Card 1 -->
-                        <div
-                            class="break-inside-avoid relative rounded-2xl md:rounded-[1.5rem] p-1 bg-zinc-900/40 border border-white/5 transition-all duration-500 ease-out hover:-translate-y-1.5 hover:border-white/15 hover:bg-zinc-800/60 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.7)] group">
-                            <div
-                                class="relative overflow-hidden rounded-xl md:rounded-[1.25rem] border border-white/5 bg-[#1e1f22]">
-                                <img src="discord1.png" alt="Discord Testimonial" onclick="openLightbox(this.src)"
-                                    class="w-full h-auto transform transition-transform duration-700 ease-out group-hover:scale-[1.02] cursor-zoom-in">
-                            </div>
-                        </div>
-
-                        <!-- Screenshot Card 2 -->
-                        <div
-                            class="break-inside-avoid relative rounded-2xl md:rounded-[1.5rem] p-1 bg-zinc-900/40 border border-white/5 transition-all duration-500 ease-out hover:-translate-y-1.5 hover:border-white/15 hover:bg-zinc-800/60 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.7)] group">
-                            <div
-                                class="relative overflow-hidden rounded-xl md:rounded-[1.25rem] border border-white/5 bg-[#1e1f22]">
-                                <img src="discord2.png" alt="Discord Testimonial" onclick="openLightbox(this.src)"
-                                    class="w-full h-auto transform transition-transform duration-700 ease-out group-hover:scale-[1.02] cursor-zoom-in">
-                            </div>
-                        </div>
-
-                        <!-- Screenshot Card 3 -->
-                        <div
-                            class="break-inside-avoid relative rounded-2xl md:rounded-[1.5rem] p-1 bg-zinc-900/40 border border-white/5 transition-all duration-500 ease-out hover:-translate-y-1.5 hover:border-white/15 hover:bg-zinc-800/60 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.7)] group">
-                            <div
-                                class="relative overflow-hidden rounded-xl md:rounded-[1.25rem] border border-white/5 bg-[#1e1f22]">
-                                <img src="discord4.png" alt="Discord Testimonial" onclick="openLightbox(this.src)"
-                                    class="w-full h-auto transform transition-transform duration-700 ease-out group-hover:scale-[1.02] cursor-zoom-in">
-                            </div>
-                        </div>
-
-                        <!-- Screenshot Card 4 -->
-                        <div
-                            class="break-inside-avoid relative rounded-2xl md:rounded-[1.5rem] p-1 bg-zinc-900/40 border border-white/5 transition-all duration-500 ease-out hover:-translate-y-1.5 hover:border-white/15 hover:bg-zinc-800/60 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.7)] group">
-                            <div
-                                class="relative overflow-hidden rounded-xl md:rounded-[1.25rem] border border-white/5 bg-[#1e1f22]">
-                                <img src="discord3.png" alt="Discord Testimonial" onclick="openLightbox(this.src)"
-                                    class="w-full h-auto transform transition-transform duration-700 ease-out group-hover:scale-[1.02] cursor-zoom-in">
-                            </div>
-                        </div>
-
-                        <div
-                            class="break-inside-avoid relative rounded-2xl md:rounded-[1.5rem] p-1 bg-zinc-900/40 border border-white/5 transition-all duration-500 ease-out hover:-translate-y-1.5 hover:border-white/15 hover:bg-zinc-800/60 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.7)] group">
-                            <div
-                                class="relative overflow-hidden rounded-xl md:rounded-[1.25rem] border border-white/5 bg-[#1e1f22]">
-                                <img src="discord5.png" alt="Discord Testimonial" onclick="openLightbox(this.src)"
-                                    class="w-full h-auto transform transition-transform duration-700 ease-out group-hover:scale-[1.02] cursor-zoom-in">
-                            </div>
-                        </div>
-
-                        <div
-                            class="break-inside-avoid relative rounded-2xl md:rounded-[1.5rem] p-1 bg-zinc-900/40 border border-white/5 transition-all duration-500 ease-out hover:-translate-y-1.5 hover:border-white/15 hover:bg-zinc-800/60 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.7)] group">
-                            <div
-                                class="relative overflow-hidden rounded-xl md:rounded-[1.25rem] border border-white/5 bg-[#1e1f22]">
-                                <img src="discord6.png" alt="Discord Testimonial" onclick="openLightbox(this.src)"
-                                    class="w-full h-auto transform transition-transform duration-700 ease-out group-hover:scale-[1.02] cursor-zoom-in">
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <div class="mt-16 flex justify-center px-4">
-                        <a href="https://discord.gg/mKXPpSY6Dz" target="_blank"
-                            class="rounded-xl bg-[#5865F2] hover:bg-[#4752C4] text-white px-8 py-4 flex items-center justify-center gap-3 transition-all active:scale-95 font-bold text-sm shadow-[0_0_30px_-5px_rgba(88,101,242,0.4)]">
-                            <i data-lucide="message-square" class="w-5 h-5"></i>
-                            Join the Discord
-                        </a>
+                <!-- Timer -->
+                <div class="feature-cell span-4">
+                    <div class="feature-tag">Deep Work Timer</div>
+                    <div class="feature-title">Clock your hours.</div>
+                    <p class="feature-desc">Flow state timer with PiP mode, session linking, and weekly charts. Built for 10-hour days.</p>
+                    <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:auto;">
+                        <div style="font-family:var(--mono);font-size:9px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.1em;">Today's Focus</div>
+                        <div class="timer-display">10<span style="font-size:1.25rem;color:var(--text-3);">h</span> 14<span style="font-size:1.25rem;color:var(--text-3);">m</span></div>
+                        <div class="timer-sub">Physics · Electrostatics</div>
                     </div>
                 </div>
 
-                <!-- Footer -->
-                <div
-                    class="w-full mt-24 pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 z-20">
-                    <div class="text-[11px] font-bold text-zinc-600 uppercase tracking-widest">
-                        © 2026 sval.tech
+                <!-- Mock Analytics -->
+                <div class="feature-cell span-6">
+                    <div class="feature-tag">Analytics</div>
+                    <div class="feature-title">Measure trajectory.</div>
+                    <p class="feature-desc">Log mocks. Track accuracy ratios, subject breakdowns, and your score curve over time.</p>
+                    <div class="mini-stat-row">
+                        <div class="mini-stat">
+                            <div class="mini-stat-label">Target</div>
+                            <div class="mini-stat-value">220<span style="font-size:0.7em;color:var(--text-3)">/300</span></div>
+                        </div>
+                        <div class="mini-stat">
+                            <div class="mini-stat-label">Accuracy</div>
+                            <div class="mini-stat-value blue">88%</div>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-6 text-[11px] font-bold uppercase tracking-widest text-zinc-500">
-                        <a href="privacypolicy.html" class="hover:text-white transition-colors">Privacy</a>
-                        <a href="termsandconditions.html" class="hover:text-white transition-colors">Terms</a>
+                    <div class="mini-stat" style="margin-top:8px;">
+                        <div class="mini-stat-label">Latest Full Syllabus</div>
+                        <div class="mini-stat-value green" style="display:flex;align-items:center;gap:8px;">184 <i data-lucide="trending-up" style="width:20px;height:20px;"></i></div>
+                    </div>
+                </div>
+
+                <!-- Error Tracking -->
+                <div class="feature-cell span-6">
+                    <div class="feature-tag">Error Log</div>
+                    <div class="feature-title">Fix the leaks.</div>
+                    <p class="feature-desc">Categorize every mistake — conceptual, silly, formula. Build your personal defence before D-Day.</p>
+                    <div class="mock-log" style="margin-top:auto;">
+                        <div class="mock-subject"><span style="width:6px;height:6px;border-radius:2px;background:white;display:inline-block;"></span> MATH · Definite Integration</div>
+                        <span class="mock-badge badge-rose">Conceptual</span>
+                    </div>
+                    <div class="mock-log">
+                        <div class="mock-subject"><span style="width:6px;height:6px;border-radius:2px;background:white;display:inline-block;"></span> CHEM · Chemical Kinetics</div>
+                        <span class="mock-badge badge-amber">Silly Mistake</span>
+                    </div>
+                </div>
+
+                <!-- Squad -->
+                <div class="feature-cell span-12">
+                    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:2rem;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:220px;">
+                            <div class="feature-tag">Accountability Squad</div>
+                            <div class="feature-title">Peer pressure, weaponized.</div>
+                            <p class="feature-desc" style="margin-top:0.5rem;">1-on-1 connections via 6-digit codes. No group chats. Just live status — see when your friends are deep in focus and let the silence push you harder.</p>
+                        </div>
+                        <div style="min-width:240px;display:flex;flex-direction:column;gap:8px;justify-content:flex-end;">
+                            <div class="squad-row">
+                                <div class="squad-user">
+                                    <div class="squad-avatar">Y</div>
+                                    <div class="squad-name">You</div>
+                                </div>
+                                <div class="squad-status live"><span class="live-dot"></span> Live</div>
+                            </div>
+                            <div class="squad-row">
+                                <div class="squad-user">
+                                    <div class="squad-avatar" style="background:rgba(255,255,255,0.05);color:var(--text-2);border-color:var(--border);">A</div>
+                                    <div class="squad-name" style="color:var(--text-2);">Air1_Target</div>
+                                </div>
+                                <div class="squad-status idle">· Idle</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
             </div>
-        </div>
+        </section>
+
+        <!-- TESTIMONIALS (BENTO GRID) -->
+        <section class="testimonials-section">
+            <div class="testimonials-header">
+                <div>
+                    <div class="section-label">Community</div>
+                    <h2 class="section-title">Built for the community.</h2>
+                    <p class="section-body" style="margin-top:0.5rem;">Join serious aspirants in our Discord — here's what they have to say.</p>
+                </div>
+            </div>
+
+            <div class="bento-testimonials">
+                <div class="bento-card"><img src="discord1.png" alt="Discord testimonial 1" onclick="openLightbox(this.src)"></div>
+                <div class="bento-card"><img src="discord2.png" alt="Discord testimonial 2" onclick="openLightbox(this.src)"></div>
+                <div class="bento-card"><img src="discord4.png" alt="Discord testimonial 3" onclick="openLightbox(this.src)"></div>
+                <div class="bento-card"><img src="discord3.png" alt="Discord testimonial 4" onclick="openLightbox(this.src)"></div>
+                <div class="bento-card"><img src="discord5.png" alt="Discord testimonial 5" onclick="openLightbox(this.src)"></div>
+                <div class="bento-card"><img src="discord6.png" alt="Discord testimonial 6" onclick="openLightbox(this.src)"></div>
+            </div>
+
+            <div class="discord-cta">
+                <a href="https://discord.gg/mKXPpSY6Dz" target="_blank" class="btn-discord">
+                    <i data-lucide="message-square" style="width:18px;height:18px;"></i>
+                    Join the Discord
+                </a>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer>
+            <span class="footer-copy">© 2026 ChaosPrep by sval.tech | Created by Shaurya Pratap Singh</span>
+            <div class="footer-links">
+                <a href="privacypolicy.html">Privacy</a>
+                <a href="termsandconditions.html">Terms</a>
+            </div>
+        </footer>
     </div>
+
+    <!-- Login Screen Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) window.lucide.createIcons();
+        });
+    </script>
+</div>
     <!-- Loading Overlay -->
     <div id="loading-overlay"
         class="fixed inset-0 z-[100] bg-zinc-50 dark:bg-[#09090b] flex items-center justify-center transition-opacity duration-500">
