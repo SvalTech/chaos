@@ -793,9 +793,9 @@ Today's Date: ${new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numer
                     <a href="https://github.com/svalordev" target="_blank" rel="noopener noreferrer" class="hover:text-zinc-900 dark:hover:text-white transition-colors flex items-center gap-1.5">GitHub</a>
                 </div>
                 <div class="flex flex-wrap justify-center items-center gap-3 sm:gap-4 text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mt-1 md:mt-0">
-                    <a href="/privacypolicy" class="hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">Privacy Policy</a>
+                    <a href="/chaos/privacypolicy" class="hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">Privacy Policy</a>
                     <span class="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700 hidden sm:block"></span>
-                    <a href="/termsandconditions" class="hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">Terms & Conditions</a>
+                    <a href="/chaos/termsandconditions" class="hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">Terms & Conditions</a>
                 </div>
             </div>
             <div class="flex flex-col items-center md:items-end gap-2 shrink-0">
