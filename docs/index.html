@@ -85,8 +85,8 @@
     <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-  <script type="module" crossorigin src="./assets/main-IfJ_PJDE.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/main-C4wOyL8C.css">
+  <script type="module" crossorigin src="./assets/main-y0u9TT96.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/main-GQjYE8e3.css">
 <script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
 
 <body
@@ -972,8 +972,7 @@
                         <label
                             class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Subject</label>
                         <button type="button" onclick="openCustomSubjectModal()"
-                            class="text-[10px] font-bold text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/30 px-2 py-1 rounded transition-colors">+
-                            Manage</button>
+                            class="text-[10px] font-bold text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/30 px-2 py-1 rounded transition-colors">+ Manage</button>
                     </div>
                     <div id="subject-selector" class="grid grid-cols-2 gap-2"></div>
                 </div>
@@ -2634,13 +2633,26 @@
             class="bg-white dark:bg-[#18181b] rounded-[2.5rem] shadow-2xl p-8 w-full max-w-sm transform scale-95 transition-transform duration-300 border border-zinc-200/50 dark:border-zinc-800">
             <h3 class="text-xl font-black text-zinc-900 dark:text-white mb-6 tracking-tight">Mock Categories</h3>
 
-            <input type="text" id="mock-category-modal-input" placeholder="e.g. Part Test, Full Syllabus"
+            <input type="text" id="mock-category-modal-input" placeholder="e.g. JEE Main, BITSAT"
                 class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-brand-500/30 outline-none dark:text-white mb-4 appearance-none font-medium shadow-inner-light dark:shadow-inner-dark">
+
+            <div class="mb-4">
+                <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">Maximum Marks</label>
+                <input type="number" id="mock-category-max-marks" placeholder="e.g. 300"
+                    class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500/30 outline-none dark:text-white appearance-none font-medium shadow-inner-light dark:shadow-inner-dark">
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">Filter Subjects</label>
+                <div id="mock-category-subjects-list" class="grid grid-cols-2 gap-2 max-h-[120px] overflow-y-auto custom-scrollbar pr-2">
+                    <!-- Dynamic subject checkboxes -->
+                </div>
+            </div>
 
             <div class="flex gap-3 justify-end mb-8">
                 <button onclick="closeMockCategoryModal()"
                     class="px-5 py-2.5 rounded-xl text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-bold text-sm transition-colors">Done</button>
-                <button onclick="addMockCategory()"
+                <button onclick="addMockCategory()" id="btn-add-mock-category"
                     class="px-6 py-2.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold text-sm shadow-md transition-all active:scale-95">Add</button>
             </div>
 
@@ -2695,12 +2707,10 @@
                     <label
                         class="block text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Category</label>
                     <button type="button" onclick="closeEditMockModal(); openMockCategoryModal()"
-                        class="text-[10px] font-bold text-brand-600 dark:text-brand-400 hover:underline">+
-                        Manage</button>
+                        class="text-[10px] font-bold text-brand-600 dark:text-brand-400 hover:underline">+ Manage Categories</button>
                 </div>
-                <select id="edit-mock-category"
-                    class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800 rounded-xl px-4 py-3.5 text-sm outline-none dark:text-white font-bold focus:ring-2 focus:ring-brand-500 shadow-inner-light dark:shadow-inner-dark appearance-none">
-                    <!-- Options populated by JS -->
+                <select id="edit-mock-category" onchange="handleEditMockCategoryChange()"
+                    class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-bold focus:ring-2 focus:ring-brand-500 shadow-inner-light dark:shadow-inner-dark appearance-none">
                 </select>
             </div>
             <input type="hidden" id="edit-mock-id">
