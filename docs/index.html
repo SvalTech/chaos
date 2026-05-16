@@ -85,13 +85,28 @@
     <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-  <script type="module" crossorigin src="./assets/main-DL7mV-Oj.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/main-GQjYE8e3.css">
+  <script type="module" crossorigin src="./assets/main-BqydCRSb.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/main-C7Z1D1A7.css">
 <script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
 
 <body
     class="h-screen flex flex-col md:flex-row overflow-hidden text-zinc-800 bg-zinc-50 dark:bg-[#09090b] dark:text-zinc-100 transition-colors duration-500 selection:bg-brand-500 selection:text-white">
+    <!-- NATIVE DESKTOP PWA TITLE BAR -->
+    <div id="pwa-titlebar"
+        class="fixed top-0 left-0 w-full flex items-center z-[9999] bg-zinc-50 dark:bg-[#09090b] border-b border-zinc-200/80 dark:border-zinc-800/80 hidden select-none">
 
+        <!-- The draggable area automatically avoids the Windows/Mac OS buttons using CSS env() -->
+        <div class="app-drag-region flex items-center px-4 w-full h-full gap-4">
+
+            <!-- Native App Icon & Name -->
+            <img src="logo.png" alt="Logo" class="w-4 h-4 grayscale opacity-70 pointer-events-none">
+            <span class="text-[10px] font-black tracking-widest uppercase text-zinc-500">ChaosPrep</span>
+
+            <!-- Spacer -->
+            <div class="flex-1"></div>
+
+        </div>
+    </div>
 
     <div id="app-background" class="fixed inset-0 z-[-1] pointer-events-none">
         <div
@@ -99,718 +114,1318 @@
         </div>
     </div>
 
-    <!-- Replace the existing <div id="login-screen"> ... </div> entirely with this block -->
-    <div id="login-screen" class="fixed inset-0 z-[70] transition-opacity duration-700 overflow-y-auto overflow-x-hidden">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap');
-
-        #login-screen {
-            --brand: #7c3aed;
-            --brand-dim: rgba(124,58,237,0.12);
-            --brand-border: rgba(124,58,237,0.25);
-            --surface: #0a0a0c;
-            --surface-1: #111114;
-            --surface-2: #18181d;
-            --surface-3: #222228;
-            --border: rgba(255,255,255,0.07);
-            --border-hover: rgba(255,255,255,0.14);
-            --text-1: #f4f4f5;
-            --text-2: #a1a1aa;
-            --text-3: #71717a;
-            --heading: 'Syne', sans-serif;
-            --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-            --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            --body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-
-            background: var(--surface);
-            color: var(--text-1);
-            font-family: var(--body);
-            min-height: 100vh;
-        }
-
-        #login-screen *, #login-screen *::before, #login-screen *::after { 
-            box-sizing: border-box; 
-        }
-
-        /* ── Grid bg ── */
-
-        #login-screen .grid-bg {
-            position: absolute; inset: 0; pointer-events: none; z-index: 0;
-            background-image:
-                linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-            background-size: 48px 48px;
-            mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 100%);
-            -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 100%);
-        }
-
-        #login-screen .radial-glow {
-            position: absolute; top: -200px; left: 50%; transform: translateX(-50%);
-            width: 900px; height: 600px; pointer-events: none; z-index: 0;
-            background: radial-gradient(ellipse at center, rgba(124,58,237,0.18) 0%, transparent 70%);
-        }
-
-        #login-screen .wrapper { position: relative; z-index: 1; }
-
-        /* ── Nav ── */
-
-        #login-screen nav {
-            position: sticky; top: 0; z-index: 50;
-            border-bottom: 1px solid var(--border);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            background: rgba(10,10,12,0.75);
-        }
-
-        #login-screen .nav-inner {
-            max-width: 1200px; margin: 0 auto;
-            padding: 0 2rem; height: 60px;
-            display: flex; align-items: center; justify-content: space-between;
-        }
-
-        #login-screen .nav-brand { display: flex; align-items: center; gap: 10px; }
-
-        #login-screen .nav-brand img { width: 30px; height: 30px; border-radius: 8px; }
-
-        #login-screen .nav-brand-name { font-family: var(--sans); font-weight: 800; font-size: 17px; letter-spacing: -0.02em; color: var(--text-1); }
-
-        #login-screen .nav-links { display: flex; align-items: center; gap: 1.5rem; }
-
-        #login-screen .nav-links a { font-size: 13px; font-weight: 500; color: var(--text-3); text-decoration: none; transition: color .2s; }
-
-        #login-screen .nav-links a:hover { color: var(--text-1); }
-
-        #login-screen .btn-signin {
-            font-size: 13px; font-weight: 600; font-family: var(--sans);
-            background: var(--text-1); color: #0a0a0c;
-            border: none; padding: 8px 18px; border-radius: 8px; cursor: pointer;
-            transition: opacity .2s, transform .15s;
-            letter-spacing: -0.01em;
-        }
-
-        #login-screen .btn-signin:hover { opacity: 0.88; transform: scale(0.98); }
-
-        /* ── HERO ── */
-
-        #login-screen .hero {
-            max-width: 1440px; margin: 0 auto;
-            padding: 6rem 3rem 4rem;
-            display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 6rem; align-items: center;
-        }
-
-        @media (max-width: 1024px) { #login-screen .hero { grid-template-columns: 1fr 1fr; gap: 4rem; } }
-
-        @media (max-width: 900px) { #login-screen .hero { grid-template-columns: 1fr; gap: 3rem; padding: 4rem 1.5rem; } }
-
-        #login-screen .hero-eyebrow {
-            display: inline-flex; align-items: center; gap: 8px;
-            font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: var(--brand); border: 1px solid var(--brand-border);
-            background: var(--brand-dim);
-            padding: 6px 12px; border-radius: 6px; margin-bottom: 1.5rem;
-            animation: lsFadeUp .6s ease both;
-        }
-
-        #login-screen .hero-eyebrow-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); animation: lsPulse 2s infinite; }
-
-        #login-screen .hero-headline {
-            font-family: var(--heading); font-weight: 800; font-size: clamp(3rem, 6vw, 5.25rem);
-            line-height: 1.0; letter-spacing: -0.035em;
-            color: var(--text-1); margin-bottom: 1.5rem; margin-top: 0;
-            animation: lsFadeUp .7s .1s ease both;
-        }
-
-        #login-screen .hero-headline .dim { color: var(--text-3); }
-
-        #login-screen .hero-body {
-            font-size: 16px; line-height: 1.75; color: var(--text-2); font-weight: 400;
-            max-width: 420px; margin-bottom: 2.5rem; margin-top: 0;
-            animation: lsFadeUp .7s .2s ease both;
-        }
-
-        #login-screen .hero-ctas {
-            display: flex; gap: 12px; flex-wrap: wrap;
-            animation: lsFadeUp .7s .3s ease both;
-        }
-
-        #login-screen .btn-primary {
-            display: inline-flex; align-items: center; gap: 10px;
-            font-family: var(--sans); font-weight: 700; font-size: 14px; letter-spacing: -0.01em;
-            background: white; color: #0a0a0c;
-            padding: 12px 22px; border-radius: 10px; border: none; cursor: pointer;
-            transition: opacity .2s, transform .15s; text-decoration: none;
-        }
-
-        #login-screen .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
-
-        #login-screen .btn-primary img { width: 18px; height: 18px; }
-
-        #login-screen .btn-ghost {
-            display: inline-flex; align-items: center; gap: 8px;
-            font-family: var(--sans); font-weight: 600; font-size: 14px; letter-spacing: -0.01em;
-            color: var(--text-2); background: transparent;
-            padding: 12px 20px; border-radius: 10px; border: 1px solid var(--border); cursor: pointer;
-            transition: border-color .2s, color .2s, transform .15s; text-decoration: none;
-        }
-
-        #login-screen .btn-ghost:hover { border-color: var(--border-hover); color: var(--text-1); transform: translateY(-1px); }
-
-        #login-screen .hero-trust {
-            display: flex; align-items: center; gap: 1.5rem; margin-top: 2.5rem;
-            padding-top: 2rem; border-top: 1px solid var(--border);
-            animation: lsFadeUp .7s .4s ease both;
-        }
-
-        #login-screen .trust-pill {
-            display: inline-flex; align-items: center; gap: 6px;
-            font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-        }
-
-        #login-screen .trust-dot-green { width: 7px; height: 7px; border-radius: 50%; background: #10b981; }
-
-        #login-screen .trust-dot-red { width: 7px; height: 7px; border-radius: 50%; background: #f43f5e; }
-
-        #login-screen .trust-sep { width: 1px; height: 24px; background: var(--border); }
-
-        #login-screen .trust-partner { display: flex; align-items: center; gap: 10px; text-decoration: none; transition: opacity .2s; }
-
-        #login-screen .trust-partner:hover { opacity: 0.75; }
-
-        #login-screen .trust-partner-logo { width: 28px; height: 28px; border-radius: 7px; background: rgba(255,255,255,0.07); border: 1px solid var(--border); padding: 5px; display: flex; align-items: center; justify-content: center; }
-
-        #login-screen .trust-partner-logo img { width: 100%; height: 100%; -o-object-fit: contain; object-fit: contain; filter: grayscale(1) brightness(0.7); }
-
-        #login-screen .trust-partner:hover .trust-partner-logo img { filter: grayscale(0) brightness(1); }
-
-        #login-screen .trust-partner-label { display: flex; flex-direction: column; }
-
-        #login-screen .trust-partner-sub { font-family: var(--mono); font-size: 9px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.12em; line-height: 1; }
-
-        #login-screen .trust-partner-name { font-family: var(--sans); font-size: 13px; font-weight: 700; color: var(--text-2); transition: color .2s; letter-spacing: -0.01em; line-height: 1.2; }
-
-        #login-screen .trust-partner:hover .trust-partner-name { color: var(--text-1); }
-
-        /* ── Hero image ── */
-
-        #login-screen .hero-visual { animation: lsFadeUp .8s .2s ease both; transform: scale(1.05); transform-origin: right center; }
-
-        #login-screen .hero-img-frame {
-            position: relative; border-radius: 20px; border: 1px solid var(--border);
-            background: var(--surface-1); padding: 10px;
-            box-shadow: 0 40px 80px rgba(0,0,0,0.6);
-        }
-
-        #login-screen .hero-img-frame img { width: 100%; border-radius: 13px; display: block; }
-
-        #login-screen .hero-float { position: absolute; display: flex; align-items: center; gap: 12px; background: rgba(10,10,12,0.92); border: 1px solid var(--border); border-radius: 14px; padding: 12px 16px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: 0 16px 32px rgba(0,0,0,0.5); }
-
-        #login-screen .hero-float-streak { bottom: -20px; left: -30px; }
-
-        #login-screen .hero-float-timer { top: -16px; right: -20px; }
-
-        #login-screen .float-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-
-        #login-screen .float-icon-orange { background: rgba(249,115,22,0.18); }
-
-        #login-screen .float-icon-brand { background: var(--brand-dim); }
-
-        #login-screen .float-label { font-family: var(--mono); font-size: 9px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 2px; }
-
-        #login-screen .float-value { font-family: var(--sans); font-size: 18px; font-weight: 800; color: var(--text-1); letter-spacing: -0.02em; line-height: 1; }
-
-        #login-screen .float-mono { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--text-1); letter-spacing: -0.01em; }
-
-        #login-screen .float-live { font-family: var(--mono); font-size: 9px; color: var(--brand); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 1px; display: flex; align-items: center; gap: 5px; }
-
-        #login-screen .live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--brand); animation: lsPulse 2s infinite; }
-
-        /* ── Section headers ── */
-
-        #login-screen .section-label {
-            font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.15em;
-            text-transform: uppercase; color: var(--text-3); margin-bottom: 0.75rem;
-            display: flex; align-items: center; gap: 10px;
-        }
-
-        #login-screen .section-label::before { content: ''; display: block; width: 24px; height: 1px; background: var(--text-3); }
-
-        #login-screen .section-title {
-            font-family: var(--heading); font-weight: 800; font-size: clamp(2rem, 4vw, 3rem);
-            letter-spacing: -0.03em; line-height: 1.1; color: var(--text-1); margin-bottom: 1rem; margin-top: 0;
-        }
-
-        #login-screen .section-body { font-size: 15px; line-height: 1.75; color: var(--text-2); max-width: 560px; margin-top: 0; }
-
-        /* ── Features ── */
-
-        #login-screen .features-section { max-width: 1200px; margin: 6rem auto; padding: 0 2rem; }
-
-        #login-screen .features-grid {
-            display: grid; 
-            grid-template-columns: repeat(12, 1fr); 
-            gap: 1px;
-            background: var(--border); 
-            border-radius: 20px; 
-            overflow: hidden;
-            border: 1px solid var(--border); 
-            margin-top: 4rem;
-        }
-
-        #login-screen .feature-cell {
-            background: var(--surface-1); padding: 2rem;
-            transition: background .25s;
-            display: flex; flex-direction: column; gap: 1rem;
-        }
-
-        #login-screen .feature-cell:hover { background: var(--surface-2); }
-
-        #login-screen .span-12 { grid-column: span 12; }
-
-        #login-screen .span-8 { grid-column: span 8; }
-
-        #login-screen .span-6 { grid-column: span 6; }
-
-        #login-screen .span-4 { grid-column: span 4; }
-
-        @media (max-width: 900px) { 
-            #login-screen .span-12, #login-screen .span-8, #login-screen .span-6, #login-screen .span-4 { 
-                grid-column: span 12; 
-            } 
-        }
-
-        @media (min-width: 901px) and (max-width: 1100px) { 
-            #login-screen .span-8, #login-screen .span-4 { grid-column: span 12; }
-            #login-screen .span-6 { grid-column: span 6; } 
-        }
-
-        #login-screen .feature-tag {
-            font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
-            text-transform: uppercase; color: var(--text-3); margin-bottom: 4px;
-        }
-
-        #login-screen .feature-title { font-family: var(--heading); font-weight: 700; font-size: 18px; letter-spacing: -0.02em; color: var(--text-1); }
-
-        #login-screen .feature-desc { font-size: 13.5px; line-height: 1.7; color: var(--text-2); flex: 1; margin: 0; }
-
-        #login-screen .mini-stat-row { display: flex; gap: 8px; margin-top: 1rem; }
-
-        #login-screen .mini-stat {
-            flex: 1; background: var(--surface-2); border: 1px solid var(--border);
-            border-radius: 10px; padding: 10px 12px;
-        }
-
-        #login-screen .mini-stat-label { font-family: var(--mono); font-size: 9px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
-
-        #login-screen .mini-stat-value { font-family: var(--sans); font-weight: 800; font-size: 22px; letter-spacing: -0.03em; color: var(--text-1); line-height: 1; }
-
-        #login-screen .mini-stat-value.green { color: #10b981; }
-
-        #login-screen .mini-stat-value.blue { color: #3b82f6; }
-
-        #login-screen .mini-stat-value.amber { color: #f59e0b; }
-
-        #login-screen .mock-log {
-            background: var(--surface-2); border: 1px solid var(--border);
-            border-radius: 10px; padding: 10px 12px; margin-top: 8px;
-            display: flex; align-items: center; justify-content: space-between;
-        }
-
-        #login-screen .mock-subject { font-family: var(--mono); font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-3); display: flex; align-items: center; gap: 8px; }
-
-        #login-screen .mock-badge { font-family: var(--mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 3px 8px; border-radius: 5px; }
-
-        #login-screen .badge-rose { background: rgba(244,63,94,0.12); color: #f43f5e; border: 1px solid rgba(244,63,94,0.2); }
-
-        #login-screen .badge-amber { background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
-
-        #login-screen .progress-bar { height: 4px; background: var(--surface-2); border-radius: 2px; margin-top: 12px; overflow: hidden; }
-
-        #login-screen .progress-fill { height: 100%; border-radius: 2px; background: var(--brand); }
-
-        #login-screen .progress-fill.green { background: #10b981; }
-
-        #login-screen .timer-display {
-            font-family: var(--mono); font-size: 2.5rem; font-weight: 700; letter-spacing: -0.02em;
-            color: var(--text-1); margin: 0.75rem 0 0.25rem; line-height: 1;
-        }
-
-        #login-screen .timer-sub { font-family: var(--mono); font-size: 11px; color: var(--brand); text-transform: uppercase; letter-spacing: 0.1em; }
-
-        #login-screen .squad-row {
-            display: flex; align-items: center; justify-content: space-between;
-            background: var(--surface-2); border: 1px solid var(--border);
-            border-radius: 10px; padding: 10px 14px; margin-top: 8px;
-        }
-
-        #login-screen .squad-user { display: flex; align-items: center; gap: 10px; }
-
-        #login-screen .squad-avatar { width: 32px; height: 32px; border-radius: 8px; background: var(--brand-dim); display: flex; align-items: center; justify-content: center; font-family: var(--sans); font-size: 13px; font-weight: 800; color: var(--brand); border: 1px solid var(--brand-border); }
-
-        #login-screen .squad-name { font-family: var(--sans); font-size: 14px; font-weight: 600; color: var(--text-1); letter-spacing: -0.01em; }
-
-        #login-screen .squad-status { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 6px; }
-
-        #login-screen .squad-status.live { color: var(--brand); }
-
-        #login-screen .squad-status.idle { color: var(--text-3); }
-
-        /* ── Testimonials (Bento Grid) ── */
-
-        #login-screen .testimonials-section { max-width: 1200px; margin: 7rem auto; padding: 0 2rem; }
-
-        #login-screen .testimonials-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 3rem; flex-wrap: wrap; gap: 1.5rem; }
-
-        #login-screen .bento-testimonials {
-            -moz-column-count: 1;
-                 column-count: 1;
-            -moz-column-gap: 1.5rem;
-                 column-gap: 1.5rem;
-        }
-
-        @media (min-width: 768px) {
-            #login-screen .bento-testimonials { -moz-column-count: 2; column-count: 2; }
-        }
-
-        @media (min-width: 1024px) {
-            #login-screen .bento-testimonials { -moz-column-count: 3; column-count: 3; }
-        }
-
-        #login-screen .bento-card {
-            -moz-column-break-inside: avoid;
-                 break-inside: avoid;
-            margin-bottom: 1.5rem;
-            border-radius: 16px;
-            border: 1px solid var(--border);
-            background: var(--surface-1);
-            overflow: hidden;
-            cursor: zoom-in;
-            transition: border-color .2s, transform .2s, box-shadow .2s;
-            position: relative;
-        }
-
-        #login-screen .bento-card:hover {
-            border-color: var(--border-hover);
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px rgba(0,0,0,0.4);
-        }
-
-        #login-screen .bento-card img {
-            width: 100%;
-            height: auto;
-            -o-object-fit: contain;
-               object-fit: contain;
-            display: block;
-            border-radius: 16px;
-        }
-
-        #login-screen .discord-cta { text-align: center; margin-top: 3rem; }
-
-        #login-screen .btn-discord {
-            display: inline-flex; align-items: center; gap: 10px;
-            font-family: var(--sans); font-weight: 700; font-size: 14px; letter-spacing: -0.01em;
-            background: #5865F2; color: white;
-            padding: 12px 24px; border-radius: 10px; border: none; cursor: pointer;
-            transition: opacity .2s, transform .15s; text-decoration: none;
-        }
-
-        #login-screen .btn-discord:hover { opacity: 0.88; transform: translateY(-1px); }
-
-        /* ── Live count ── */
-
-        #login-screen .live-count-bar {
-            background: var(--surface-1); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
-            padding: 12px 2rem; text-align: center; margin-bottom: 0;
-        }
-
-        #login-screen .live-count-inner {
-            font-family: var(--mono); font-size: 11px; color: var(--text-3); letter-spacing: 0.08em; text-transform: uppercase;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-        }
-
-        #login-screen .live-number { color: var(--text-1); font-weight: 700; font-size: 13px; }
-
-        /* ── Footer ── */
-
-        #login-screen footer {
-            border-top: 1px solid var(--border);
-            max-width: 1200px; margin: 0 auto; padding: 2rem;
-            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
-        }
-
-        #login-screen .footer-copy { font-family: var(--mono); font-size: 11px; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; }
-
-        #login-screen .footer-links { display: flex; gap: 1.5rem; }
-
-        #login-screen .footer-links a { font-family: var(--mono); font-size: 11px; color: var(--text-3); text-decoration: none; letter-spacing: 0.06em; text-transform: uppercase; transition: color .2s; }
-
-        #login-screen .footer-links a:hover { color: var(--text-1); }
-
-        /* ── Animations ── */
-
-        @keyframes lsFadeUp {
-            from { opacity: 0; transform: translateY(18px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes lsPulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.55; transform: scale(0.85); }
-        }
-    </style>
-
-    <div class="grid-bg"></div>
-    <div class="radial-glow"></div>
-
-    <div class="wrapper">
-
-        <!-- NAV -->
-        <nav>
-            <div class="nav-inner">
-                <div class="nav-brand">
-                    <img src="logo.png" alt="ChaosPrep">
-                    <span class="nav-brand-name">ChaosPrep</span>
+    <div id="login-screen"
+        class="fixed inset-0 z-[70] transition-opacity duration-700 overflow-y-auto overflow-x-hidden">
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap');
+
+            #login-screen {
+                --brand: #7c3aed;
+                --brand-dim: rgba(124, 58, 237, 0.12);
+                --brand-border: rgba(124, 58, 237, 0.25);
+                --surface: #0a0a0c;
+                --surface-1: #111114;
+                --surface-2: #18181d;
+                --surface-3: #222228;
+                --border: rgba(255, 255, 255, 0.07);
+                --border-hover: rgba(255, 255, 255, 0.14);
+                --text-1: #f4f4f5;
+                --text-2: #a1a1aa;
+                --text-3: #71717a;
+                --heading: 'Syne', sans-serif;
+                --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+                --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                --body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+                background: var(--surface);
+                color: var(--text-1);
+                font-family: var(--body);
+                min-height: 100vh;
+            }
+
+            #login-screen *,
+            #login-screen *::before,
+            #login-screen *::after {
+                box-sizing: border-box;
+            }
+
+            /* ── Grid bg ── */
+
+            #login-screen .grid-bg {
+                position: absolute;
+                inset: 0;
+                pointer-events: none;
+                z-index: 0;
+                background-image:
+                    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+                background-size: 48px 48px;
+                mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 100%);
+                -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 100%);
+            }
+
+            #login-screen .radial-glow {
+                position: absolute;
+                top: -200px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 900px;
+                height: 600px;
+                pointer-events: none;
+                z-index: 0;
+                background: radial-gradient(ellipse at center, rgba(124, 58, 237, 0.18) 0%, transparent 70%);
+            }
+
+            #login-screen .wrapper {
+                position: relative;
+                z-index: 1;
+            }
+
+            /* ── Nav ── */
+
+            #login-screen nav {
+                position: sticky;
+                top: 0;
+                z-index: 50;
+                border-bottom: 1px solid var(--border);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                background: rgba(10, 10, 12, 0.75);
+            }
+
+            #login-screen .nav-inner {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 0 2rem;
+                height: 60px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            #login-screen .nav-brand {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            #login-screen .nav-brand img {
+                width: 30px;
+                height: 30px;
+                border-radius: 8px;
+            }
+
+            #login-screen .nav-brand-name {
+                font-family: var(--sans);
+                font-weight: 800;
+                font-size: 17px;
+                letter-spacing: -0.02em;
+                color: var(--text-1);
+            }
+
+            #login-screen .nav-links {
+                display: flex;
+                align-items: center;
+                gap: 1.5rem;
+            }
+
+            #login-screen .nav-links a {
+                font-size: 13px;
+                font-weight: 500;
+                color: var(--text-3);
+                text-decoration: none;
+                transition: color .2s;
+            }
+
+            #login-screen .nav-links a:hover {
+                color: var(--text-1);
+            }
+
+            #login-screen .btn-signin {
+                font-size: 13px;
+                font-weight: 600;
+                font-family: var(--sans);
+                background: var(--text-1);
+                color: #0a0a0c;
+                border: none;
+                padding: 8px 18px;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: opacity .2s, transform .15s;
+                letter-spacing: -0.01em;
+            }
+
+            #login-screen .btn-signin:hover {
+                opacity: 0.88;
+                transform: scale(0.98);
+            }
+
+            /* ── HERO ── */
+
+            #login-screen .hero {
+                max-width: 1440px;
+                margin: 0 auto;
+                padding: 6rem 3rem 4rem;
+                display: grid;
+                grid-template-columns: 0.8fr 1.2fr;
+                gap: 6rem;
+                align-items: center;
+            }
+
+            @media (max-width: 1024px) {
+                #login-screen .hero {
+                    grid-template-columns: 1fr 1fr;
+                    gap: 4rem;
+                }
+            }
+
+            @media (max-width: 900px) {
+                #login-screen .hero {
+                    grid-template-columns: 1fr;
+                    gap: 3rem;
+                    padding: 4rem 1.5rem;
+                }
+            }
+
+            #login-screen .hero-eyebrow {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                font-family: var(--mono);
+                font-size: 11px;
+                font-weight: 500;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                color: var(--brand);
+                border: 1px solid var(--brand-border);
+                background: var(--brand-dim);
+                padding: 6px 12px;
+                border-radius: 6px;
+                margin-bottom: 1.5rem;
+                animation: lsFadeUp .6s ease both;
+            }
+
+            #login-screen .hero-eyebrow-dot {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: var(--brand);
+                animation: lsPulse 2s infinite;
+            }
+
+            #login-screen .hero-headline {
+                font-family: var(--heading);
+                font-weight: 800;
+                font-size: clamp(3rem, 6vw, 5.25rem);
+                line-height: 1.0;
+                letter-spacing: -0.035em;
+                color: var(--text-1);
+                margin-bottom: 1.5rem;
+                margin-top: 0;
+                animation: lsFadeUp .7s .1s ease both;
+            }
+
+            #login-screen .hero-headline .dim {
+                color: var(--text-3);
+            }
+
+            #login-screen .hero-body {
+                font-size: 16px;
+                line-height: 1.75;
+                color: var(--text-2);
+                font-weight: 400;
+                max-width: 420px;
+                margin-bottom: 2.5rem;
+                margin-top: 0;
+                animation: lsFadeUp .7s .2s ease both;
+            }
+
+            #login-screen .hero-ctas {
+                display: flex;
+                gap: 12px;
+                flex-wrap: wrap;
+                animation: lsFadeUp .7s .3s ease both;
+            }
+
+            #login-screen .btn-primary {
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                font-family: var(--sans);
+                font-weight: 700;
+                font-size: 14px;
+                letter-spacing: -0.01em;
+                background: white;
+                color: #0a0a0c;
+                padding: 12px 22px;
+                border-radius: 10px;
+                border: none;
+                cursor: pointer;
+                transition: opacity .2s, transform .15s;
+                text-decoration: none;
+            }
+
+            #login-screen .btn-primary:hover {
+                opacity: 0.88;
+                transform: translateY(-1px);
+            }
+
+            #login-screen .btn-primary img {
+                width: 18px;
+                height: 18px;
+            }
+
+            #login-screen .btn-ghost {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                font-family: var(--sans);
+                font-weight: 600;
+                font-size: 14px;
+                letter-spacing: -0.01em;
+                color: var(--text-2);
+                background: transparent;
+                padding: 12px 20px;
+                border-radius: 10px;
+                border: 1px solid var(--border);
+                cursor: pointer;
+                transition: border-color .2s, color .2s, transform .15s;
+                text-decoration: none;
+            }
+
+            #login-screen .btn-ghost:hover {
+                border-color: var(--border-hover);
+                color: var(--text-1);
+                transform: translateY(-1px);
+            }
+
+            #login-screen .hero-trust {
+                display: flex;
+                align-items: center;
+                gap: 1.5rem;
+                margin-top: 2.5rem;
+                padding-top: 2rem;
+                border-top: 1px solid var(--border);
+                animation: lsFadeUp .7s .4s ease both;
+            }
+
+            #login-screen .trust-pill {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                font-family: var(--mono);
+                font-size: 10px;
+                font-weight: 700;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+            }
+
+            #login-screen .trust-dot-green {
+                width: 7px;
+                height: 7px;
+                border-radius: 50%;
+                background: #10b981;
+            }
+
+            #login-screen .trust-dot-red {
+                width: 7px;
+                height: 7px;
+                border-radius: 50%;
+                background: #f43f5e;
+            }
+
+            #login-screen .trust-sep {
+                width: 1px;
+                height: 24px;
+                background: var(--border);
+            }
+
+            #login-screen .trust-partner {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                text-decoration: none;
+                transition: opacity .2s;
+            }
+
+            #login-screen .trust-partner:hover {
+                opacity: 0.75;
+            }
+
+            #login-screen .trust-partner-logo {
+                width: 28px;
+                height: 28px;
+                border-radius: 7px;
+                background: rgba(255, 255, 255, 0.07);
+                border: 1px solid var(--border);
+                padding: 5px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            #login-screen .trust-partner-logo img {
+                width: 100%;
+                height: 100%;
+                -o-object-fit: contain;
+                   object-fit: contain;
+                filter: grayscale(1) brightness(0.7);
+            }
+
+            #login-screen .trust-partner:hover .trust-partner-logo img {
+                filter: grayscale(0) brightness(1);
+            }
+
+            #login-screen .trust-partner-label {
+                display: flex;
+                flex-direction: column;
+            }
+
+            #login-screen .trust-partner-sub {
+                font-family: var(--mono);
+                font-size: 9px;
+                color: var(--text-3);
+                text-transform: uppercase;
+                letter-spacing: 0.12em;
+                line-height: 1;
+            }
+
+            #login-screen .trust-partner-name {
+                font-family: var(--sans);
+                font-size: 13px;
+                font-weight: 700;
+                color: var(--text-2);
+                transition: color .2s;
+                letter-spacing: -0.01em;
+                line-height: 1.2;
+            }
+
+            #login-screen .trust-partner:hover .trust-partner-name {
+                color: var(--text-1);
+            }
+
+            /* ── Hero image ── */
+
+            #login-screen .hero-visual {
+                animation: lsFadeUp .8s .2s ease both;
+                transform: scale(1.05);
+                transform-origin: right center;
+            }
+
+            #login-screen .hero-img-frame {
+                position: relative;
+                border-radius: 20px;
+                border: 1px solid var(--border);
+                background: var(--surface-1);
+                padding: 10px;
+                box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6);
+            }
+
+            #login-screen .hero-img-frame img {
+                width: 100%;
+                border-radius: 13px;
+                display: block;
+            }
+
+            #login-screen .hero-float {
+                position: absolute;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                background: rgba(10, 10, 12, 0.92);
+                border: 1px solid var(--border);
+                border-radius: 14px;
+                padding: 12px 16px;
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+                box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5);
+            }
+
+            #login-screen .hero-float-streak {
+                bottom: -20px;
+                left: -30px;
+            }
+
+            #login-screen .hero-float-timer {
+                top: -16px;
+                right: -20px;
+            }
+
+            #login-screen .float-icon {
+                width: 36px;
+                height: 36px;
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            #login-screen .float-icon-orange {
+                background: rgba(249, 115, 22, 0.18);
+            }
+
+            #login-screen .float-icon-brand {
+                background: var(--brand-dim);
+            }
+
+            #login-screen .float-label {
+                font-family: var(--mono);
+                font-size: 9px;
+                color: var(--text-3);
+                text-transform: uppercase;
+                letter-spacing: 0.1em;
+                margin-bottom: 2px;
+            }
+
+            #login-screen .float-value {
+                font-family: var(--sans);
+                font-size: 18px;
+                font-weight: 800;
+                color: var(--text-1);
+                letter-spacing: -0.02em;
+                line-height: 1;
+            }
+
+            #login-screen .float-mono {
+                font-family: var(--mono);
+                font-size: 16px;
+                font-weight: 700;
+                color: var(--text-1);
+                letter-spacing: -0.01em;
+            }
+
+            #login-screen .float-live {
+                font-family: var(--mono);
+                font-size: 9px;
+                color: var(--brand);
+                text-transform: uppercase;
+                letter-spacing: 0.1em;
+                margin-top: 1px;
+                display: flex;
+                align-items: center;
+                gap: 5px;
+            }
+
+            #login-screen .live-dot {
+                width: 5px;
+                height: 5px;
+                border-radius: 50%;
+                background: var(--brand);
+                animation: lsPulse 2s infinite;
+            }
+
+            /* ── Section headers ── */
+
+            #login-screen .section-label {
+                font-family: var(--mono);
+                font-size: 10px;
+                font-weight: 700;
+                letter-spacing: 0.15em;
+                text-transform: uppercase;
+                color: var(--text-3);
+                margin-bottom: 0.75rem;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            #login-screen .section-label::before {
+                content: '';
+                display: block;
+                width: 24px;
+                height: 1px;
+                background: var(--text-3);
+            }
+
+            #login-screen .section-title {
+                font-family: var(--heading);
+                font-weight: 800;
+                font-size: clamp(2rem, 4vw, 3rem);
+                letter-spacing: -0.03em;
+                line-height: 1.1;
+                color: var(--text-1);
+                margin-bottom: 1rem;
+                margin-top: 0;
+            }
+
+            #login-screen .section-body {
+                font-size: 15px;
+                line-height: 1.75;
+                color: var(--text-2);
+                max-width: 560px;
+                margin-top: 0;
+            }
+
+            /* ── Features ── */
+
+            #login-screen .features-section {
+                max-width: 1200px;
+                margin: 6rem auto;
+                padding: 0 2rem;
+            }
+
+            #login-screen .features-grid {
+                display: grid;
+                grid-template-columns: repeat(12, 1fr);
+                gap: 1px;
+                background: var(--border);
+                border-radius: 20px;
+                overflow: hidden;
+                border: 1px solid var(--border);
+                margin-top: 4rem;
+            }
+
+            #login-screen .feature-cell {
+                background: var(--surface-1);
+                padding: 2rem;
+                transition: background .25s;
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            #login-screen .feature-cell:hover {
+                background: var(--surface-2);
+            }
+
+            #login-screen .span-12 {
+                grid-column: span 12;
+            }
+
+            #login-screen .span-8 {
+                grid-column: span 8;
+            }
+
+            #login-screen .span-6 {
+                grid-column: span 6;
+            }
+
+            #login-screen .span-4 {
+                grid-column: span 4;
+            }
+
+            @media (max-width: 900px) {
+
+                #login-screen .span-12,
+                #login-screen .span-8,
+                #login-screen .span-6,
+                #login-screen .span-4 {
+                    grid-column: span 12;
+                }
+            }
+
+            @media (min-width: 901px) and (max-width: 1100px) {
+
+                #login-screen .span-8,
+                #login-screen .span-4 {
+                    grid-column: span 12;
+                }
+
+                #login-screen .span-6 {
+                    grid-column: span 6;
+                }
+            }
+
+            #login-screen .feature-tag {
+                font-family: var(--mono);
+                font-size: 9px;
+                font-weight: 700;
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+                color: var(--text-3);
+                margin-bottom: 4px;
+            }
+
+            #login-screen .feature-title {
+                font-family: var(--heading);
+                font-weight: 700;
+                font-size: 18px;
+                letter-spacing: -0.02em;
+                color: var(--text-1);
+            }
+
+            #login-screen .feature-desc {
+                font-size: 13.5px;
+                line-height: 1.7;
+                color: var(--text-2);
+                flex: 1;
+                margin: 0;
+            }
+
+            #login-screen .mini-stat-row {
+                display: flex;
+                gap: 8px;
+                margin-top: 1rem;
+            }
+
+            #login-screen .mini-stat {
+                flex: 1;
+                background: var(--surface-2);
+                border: 1px solid var(--border);
+                border-radius: 10px;
+                padding: 10px 12px;
+            }
+
+            #login-screen .mini-stat-label {
+                font-family: var(--mono);
+                font-size: 9px;
+                color: var(--text-3);
+                text-transform: uppercase;
+                letter-spacing: 0.1em;
+                margin-bottom: 4px;
+            }
+
+            #login-screen .mini-stat-value {
+                font-family: var(--sans);
+                font-weight: 800;
+                font-size: 22px;
+                letter-spacing: -0.03em;
+                color: var(--text-1);
+                line-height: 1;
+            }
+
+            #login-screen .mini-stat-value.green {
+                color: #10b981;
+            }
+
+            #login-screen .mini-stat-value.blue {
+                color: #3b82f6;
+            }
+
+            #login-screen .mini-stat-value.amber {
+                color: #f59e0b;
+            }
+
+            #login-screen .mock-log {
+                background: var(--surface-2);
+                border: 1px solid var(--border);
+                border-radius: 10px;
+                padding: 10px 12px;
+                margin-top: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            #login-screen .mock-subject {
+                font-family: var(--mono);
+                font-size: 10px;
+                font-weight: 700;
+                text-transform: uppercase;
+                color: var(--text-3);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            #login-screen .mock-badge {
+                font-family: var(--mono);
+                font-size: 9px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                padding: 3px 8px;
+                border-radius: 5px;
+            }
+
+            #login-screen .badge-rose {
+                background: rgba(244, 63, 94, 0.12);
+                color: #f43f5e;
+                border: 1px solid rgba(244, 63, 94, 0.2);
+            }
+
+            #login-screen .badge-amber {
+                background: rgba(245, 158, 11, 0.12);
+                color: #f59e0b;
+                border: 1px solid rgba(245, 158, 11, 0.2);
+            }
+
+            #login-screen .progress-bar {
+                height: 4px;
+                background: var(--surface-2);
+                border-radius: 2px;
+                margin-top: 12px;
+                overflow: hidden;
+            }
+
+            #login-screen .progress-fill {
+                height: 100%;
+                border-radius: 2px;
+                background: var(--brand);
+            }
+
+            #login-screen .progress-fill.green {
+                background: #10b981;
+            }
+
+            #login-screen .timer-display {
+                font-family: var(--mono);
+                font-size: 2.5rem;
+                font-weight: 700;
+                letter-spacing: -0.02em;
+                color: var(--text-1);
+                margin: 0.75rem 0 0.25rem;
+                line-height: 1;
+            }
+
+            #login-screen .timer-sub {
+                font-family: var(--mono);
+                font-size: 11px;
+                color: var(--brand);
+                text-transform: uppercase;
+                letter-spacing: 0.1em;
+            }
+
+            #login-screen .squad-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                background: var(--surface-2);
+                border: 1px solid var(--border);
+                border-radius: 10px;
+                padding: 10px 14px;
+                margin-top: 8px;
+            }
+
+            #login-screen .squad-user {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            #login-screen .squad-avatar {
+                width: 32px;
+                height: 32px;
+                border-radius: 8px;
+                background: var(--brand-dim);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: var(--sans);
+                font-size: 13px;
+                font-weight: 800;
+                color: var(--brand);
+                border: 1px solid var(--brand-border);
+            }
+
+            #login-screen .squad-name {
+                font-family: var(--sans);
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--text-1);
+                letter-spacing: -0.01em;
+            }
+
+            #login-screen .squad-status {
+                font-family: var(--mono);
+                font-size: 9px;
+                text-transform: uppercase;
+                letter-spacing: 0.1em;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            #login-screen .squad-status.live {
+                color: var(--brand);
+            }
+
+            #login-screen .squad-status.idle {
+                color: var(--text-3);
+            }
+
+            /* ── Testimonials (Bento Grid) ── */
+
+            #login-screen .testimonials-section {
+                max-width: 1200px;
+                margin: 7rem auto;
+                padding: 0 2rem;
+            }
+
+            #login-screen .testimonials-header {
+                display: flex;
+                align-items: flex-end;
+                justify-content: space-between;
+                margin-bottom: 3rem;
+                flex-wrap: wrap;
+                gap: 1.5rem;
+            }
+
+            #login-screen .bento-testimonials {
+                -moz-column-count: 1;
+                     column-count: 1;
+                -moz-column-gap: 1.5rem;
+                     column-gap: 1.5rem;
+            }
+
+            @media (min-width: 768px) {
+                #login-screen .bento-testimonials {
+                    -moz-column-count: 2;
+                         column-count: 2;
+                }
+            }
+
+            @media (min-width: 1024px) {
+                #login-screen .bento-testimonials {
+                    -moz-column-count: 3;
+                         column-count: 3;
+                }
+            }
+
+            #login-screen .bento-card {
+                -moz-column-break-inside: avoid;
+                     break-inside: avoid;
+                margin-bottom: 1.5rem;
+                border-radius: 16px;
+                border: 1px solid var(--border);
+                background: var(--surface-1);
+                overflow: hidden;
+                cursor: zoom-in;
+                transition: border-color .2s, transform .2s, box-shadow .2s;
+                position: relative;
+            }
+
+            #login-screen .bento-card:hover {
+                border-color: var(--border-hover);
+                transform: translateY(-4px);
+                box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+            }
+
+            #login-screen .bento-card img {
+                width: 100%;
+                height: auto;
+                -o-object-fit: contain;
+                   object-fit: contain;
+                display: block;
+                border-radius: 16px;
+            }
+
+            #login-screen .discord-cta {
+                text-align: center;
+                margin-top: 3rem;
+            }
+
+            #login-screen .btn-discord {
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                font-family: var(--sans);
+                font-weight: 700;
+                font-size: 14px;
+                letter-spacing: -0.01em;
+                background: #5865F2;
+                color: white;
+                padding: 12px 24px;
+                border-radius: 10px;
+                border: none;
+                cursor: pointer;
+                transition: opacity .2s, transform .15s;
+                text-decoration: none;
+            }
+
+            #login-screen .btn-discord:hover {
+                opacity: 0.88;
+                transform: translateY(-1px);
+            }
+
+            /* ── Live count ── */
+
+            #login-screen .live-count-bar {
+                background: var(--surface-1);
+                border-top: 1px solid var(--border);
+                border-bottom: 1px solid var(--border);
+                padding: 12px 2rem;
+                text-align: center;
+                margin-bottom: 0;
+            }
+
+            #login-screen .live-count-inner {
+                font-family: var(--mono);
+                font-size: 11px;
+                color: var(--text-3);
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+            }
+
+            #login-screen .live-number {
+                color: var(--text-1);
+                font-weight: 700;
+                font-size: 13px;
+            }
+
+            /* ── Footer ── */
+
+            #login-screen footer {
+                border-top: 1px solid var(--border);
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 2rem;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 1rem;
+            }
+
+            #login-screen .footer-copy {
+                font-family: var(--mono);
+                font-size: 11px;
+                color: var(--text-3);
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+            }
+
+            #login-screen .footer-links {
+                display: flex;
+                gap: 1.5rem;
+            }
+
+            #login-screen .footer-links a {
+                font-family: var(--mono);
+                font-size: 11px;
+                color: var(--text-3);
+                text-decoration: none;
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+                transition: color .2s;
+            }
+
+            #login-screen .footer-links a:hover {
+                color: var(--text-1);
+            }
+
+            /* ── Animations ── */
+
+            @keyframes lsFadeUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(18px);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            @keyframes lsPulse {
+
+                0%,
+                100% {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+
+                50% {
+                    opacity: 0.55;
+                    transform: scale(0.85);
+                }
+            }
+        </style>
+
+        <div class="grid-bg"></div>
+        <div class="radial-glow"></div>
+
+        <div class="wrapper">
+
+            <!-- NAV -->
+            <nav>
+                <div class="nav-inner">
+                    <div class="nav-brand">
+                        <img src="logo.png" alt="ChaosPrep">
+                        <span class="nav-brand-name">ChaosPrep</span>
+                    </div>
+                    <div class="nav-links">
+                        <a href="https://discord.gg/mKXPpSY6Dz" target="_blank"
+                            style="display:flex;align-items:center;gap:6px;">
+                            <i data-lucide="message-square" style="width:14px;height:14px;"></i> Community
+                        </a>
+                        <button class="btn-signin" onclick="signInWithGoogle()">Log In</button>
+                    </div>
                 </div>
-                <div class="nav-links">
-                    <a href="https://discord.gg/mKXPpSY6Dz" target="_blank" style="display:flex;align-items:center;gap:6px;">
-                        <i data-lucide="message-square" style="width:14px;height:14px;"></i> Community
-                    </a>
-                    <button class="btn-signin" onclick="signInWithGoogle()">Log In</button>
+            </nav>
+
+            <!-- LIVE COUNT BAR -->
+            <div class="live-count-bar">
+                <div class="live-count-inner">
+                    <span class="live-number" id="live-student-count">—</span>
+                    <span>aspirants are using ChaosPrep</span>
                 </div>
             </div>
-        </nav>
 
-        <!-- LIVE COUNT BAR -->
-        <div class="live-count-bar">
-            <div class="live-count-inner">
-                <span class="live-number" id="live-student-count">—</span>
-                <span>aspirants are using ChaosPrep</span>
-            </div>
-        </div>
+            <!-- HERO -->
+            <section class="hero">
+                <div class="hero-left">
+                    <div class="hero-eyebrow">
+                        JEE · NEET · Competitive Exams
+                    </div>
 
-        <!-- HERO -->
-        <section class="hero">
-            <div class="hero-left">
-                <div class="hero-eyebrow">
-                    JEE · NEET · Competitive Exams
+                    <h1 class="hero-headline">
+                        Master<br>the <span class="dim">chaos.</span>
+                    </h1>
+
+                    <p class="hero-body">
+                        The operating system for serious aspirants. Micro-manage your syllabus, log your daily hours,
+                        track along with friends and clock consistent 10-hour days.
+                    </p>
+
+                    <div class="hero-ctas">
+                        <button class="btn-primary" onclick="signInWithGoogle()">
+                            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                            Start Tracking
+                        </button>
+                        <a href="#features" class="btn-ghost">
+                            Explore Features
+                            <i data-lucide="arrow-down" style="width:15px;height:15px;"></i>
+                        </a>
+                    </div>
+
+                    <div class="hero-trust">
+                        <div class="trust-pill"><span class="trust-dot-green"></span><span
+                                style="color:var(--text-2)">Free</span></div>
+                        <div class="trust-pill"><span class="trust-dot-red"></span><span style="color:var(--text-2)">No
+                                Ads</span></div>
+                        <div class="trust-sep"></div>
+                        <a href="https://alphajee.online" target="_blank" class="trust-partner">
+                            <div class="trust-partner-logo"><img src="alphajee.png" alt="AlphaJEE"></div>
+                            <div class="trust-partner-label">
+                                <span class="trust-partner-sub">Official Partner</span>
+                                <span class="trust-partner-name">AlphaJEE</span>
+                            </div>
+                        </a>
+                    </div>
                 </div>
 
-                <h1 class="hero-headline">
-                    Master<br>the <span class="dim">chaos.</span>
-                </h1>
+                <div class="hero-visual">
+                    <div class="hero-img-frame">
+                        <img src="og-image.png" alt="ChaosPrep Interface"
+                            onerror="this.style.minHeight='320px';this.style.background='var(--surface-2)'">
 
-                <p class="hero-body">
-                    The operating system for serious aspirants. Micro-manage your syllabus, log your daily hours, track along with friends and clock consistent 10-hour days.
+                        <div class="hero-float hero-float-streak">
+                            <div class="float-icon float-icon-orange">
+                                <i data-lucide="flame" style="width:18px;height:18px;color:#f97316;"></i>
+                            </div>
+                            <div>
+                                <div class="float-label">Study Streak</div>
+                                <div class="float-value">16 Days</div>
+                            </div>
+                        </div>
+
+                        <div class="hero-float hero-float-timer">
+                            <div>
+                                <div class="float-live"><span class="live-dot"></span> Deep Work</div>
+                                <div class="float-mono">04:20:00</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FEATURES -->
+            <section class="features-section" id="features">
+                <div class="section-label">Features</div>
+                <h2 class="section-title">Built for the obsessive.</h2>
+                <p class="section-body">Every tool engineered around the one goal that matters — your rank on exam day.
                 </p>
 
-                <div class="hero-ctas">
-                    <button class="btn-primary" onclick="signInWithGoogle()">
-                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
-                        Start Tracking
-                    </button>
-                    <a href="#features" class="btn-ghost">
-                        Explore Features
-                        <i data-lucide="arrow-down" style="width:15px;height:15px;"></i>
+                <div class="features-grid">
+
+                    <!-- Syllabus -->
+                    <div class="feature-cell span-8">
+                        <div
+                            style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+                            <div>
+                                <div class="feature-tag">Syllabus Matrix</div>
+                                <div class="feature-title">Track to the sub-topic.</div>
+                                <p class="feature-desc" style="max-width:340px;margin-top:0.5rem;">Track completion
+                                    states, revision counts, and PYQ coverage across Physics, Chemistry, Maths &amp;
+                                    Biology — chapter by chapter.</p>
+                            </div>
+                            <div
+                                style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;min-width:200px;">
+                                <div
+                                    style="font-family:var(--mono);font-size:9px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">
+                                    Physics Covered</div>
+                                <div
+                                    style="font-family:var(--sans);font-size:3.5rem;font-weight:800;line-height:1;letter-spacing:-0.04em;color:var(--text-1);">
+                                    82<span style="color:#10b981;font-size:2rem;">%</span></div>
+                                <div class="progress-bar" style="margin-top:10px;">
+                                    <div class="progress-fill"
+                                        style="width:45%;background:var(--brand);display:inline-block;float:left;">
+                                    </div>
+                                    <div class="progress-fill"
+                                        style="width:37%;background:#10b981;display:inline-block;float:left;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mock-log">
+                            <div class="mock-subject">
+                                <span
+                                    style="width:7px;height:7px;border-radius:50%;background:#10b981;display:inline-block;"></span>
+                                Rotational Motion
+                            </div>
+                            <div style="display:flex;gap:6px;">
+                                <span class="mock-badge"
+                                    style="background:var(--surface-3);color:var(--text-2);border:1px solid var(--border);">R3</span>
+                                <span class="mock-badge"
+                                    style="background:rgba(16,185,129,0.1);color:#10b981;border:1px solid rgba(16,185,129,0.2);">PYQs
+                                    ✓</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timer -->
+                    <div class="feature-cell span-4">
+                        <div class="feature-tag">Deep Work Timer</div>
+                        <div class="feature-title">Clock your hours.</div>
+                        <p class="feature-desc">Flow state timer with PiP mode, session linking, and weekly charts.
+                            Built for 10-hour days.</p>
+                        <div
+                            style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:auto;">
+                            <div
+                                style="font-family:var(--mono);font-size:9px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.1em;">
+                                Today's Focus</div>
+                            <div class="timer-display">10<span style="font-size:1.25rem;color:var(--text-3);">h</span>
+                                14<span style="font-size:1.25rem;color:var(--text-3);">m</span></div>
+                            <div class="timer-sub">Physics · Electrostatics</div>
+                        </div>
+                    </div>
+
+                    <!-- Mock Analytics -->
+                    <div class="feature-cell span-6">
+                        <div class="feature-tag">Analytics</div>
+                        <div class="feature-title">Measure trajectory.</div>
+                        <p class="feature-desc">Log mocks. Track accuracy ratios, subject breakdowns, and your score
+                            curve over time.</p>
+                        <div class="mini-stat-row">
+                            <div class="mini-stat">
+                                <div class="mini-stat-label">Target</div>
+                                <div class="mini-stat-value">220<span
+                                        style="font-size:0.7em;color:var(--text-3)">/300</span></div>
+                            </div>
+                            <div class="mini-stat">
+                                <div class="mini-stat-label">Accuracy</div>
+                                <div class="mini-stat-value blue">88%</div>
+                            </div>
+                        </div>
+                        <div class="mini-stat" style="margin-top:8px;">
+                            <div class="mini-stat-label">Latest Full Syllabus</div>
+                            <div class="mini-stat-value green" style="display:flex;align-items:center;gap:8px;">184 <i
+                                    data-lucide="trending-up" style="width:20px;height:20px;"></i></div>
+                        </div>
+                    </div>
+
+                    <!-- Error Tracking -->
+                    <div class="feature-cell span-6">
+                        <div class="feature-tag">Error Log</div>
+                        <div class="feature-title">Fix the leaks.</div>
+                        <p class="feature-desc">Categorize every mistake — conceptual, silly, formula. Build your
+                            personal defence before D-Day.</p>
+                        <div class="mock-log" style="margin-top:auto;">
+                            <div class="mock-subject"><span
+                                    style="width:6px;height:6px;border-radius:2px;background:white;display:inline-block;"></span>
+                                MATH · Definite Integration</div>
+                            <span class="mock-badge badge-rose">Conceptual</span>
+                        </div>
+                        <div class="mock-log">
+                            <div class="mock-subject"><span
+                                    style="width:6px;height:6px;border-radius:2px;background:white;display:inline-block;"></span>
+                                CHEM · Chemical Kinetics</div>
+                            <span class="mock-badge badge-amber">Silly Mistake</span>
+                        </div>
+                    </div>
+
+                    <!-- Squad -->
+                    <div class="feature-cell span-12">
+                        <div
+                            style="display:flex;align-items:flex-start;justify-content:space-between;gap:2rem;flex-wrap:wrap;">
+                            <div style="flex:1;min-width:220px;">
+                                <div class="feature-tag">Accountability Squad</div>
+                                <div class="feature-title">Peer pressure, weaponized.</div>
+                                <p class="feature-desc" style="margin-top:0.5rem;">1-on-1 connections via 6-digit codes.
+                                    No group chats. Just live status — see when your friends are deep in focus and let
+                                    the silence push you harder.</p>
+                            </div>
+                            <div
+                                style="min-width:240px;display:flex;flex-direction:column;gap:8px;justify-content:flex-end;">
+                                <div class="squad-row">
+                                    <div class="squad-user">
+                                        <div class="squad-avatar">Y</div>
+                                        <div class="squad-name">You</div>
+                                    </div>
+                                    <div class="squad-status live"><span class="live-dot"></span> Live</div>
+                                </div>
+                                <div class="squad-row">
+                                    <div class="squad-user">
+                                        <div class="squad-avatar"
+                                            style="background:rgba(255,255,255,0.05);color:var(--text-2);border-color:var(--border);">
+                                            A</div>
+                                        <div class="squad-name" style="color:var(--text-2);">Air1_Target</div>
+                                    </div>
+                                    <div class="squad-status idle">· Idle</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- TESTIMONIALS (BENTO GRID) -->
+            <section class="testimonials-section">
+                <div class="testimonials-header">
+                    <div>
+                        <div class="section-label">Community</div>
+                        <h2 class="section-title">Built for the community.</h2>
+                        <p class="section-body" style="margin-top:0.5rem;">Join serious aspirants in our Discord —
+                            here's what they have to say.</p>
+                    </div>
+                </div>
+
+                <div class="bento-testimonials">
+                    <div class="bento-card"><img src="discord1.png" alt="Discord testimonial 1"
+                            onclick="openLightbox(this.src)"></div>
+                    <div class="bento-card"><img src="discord2.png" alt="Discord testimonial 2"
+                            onclick="openLightbox(this.src)"></div>
+                    <div class="bento-card"><img src="discord4.png" alt="Discord testimonial 3"
+                            onclick="openLightbox(this.src)"></div>
+                    <div class="bento-card"><img src="discord3.png" alt="Discord testimonial 4"
+                            onclick="openLightbox(this.src)"></div>
+                    <div class="bento-card"><img src="discord5.png" alt="Discord testimonial 5"
+                            onclick="openLightbox(this.src)"></div>
+                    <div class="bento-card"><img src="discord6.png" alt="Discord testimonial 6"
+                            onclick="openLightbox(this.src)"></div>
+                </div>
+
+                <div class="discord-cta">
+                    <a href="https://discord.gg/mKXPpSY6Dz" target="_blank" class="btn-discord">
+                        <i data-lucide="message-square" style="width:18px;height:18px;"></i>
+                        Join the Discord
                     </a>
                 </div>
+            </section>
 
-                <div class="hero-trust">
-                    <div class="trust-pill"><span class="trust-dot-green"></span><span style="color:var(--text-2)">Free</span></div>
-                    <div class="trust-pill"><span class="trust-dot-red"></span><span style="color:var(--text-2)">No Ads</span></div>
-                    <div class="trust-sep"></div>
-                    <a href="https://alphajee.online" target="_blank" class="trust-partner">
-                        <div class="trust-partner-logo"><img src="alphajee.png" alt="AlphaJEE"></div>
-                        <div class="trust-partner-label">
-                            <span class="trust-partner-sub">Official Partner</span>
-                            <span class="trust-partner-name">AlphaJEE</span>
-                        </div>
-                    </a>
+            <!-- FOOTER -->
+            <footer>
+                <span class="footer-copy">© 2026 ChaosPrep by sval.tech | Created by Shaurya Pratap Singh</span>
+                <div class="footer-links">
+                    <a href="/chaos/privacypolicy">Privacy</a>
+                    <a href="/chaos/termsandconditions">Terms</a>
                 </div>
-            </div>
+            </footer>
+        </div>
 
-            <div class="hero-visual">
-                <div class="hero-img-frame">
-                    <img src="og-image.png" alt="ChaosPrep Interface" onerror="this.style.minHeight='320px';this.style.background='var(--surface-2)'">
-
-                    <div class="hero-float hero-float-streak">
-                        <div class="float-icon float-icon-orange">
-                            <i data-lucide="flame" style="width:18px;height:18px;color:#f97316;"></i>
-                        </div>
-                        <div>
-                            <div class="float-label">Study Streak</div>
-                            <div class="float-value">16 Days</div>
-                        </div>
-                    </div>
-
-                    <div class="hero-float hero-float-timer">
-                        <div>
-                            <div class="float-live"><span class="live-dot"></span> Deep Work</div>
-                            <div class="float-mono">04:20:00</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- FEATURES -->
-        <section class="features-section" id="features">
-            <div class="section-label">Features</div>
-            <h2 class="section-title">Built for the obsessive.</h2>
-            <p class="section-body">Every tool engineered around the one goal that matters — your rank on exam day.</p>
-
-            <div class="features-grid">
-
-                <!-- Syllabus -->
-                <div class="feature-cell span-8">
-                    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
-                        <div>
-                            <div class="feature-tag">Syllabus Matrix</div>
-                            <div class="feature-title">Track to the sub-topic.</div>
-                            <p class="feature-desc" style="max-width:340px;margin-top:0.5rem;">Track completion states, revision counts, and PYQ coverage across Physics, Chemistry, Maths &amp; Biology — chapter by chapter.</p>
-                        </div>
-                        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;min-width:200px;">
-                            <div style="font-family:var(--mono);font-size:9px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">Physics Covered</div>
-                            <div style="font-family:var(--sans);font-size:3.5rem;font-weight:800;line-height:1;letter-spacing:-0.04em;color:var(--text-1);">82<span style="color:#10b981;font-size:2rem;">%</span></div>
-                            <div class="progress-bar" style="margin-top:10px;">
-                                <div class="progress-fill" style="width:45%;background:var(--brand);display:inline-block;float:left;"></div>
-                                <div class="progress-fill" style="width:37%;background:#10b981;display:inline-block;float:left;"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mock-log">
-                        <div class="mock-subject">
-                            <span style="width:7px;height:7px;border-radius:50%;background:#10b981;display:inline-block;"></span>
-                            Rotational Motion
-                        </div>
-                        <div style="display:flex;gap:6px;">
-                            <span class="mock-badge" style="background:var(--surface-3);color:var(--text-2);border:1px solid var(--border);">R3</span>
-                            <span class="mock-badge" style="background:rgba(16,185,129,0.1);color:#10b981;border:1px solid rgba(16,185,129,0.2);">PYQs ✓</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Timer -->
-                <div class="feature-cell span-4">
-                    <div class="feature-tag">Deep Work Timer</div>
-                    <div class="feature-title">Clock your hours.</div>
-                    <p class="feature-desc">Flow state timer with PiP mode, session linking, and weekly charts. Built for 10-hour days.</p>
-                    <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:auto;">
-                        <div style="font-family:var(--mono);font-size:9px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.1em;">Today's Focus</div>
-                        <div class="timer-display">10<span style="font-size:1.25rem;color:var(--text-3);">h</span> 14<span style="font-size:1.25rem;color:var(--text-3);">m</span></div>
-                        <div class="timer-sub">Physics · Electrostatics</div>
-                    </div>
-                </div>
-
-                <!-- Mock Analytics -->
-                <div class="feature-cell span-6">
-                    <div class="feature-tag">Analytics</div>
-                    <div class="feature-title">Measure trajectory.</div>
-                    <p class="feature-desc">Log mocks. Track accuracy ratios, subject breakdowns, and your score curve over time.</p>
-                    <div class="mini-stat-row">
-                        <div class="mini-stat">
-                            <div class="mini-stat-label">Target</div>
-                            <div class="mini-stat-value">220<span style="font-size:0.7em;color:var(--text-3)">/300</span></div>
-                        </div>
-                        <div class="mini-stat">
-                            <div class="mini-stat-label">Accuracy</div>
-                            <div class="mini-stat-value blue">88%</div>
-                        </div>
-                    </div>
-                    <div class="mini-stat" style="margin-top:8px;">
-                        <div class="mini-stat-label">Latest Full Syllabus</div>
-                        <div class="mini-stat-value green" style="display:flex;align-items:center;gap:8px;">184 <i data-lucide="trending-up" style="width:20px;height:20px;"></i></div>
-                    </div>
-                </div>
-
-                <!-- Error Tracking -->
-                <div class="feature-cell span-6">
-                    <div class="feature-tag">Error Log</div>
-                    <div class="feature-title">Fix the leaks.</div>
-                    <p class="feature-desc">Categorize every mistake — conceptual, silly, formula. Build your personal defence before D-Day.</p>
-                    <div class="mock-log" style="margin-top:auto;">
-                        <div class="mock-subject"><span style="width:6px;height:6px;border-radius:2px;background:white;display:inline-block;"></span> MATH · Definite Integration</div>
-                        <span class="mock-badge badge-rose">Conceptual</span>
-                    </div>
-                    <div class="mock-log">
-                        <div class="mock-subject"><span style="width:6px;height:6px;border-radius:2px;background:white;display:inline-block;"></span> CHEM · Chemical Kinetics</div>
-                        <span class="mock-badge badge-amber">Silly Mistake</span>
-                    </div>
-                </div>
-
-                <!-- Squad -->
-                <div class="feature-cell span-12">
-                    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:2rem;flex-wrap:wrap;">
-                        <div style="flex:1;min-width:220px;">
-                            <div class="feature-tag">Accountability Squad</div>
-                            <div class="feature-title">Peer pressure, weaponized.</div>
-                            <p class="feature-desc" style="margin-top:0.5rem;">1-on-1 connections via 6-digit codes. No group chats. Just live status — see when your friends are deep in focus and let the silence push you harder.</p>
-                        </div>
-                        <div style="min-width:240px;display:flex;flex-direction:column;gap:8px;justify-content:flex-end;">
-                            <div class="squad-row">
-                                <div class="squad-user">
-                                    <div class="squad-avatar">Y</div>
-                                    <div class="squad-name">You</div>
-                                </div>
-                                <div class="squad-status live"><span class="live-dot"></span> Live</div>
-                            </div>
-                            <div class="squad-row">
-                                <div class="squad-user">
-                                    <div class="squad-avatar" style="background:rgba(255,255,255,0.05);color:var(--text-2);border-color:var(--border);">A</div>
-                                    <div class="squad-name" style="color:var(--text-2);">Air1_Target</div>
-                                </div>
-                                <div class="squad-status idle">· Idle</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </section>
-
-        <!-- TESTIMONIALS (BENTO GRID) -->
-        <section class="testimonials-section">
-            <div class="testimonials-header">
-                <div>
-                    <div class="section-label">Community</div>
-                    <h2 class="section-title">Built for the community.</h2>
-                    <p class="section-body" style="margin-top:0.5rem;">Join serious aspirants in our Discord — here's what they have to say.</p>
-                </div>
-            </div>
-
-            <div class="bento-testimonials">
-                <div class="bento-card"><img src="discord1.png" alt="Discord testimonial 1" onclick="openLightbox(this.src)"></div>
-                <div class="bento-card"><img src="discord2.png" alt="Discord testimonial 2" onclick="openLightbox(this.src)"></div>
-                <div class="bento-card"><img src="discord4.png" alt="Discord testimonial 3" onclick="openLightbox(this.src)"></div>
-                <div class="bento-card"><img src="discord3.png" alt="Discord testimonial 4" onclick="openLightbox(this.src)"></div>
-                <div class="bento-card"><img src="discord5.png" alt="Discord testimonial 5" onclick="openLightbox(this.src)"></div>
-                <div class="bento-card"><img src="discord6.png" alt="Discord testimonial 6" onclick="openLightbox(this.src)"></div>
-            </div>
-
-            <div class="discord-cta">
-                <a href="https://discord.gg/mKXPpSY6Dz" target="_blank" class="btn-discord">
-                    <i data-lucide="message-square" style="width:18px;height:18px;"></i>
-                    Join the Discord
-                </a>
-            </div>
-        </section>
-
-        <!-- FOOTER -->
-        <footer>
-            <span class="footer-copy">© 2026 ChaosPrep by sval.tech | Created by Shaurya Pratap Singh</span>
-            <div class="footer-links">
-                <a href="/chaos/privacypolicy">Privacy</a>
-                <a href="/chaos/termsandconditions">Terms</a>
-            </div>
-        </footer>
+        <!-- Login Screen Logic -->
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                if (window.lucide) window.lucide.createIcons();
+            });
+        </script>
     </div>
-
-    <!-- Login Screen Logic -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.lucide) window.lucide.createIcons();
-        });
-    </script>
-</div>
     <!-- Loading Overlay -->
     <div id="loading-overlay"
         class="fixed inset-0 z-[100] bg-zinc-50 dark:bg-[#09090b] flex items-center justify-center transition-opacity duration-500">
@@ -827,7 +1442,7 @@
     <!-- Desktop Sidebar -->
     <aside
         class="hidden md:flex w-[320px] bg-white/80 dark:bg-[#18181b]/90 backdrop-blur-2xl border-r border-zinc-200/50 dark:border-zinc-800/50 flex-col shrink-0 z-[50] relative h-full transition-all duration-300 shadow-floating"
-        id="desktop-sidebar">
+        id="desktop-sidebar" style="top: var(--titlebar-height); height: calc(100vh - var(--titlebar-height));">
         <div class="p-6 shrink-0">
             <div class="flex items-center justify-between gap-2 mb-4">
                 <div class="flex items-center gap-2.5 min-w-0">
@@ -972,7 +1587,8 @@
                         <label
                             class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Subject</label>
                         <button type="button" onclick="openCustomSubjectModal()"
-                            class="text-[10px] font-bold text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/30 px-2 py-1 rounded transition-colors">+ Manage</button>
+                            class="text-[10px] font-bold text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/30 px-2 py-1 rounded transition-colors">+
+                            Manage</button>
                     </div>
                     <div id="subject-selector" class="grid grid-cols-2 gap-2"></div>
                 </div>
@@ -999,7 +1615,7 @@
     </aside>
 
     <main id="main-content-area"
-        class="flex-1 flex flex-col h-full overflow-hidden relative bg-transparent touch-pan-x z-10">
+        class="flex-1 flex flex-col h-full overflow-hidden relative bg-transparent touch-pan-x z-10" style="height: calc(100vh - var(--titlebar-height));">
 
         <div id="top-announcement-banner"
             class="hidden bg-brand-500 text-white px-4 py-2 items-center justify-center relative text-sm font-medium z-50 shadow-md transition-all duration-300">
@@ -1880,6 +2496,10 @@
                                     class="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-lg shadow-brand-500/20 active:scale-90 transition-all duration-200 flex items-center gap-2">
                                     <i data-lucide="user-plus" class="w-4 h-4"></i> Add Friend
                                 </button>
+                                <button onclick="openCreateWebModal()"
+                                    class="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-5 py-2.5 rounded-xl font-bold text-xs shadow-lg shadow-black/10 active:scale-90 transition-all duration-200 flex items-center gap-2">
+                                    <i data-lucide="network" class="w-4 h-4"></i> Squad Web
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1993,6 +2613,48 @@
                         class="px-5 py-2.5 rounded-xl text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-bold text-sm transition-colors">Cancel</button>
                     <button id="btn-submit-friend" onclick="submitAddFriend()"
                         class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-md transition-all active:scale-95 flex items-center gap-2">Connect</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Squad Web Modal -->
+        <div id="create-web-modal"
+            class="fixed inset-0 z-[140] flex items-center justify-center modal-backdrop hidden opacity-0 transition-opacity duration-300 px-4">
+            <div
+                class="bg-white dark:bg-[#18181b] rounded-[2.5rem] shadow-2xl p-8 w-full max-w-md transform scale-95 transition-transform duration-300 border border-zinc-200/50 dark:border-zinc-800 max-h-[90vh] flex flex-col">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0">
+                            <i data-lucide="network" class="w-5 h-5"></i>
+                        </div>
+                        <h3 class="text-xl font-black text-zinc-900 dark:text-white">Squad Web</h3>
+                    </div>
+                    <button onclick="closeCreateWebModal()"
+                        class="p-2 text-zinc-400 hover:text-rose-500 transition-colors">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <p class="text-xs text-zinc-500 font-medium mb-6">Connect everyone in this group to each other
+                    simultaneously. (Max 10 including you)</p>
+
+                <div id="web-inputs-wrapper" class="space-y-3 overflow-y-auto pr-2 custom-scrollbar mb-6 flex-1">
+                    <!-- Dynamic inputs will go here -->
+                </div>
+
+                <div class="space-y-3">
+                    <button onclick="addWebInputSlot()" id="btn-add-web-slot"
+                        class="w-full py-3 rounded-xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 font-bold text-xs hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Add Slot
+                    </button>
+
+                    <div class="flex gap-3 justify-end pt-2">
+                        <button onclick="closeCreateWebModal()"
+                            class="px-5 py-2.5 rounded-xl text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-bold text-sm transition-colors">Cancel</button>
+                        <button id="btn-submit-web" onclick="submitCreateWeb()"
+                            class="px-8 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-md shadow-brand-500/20 transition-all active:scale-95 flex items-center gap-2">Connect
+                            Web</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2256,9 +2918,9 @@
                                 Reset All My Data
                             </button>
                         </div>
-                    </div>   
-                    
-                    
+                    </div>
+
+
                     <div
                         class="glass-card p-6 md:p-8 rounded-[2.5rem] flex flex-col gap-4 border-t-2 border-t-brand-500">
                         <div class="flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-800 pb-4 mb-2">
@@ -2270,7 +2932,8 @@
                             class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-between border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
                             <div>
                                 <span class="font-bold text-sm text-zinc-700 dark:text-zinc-200 block">Enable Kio</span>
-                                <span class="text-[10px] text-zinc-500 font-medium">Get personalized study advice and planning assistance.</span>
+                                <span class="text-[10px] text-zinc-500 font-medium">Get personalized study advice and
+                                    planning assistance.</span>
                             </div>
                             <button id="aimentor-toggle" onclick="toggleAIMentorSetting()"
                                 class="relative w-12 h-7 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-all duration-300 shrink-0">
@@ -2281,10 +2944,14 @@
                         </div>
 
                         <div class="space-y-2">
-                            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Gemini API Key</label>
-                            <input type="password" id="settings-gemini-api-key" onchange="triggerAutoSave()" placeholder="Paste your API key here..."
+                            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Gemini
+                                API Key</label>
+                            <input type="password" id="settings-gemini-api-key" onchange="triggerAutoSave()"
+                                placeholder="Paste your API key here..."
                                 class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-medium focus:ring-2 focus:ring-brand-500 transition-all shadow-inner-light dark:shadow-inner-dark">
-                            <p class="text-[9px] text-zinc-500 mt-1 leading-tight">Your key is stored on YOUR DEVICE LOCALSTORAGE, it never leaves your device. Get one for free at <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-brand-500 underline">Google AI Studio</a>.</p>
+                            <p class="text-[9px] text-zinc-500 mt-1 leading-tight">Your key is stored on YOUR DEVICE LOCALSTORAGE, It is not stored on the sval.tech server. Get one for free at <a
+                                    href="https://aistudio.google.com/app/apikey" target="_blank"
+                                    class="text-brand-500 underline">Google AI Studio</a>.</p>
                         </div>
                     </div>
                 </div>
@@ -2637,14 +3304,17 @@
                 class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-brand-500/30 outline-none dark:text-white mb-4 appearance-none font-medium shadow-inner-light dark:shadow-inner-dark">
 
             <div class="mb-4">
-                <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">Maximum Marks</label>
+                <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">Maximum
+                    Marks</label>
                 <input type="number" id="mock-category-max-marks" placeholder="e.g. 300"
                     class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500/30 outline-none dark:text-white appearance-none font-medium shadow-inner-light dark:shadow-inner-dark">
             </div>
 
             <div class="mb-6">
-                <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">Filter Subjects</label>
-                <div id="mock-category-subjects-list" class="grid grid-cols-2 gap-2 max-h-[120px] overflow-y-auto custom-scrollbar pr-2">
+                <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">Filter
+                    Subjects</label>
+                <div id="mock-category-subjects-list"
+                    class="grid grid-cols-2 gap-2 max-h-[120px] overflow-y-auto custom-scrollbar pr-2">
                     <!-- Dynamic subject checkboxes -->
                 </div>
             </div>
@@ -2707,7 +3377,8 @@
                     <label
                         class="block text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Category</label>
                     <button type="button" onclick="closeEditMockModal(); openMockCategoryModal()"
-                        class="text-[10px] font-bold text-brand-600 dark:text-brand-400 hover:underline">+ Manage Categories</button>
+                        class="text-[10px] font-bold text-brand-600 dark:text-brand-400 hover:underline">+ Manage
+                        Categories</button>
                 </div>
                 <select id="edit-mock-category" onchange="handleEditMockCategoryChange()"
                     class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white font-bold focus:ring-2 focus:ring-brand-500 shadow-inner-light dark:shadow-inner-dark appearance-none">
